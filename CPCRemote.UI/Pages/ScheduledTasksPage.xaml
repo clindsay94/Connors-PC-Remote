@@ -1,0 +1,31 @@
+<Page
+    x:Class="CPCRemote.UI.Pages.ScheduledTasksPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid>
+        <Grid.ChildrenTransitions>
+            <TransitionCollection>
+                <EntranceThemeTransition />
+            </TransitionCollection>
+        </Grid.ChildrenTransitions>
+        
+        <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
+            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE787;" FontSize="48" HorizontalAlignment="Center" />
+            <TextBlock Text="Scheduled Tasks" Style="{ThemeResource TitleTextBlockStyle}" HorizontalAlignment="Center" />
+            <TextBlock Text="Schedule automatic shutdown, restart, or other power management tasks." 
+                       Style="{ThemeResource BodyTextBlockStyle}" 
+                       HorizontalAlignment="Center" 
+                       TextAlignment="Center"
+                       MaxWidth="400"/>
+            <Button x:Name="AddTaskButton" 
+                    Content="Add New Task" 
+                    Style="{StaticResource AccentButtonStyle}" 
+                    Click="AddTaskButton_Click" />
+        </StackPanel>
+    </Grid>
+</Page>

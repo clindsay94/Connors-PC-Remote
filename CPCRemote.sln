@@ -1,0 +1,73 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11005.162
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CPCRemote.Service", "CPCRemote.Service\CPCRemote.Service.csproj", "{9EE1AFE0-A040-704F-8561-B4120D6A96B6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{500FB467-FD2A-CB60-24C4-380B58EB904B} = {500FB467-FD2A-CB60-24C4-380B58EB904B}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CPCRemote.UI", "CPCRemote.UI\CPCRemote.UI.csproj", "{6D44F5C1-D39D-FE7B-C4D9-84D4FCC428EE}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9EE1AFE0-A040-704F-8561-B4120D6A96B6} = {9EE1AFE0-A040-704F-8561-B4120D6A96B6}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CPCRemote.Tests", "CPCRemote.Tests\CPCRemote.Tests.csproj", "{F93B4C96-A5EE-0B41-B9CD-E6A0EA7837E7}"
+	ProjectSection(ProjectDependencies) = postProject
+		{6D44F5C1-D39D-FE7B-C4D9-84D4FCC428EE} = {6D44F5C1-D39D-FE7B-C4D9-84D4FCC428EE}
+		{9EE1AFE0-A040-704F-8561-B4120D6A96B6} = {9EE1AFE0-A040-704F-8561-B4120D6A96B6}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CPCRemote.Core", "CPCRemote.Core\CPCRemote.Core.csproj", "{500FB467-FD2A-CB60-24C4-380B58EB904B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9EE1AFE0-A040-704F-8561-B4120D6A96B6}.Debug|x64.ActiveCfg = Debug|x64
+		{9EE1AFE0-A040-704F-8561-B4120D6A96B6}.Debug|x64.Build.0 = Debug|x64
+		{9EE1AFE0-A040-704F-8561-B4120D6A96B6}.Debug|x86.ActiveCfg = Debug|x64
+		{9EE1AFE0-A040-704F-8561-B4120D6A96B6}.Debug|x86.Build.0 = Debug|x64
+		{9EE1AFE0-A040-704F-8561-B4120D6A96B6}.Release|x64.ActiveCfg = Release|x64
+		{9EE1AFE0-A040-704F-8561-B4120D6A96B6}.Release|x64.Build.0 = Release|x64
+		{9EE1AFE0-A040-704F-8561-B4120D6A96B6}.Release|x86.ActiveCfg = Release|x64
+		{9EE1AFE0-A040-704F-8561-B4120D6A96B6}.Release|x86.Build.0 = Release|x64
+		{6D44F5C1-D39D-FE7B-C4D9-84D4FCC428EE}.Debug|x64.ActiveCfg = Debug|x64
+		{6D44F5C1-D39D-FE7B-C4D9-84D4FCC428EE}.Debug|x64.Build.0 = Debug|x64
+		{6D44F5C1-D39D-FE7B-C4D9-84D4FCC428EE}.Debug|x64.Deploy.0 = Debug|x64
+		{6D44F5C1-D39D-FE7B-C4D9-84D4FCC428EE}.Debug|x86.ActiveCfg = Debug|x64
+		{6D44F5C1-D39D-FE7B-C4D9-84D4FCC428EE}.Debug|x86.Build.0 = Debug|x64
+		{6D44F5C1-D39D-FE7B-C4D9-84D4FCC428EE}.Release|x64.ActiveCfg = Release|x64
+		{6D44F5C1-D39D-FE7B-C4D9-84D4FCC428EE}.Release|x64.Build.0 = Release|x64
+		{6D44F5C1-D39D-FE7B-C4D9-84D4FCC428EE}.Release|x64.Deploy.0 = Release|x64
+		{6D44F5C1-D39D-FE7B-C4D9-84D4FCC428EE}.Release|x86.ActiveCfg = Release|x64
+		{6D44F5C1-D39D-FE7B-C4D9-84D4FCC428EE}.Release|x86.Build.0 = Release|x64
+		{F93B4C96-A5EE-0B41-B9CD-E6A0EA7837E7}.Debug|x64.ActiveCfg = Debug|x64
+		{F93B4C96-A5EE-0B41-B9CD-E6A0EA7837E7}.Debug|x64.Build.0 = Debug|x64
+		{F93B4C96-A5EE-0B41-B9CD-E6A0EA7837E7}.Debug|x86.ActiveCfg = Debug|x64
+		{F93B4C96-A5EE-0B41-B9CD-E6A0EA7837E7}.Debug|x86.Build.0 = Debug|x64
+		{F93B4C96-A5EE-0B41-B9CD-E6A0EA7837E7}.Release|x64.ActiveCfg = Release|Any CPU
+		{F93B4C96-A5EE-0B41-B9CD-E6A0EA7837E7}.Release|x64.Build.0 = Release|Any CPU
+		{F93B4C96-A5EE-0B41-B9CD-E6A0EA7837E7}.Release|x86.ActiveCfg = Release|Any CPU
+		{F93B4C96-A5EE-0B41-B9CD-E6A0EA7837E7}.Release|x86.Build.0 = Release|Any CPU
+		{500FB467-FD2A-CB60-24C4-380B58EB904B}.Debug|x64.ActiveCfg = Debug|x64
+		{500FB467-FD2A-CB60-24C4-380B58EB904B}.Debug|x64.Build.0 = Debug|x64
+		{500FB467-FD2A-CB60-24C4-380B58EB904B}.Debug|x86.ActiveCfg = Debug|x64
+		{500FB467-FD2A-CB60-24C4-380B58EB904B}.Debug|x86.Build.0 = Debug|x64
+		{500FB467-FD2A-CB60-24C4-380B58EB904B}.Release|x64.ActiveCfg = Release|x64
+		{500FB467-FD2A-CB60-24C4-380B58EB904B}.Release|x64.Build.0 = Release|x64
+		{500FB467-FD2A-CB60-24C4-380B58EB904B}.Release|x86.ActiveCfg = Release|x64
+		{500FB467-FD2A-CB60-24C4-380B58EB904B}.Release|x86.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CA60F2EB-A99D-45F2-859D-715D14267EBE}
+	EndGlobalSection
+EndGlobal

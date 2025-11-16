@@ -1,0 +1,537 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="CPCRemote.UI.Pages.ServiceManagementPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+
+
+    <ScrollViewer>    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+
+        <StackPanel Padding="24" Spacing="16" MaxWidth="800">
+
+            <TextBlock Text="Service Management" Style="{StaticResource TitleTextBlockStyle}"/>    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+
+            
+
+            <TextBlock TextWrapping="Wrap" Text="Manage the Connor's PC Remote Windows Service. Install, configure, and control the service without using PowerShell scripts."/>    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"    mc:Ignorable="d"
+
+
+
+            <StackPanel Spacing="12" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" Padding="16" CornerRadius="8">    mc:Ignorable="d"    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+                <TextBlock Text="Service Status" FontWeight="SemiBold" FontSize="16"/>
+
+                    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+                <Grid ColumnSpacing="8">
+
+                    <Grid.ColumnDefinitions>    <ScrollViewer>
+
+                        <ColumnDefinition Width="120"/>
+
+                        <ColumnDefinition Width="*"/>    <ScrollViewer>        <StackPanel Padding="24" Spacing="16" MaxWidth="800">
+
+                    </Grid.ColumnDefinitions>
+
+                    <Grid.RowDefinitions>        <StackPanel Padding="24" Spacing="16" MaxWidth="800">            <TextBlock Text="Service Management" 
+
+                        <RowDefinition/>
+
+                        <RowDefinition/>            <TextBlock Text="Service Management"                        Style="{StaticResource TitleTextBlockStyle}"/>
+
+                    </Grid.RowDefinitions>
+
+                                           Style="{StaticResource TitleTextBlockStyle}"/>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Installation:" FontWeight="SemiBold"/>
+
+                    <TextBlock Grid.Row="0" Grid.Column="1" x:Name="ServiceInstalledText" Text="Unknown"/>                        <!-- Service Status Section -->
+
+                    
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Status:" FontWeight="SemiBold"/>            <TextBlock TextWrapping="Wrap"            <Expander Header="Service Status" IsExpanded="True" HorizontalAlignment="Stretch">
+
+                    <TextBlock Grid.Row="1" Grid.Column="1" x:Name="ServiceStatusText" Text="Unknown"/>
+
+                </Grid>                       Text="Manage the Connor's PC Remote Windows Service directly from the GUI. Install, configure, and control the service without using PowerShell scripts."/>                <StackPanel Spacing="12" Padding="12">
+
+
+
+                <StackPanel Orientation="Horizontal" Spacing="8">                    <StackPanel Orientation="Horizontal" Spacing="8">
+
+                    <Button x:Name="RefreshStatusButton" Click="RefreshStatusButton_Click">
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">            <!-- Service Status -->                        <TextBlock Text="Status:" FontWeight="SemiBold" MinWidth="120"/>
+
+                            <SymbolIcon Symbol="Refresh"/>
+
+                            <TextBlock Text="Refresh Status"/>            <StackPanel Spacing="8" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"                         <TextBlock x:Name="ServiceStatusText" Text="Unknown" Foreground="{ThemeResource SystemAccentColor}"/>
+
+                        </StackPanel>
+
+                    </Button>                        BorderThickness="1" Padding="16" CornerRadius="8">                    </StackPanel>
+
+                    <ProgressRing x:Name="StatusLoadingRing" IsActive="False" Width="20" Height="20"/>
+
+                </StackPanel>                <TextBlock Text="Service Status" FontWeight="SemiBold" FontSize="16"/>                    
+
+            </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+
+            <StackPanel Spacing="12" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" Padding="16" CornerRadius="8">
+
+                <TextBlock Text="Service Control" FontWeight="SemiBold" FontSize="16"/>                <StackPanel Orientation="Horizontal" Spacing="8">                        <TextBlock Text="Installation:" FontWeight="SemiBold" MinWidth="120"/>
+
+                
+
+                <StackPanel Orientation="Horizontal" Spacing="8">                    <TextBlock Text="Installation:" FontWeight="SemiBold" MinWidth="120"/>                        <TextBlock x:Name="ServiceInstalledText" Text="Unknown"/>
+
+                    <Button x:Name="StartServiceButton" Click="StartServiceButton_Click" IsEnabled="False">
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">                    <TextBlock x:Name="ServiceInstalledText" Text="Unknown"/>                    </StackPanel>
+
+                            <SymbolIcon Symbol="Play"/>
+
+                            <TextBlock Text="Start"/>                </StackPanel>
+
+                        </StackPanel>
+
+                    </Button>                                    <StackPanel Orientation="Horizontal" Spacing="8">
+
+                    
+
+                    <Button x:Name="StopServiceButton" Click="StopServiceButton_Click" IsEnabled="False">                <StackPanel Orientation="Horizontal" Spacing="8">                        <Button x:Name="RefreshStatusButton" Content="Refresh Status" Click="RefreshStatusButton_Click">
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+
+                            <SymbolIcon Symbol="Stop"/>                    <TextBlock Text="Status:" FontWeight="SemiBold" MinWidth="120"/>                            <Button.Icon>
+
+                            <TextBlock Text="Stop"/>
+
+                        </StackPanel>                    <TextBlock x:Name="ServiceStatusText" Text="Unknown"/>                                <FontIcon Glyph="&#xE72C;"/>
+
+                    </Button>
+
+                                    </StackPanel>                            </Button.Icon>
+
+                    <Button x:Name="RestartServiceButton" Click="RestartServiceButton_Click" IsEnabled="False">
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">                        </Button>
+
+                            <SymbolIcon Symbol="RepeatAll"/>
+
+                            <TextBlock Text="Restart"/>                <StackPanel Orientation="Horizontal" Spacing="8">                        <ProgressRing x:Name="StatusLoadingRing" IsActive="False" Width="20" Height="20"/>
+
+                        </StackPanel>
+
+                    </Button>                    <Button x:Name="RefreshStatusButton" Content="Refresh Status" Click="RefreshStatusButton_Click">                    </StackPanel>
+
+                </StackPanel>
+
+                        <Button.Icon>                </StackPanel>
+
+                <InfoBar x:Name="ServiceControlInfoBar" IsOpen="False" IsClosable="True"/>
+
+            </StackPanel>                            <SymbolIcon Symbol="Refresh"/>            </Expander>
+
+
+
+            <StackPanel Spacing="12" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" Padding="16" CornerRadius="8">                        </Button.Icon>
+
+                <TextBlock Text="Installation" FontWeight="SemiBold" FontSize="16"/>
+
+                                    </Button>            <!-- Service Control Section -->
+
+                <TextBlock TextWrapping="Wrap" Text="Install or uninstall the Windows Service. Administrator privileges required."/>
+
+                                    <ProgressRing x:Name="StatusLoadingRing" IsActive="False" Width="20" Height="20"/>            <Expander Header="Service Control" IsExpanded="True" HorizontalAlignment="Stretch">
+
+                <TextBox x:Name="ServiceExePathTextBox" Header="Service Executable Path" PlaceholderText="C:\Path\to\CPCRemote.Service.exe" TextChanged="ServiceExePathTextBox_TextChanged"/>
+
+                                </StackPanel>                <StackPanel Spacing="12" Padding="12">
+
+                <Button x:Name="BrowseExeButton" Click="BrowseExeButton_Click">
+
+                    <StackPanel Orientation="Horizontal" Spacing="8">            </StackPanel>                    <StackPanel Orientation="Horizontal" Spacing="8">
+
+                        <SymbolIcon Symbol="Folder"/>
+
+                        <TextBlock Text="Browse..."/>                        <Button x:Name="StartServiceButton" Content="Start Service" Click="StartServiceButton_Click" IsEnabled="False">
+
+                    </StackPanel>
+
+                </Button>            <!-- Service Control -->                            <Button.Icon>
+
+
+
+                <StackPanel Orientation="Horizontal" Spacing="8">            <StackPanel Spacing="8" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"                                 <FontIcon Glyph="&#xE768;"/>
+
+                    <Button x:Name="InstallServiceButton" Click="InstallServiceButton_Click" IsEnabled="False">
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">                        BorderThickness="1" Padding="16" CornerRadius="8">                            </Button.Icon>
+
+                            <SymbolIcon Symbol="Add"/>
+
+                            <TextBlock Text="Install Service"/>                <TextBlock Text="Service Control" FontWeight="SemiBold" FontSize="16"/>                        </Button>
+
+                        </StackPanel>
+
+                    </Button>                                        
+
+                    
+
+                    <Button x:Name="UninstallServiceButton" Click="UninstallServiceButton_Click" IsEnabled="False">                <StackPanel Orientation="Horizontal" Spacing="8">                        <Button x:Name="StopServiceButton" Content="Stop Service" Click="StopServiceButton_Click" IsEnabled="False">
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+
+                            <SymbolIcon Symbol="Delete"/>                    <Button x:Name="StartServiceButton" Content="Start" Click="StartServiceButton_Click" IsEnabled="False">                            <Button.Icon>
+
+                            <TextBlock Text="Uninstall Service"/>
+
+                        </StackPanel>                        <Button.Icon>                                <FontIcon Glyph="&#xE71A;"/>
+
+                    </Button>
+
+                </StackPanel>                            <SymbolIcon Symbol="Play"/>                            </Button.Icon>
+
+
+
+                <InfoBar x:Name="InstallationInfoBar" IsOpen="False" IsClosable="True"/>                        </Button.Icon>                        </Button>
+
+            </StackPanel>
+
+                    </Button>                        
+
+            <StackPanel Spacing="12" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" Padding="16" CornerRadius="8">
+
+                <TextBlock Text="Service Configuration" FontWeight="SemiBold" FontSize="16"/>                                            <Button x:Name="RestartServiceButton" Content="Restart Service" Click="RestartServiceButton_Click" IsEnabled="False">
+
+                
+
+                <TextBlock TextWrapping="Wrap" Text="Configure HTTP listener settings. Changes require service restart."/>                    <Button x:Name="StopServiceButton" Content="Stop" Click="StopServiceButton_Click" IsEnabled="False">                            <Button.Icon>
+
+                
+
+                <TextBox x:Name="IpAddressTextBox" Header="IP Address" PlaceholderText="localhost" Text="localhost" TextChanged="UpdatePreviewUrl"/>                        <Button.Icon>                                <FontIcon Glyph="&#xE777;"/>
+
+                
+
+                <NumberBox x:Name="PortNumberBox" Header="Port" Value="5005" Minimum="1" Maximum="65535" SpinButtonPlacementMode="Inline" ValueChanged="UpdatePreviewUrl"/>                            <SymbolIcon Symbol="Stop"/>                            </Button.Icon>
+
+                
+
+                <PasswordBox x:Name="SecretPasswordBox" Header="Secret (Optional)" PlaceholderText="Leave empty for no authentication" PasswordRevealMode="Peek" PasswordChanged="UpdatePreviewUrl"/>                        </Button.Icon>                        </Button>
+
+
+
+                <TextBlock Text="Preview URL:" FontWeight="SemiBold"/>                    </Button>                    </StackPanel>
+
+                <TextBlock x:Name="PreviewUrlTextBlock" Text="http://localhost:5005/" FontFamily="Consolas" IsTextSelectionEnabled="True"/>
+
+                    
+
+                <Button x:Name="SaveConfigButton" Click="SaveConfigButton_Click">
+
+                    <StackPanel Orientation="Horizontal" Spacing="8">                    <Button x:Name="RestartServiceButton" Content="Restart" Click="RestartServiceButton_Click" IsEnabled="False">                    <InfoBar x:Name="ServiceControlInfoBar" IsOpen="False" IsClosable="True"/>
+
+                        <SymbolIcon Symbol="Save"/>
+
+                        <TextBlock Text="Save Configuration"/>                        <Button.Icon>                </StackPanel>
+
+                    </StackPanel>
+
+                </Button>                            <SymbolIcon Symbol="RepeatAll"/>            </Expander>
+
+
+
+                <InfoBar x:Name="ConfigInfoBar" IsOpen="False" IsClosable="True"/>                        </Button.Icon>
+
+            </StackPanel>
+
+                    </Button>            <!-- Installation Section -->
+
+            <StackPanel Spacing="12" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" Padding="16" CornerRadius="8">
+
+                <TextBlock Text="Test Service Connection" FontWeight="SemiBold" FontSize="16"/>                </StackPanel>            <Expander Header="Installation" IsExpanded="False" HorizontalAlignment="Stretch">
+
+                
+
+                <TextBlock TextWrapping="Wrap" Text="Test that the service is responding to HTTP requests."/>                <StackPanel Spacing="12" Padding="12">
+
+                
+
+                <Button x:Name="TestPingButton" Click="TestPingButton_Click">                <InfoBar x:Name="ServiceControlInfoBar" IsOpen="False" IsClosable="True"/>                    <TextBlock TextWrapping="Wrap" 
+
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+
+                        <SymbolIcon Symbol="Globe"/>            </StackPanel>                               Text="Install or uninstall the Connor's PC Remote Windows Service. The service must be installed and running to accept remote commands."/>
+
+                        <TextBlock Text="Test Ping"/>
+
+                    </StackPanel>                    
+
+                </Button>
+
+            <!-- Installation -->                    <TextBox x:Name="ServiceExePathTextBox" 
+
+                <InfoBar x:Name="TestInfoBar" IsOpen="False" IsClosable="True"/>
+
+            </StackPanel>            <StackPanel Spacing="8" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"                              Header="Service Executable Path" 
+
+        </StackPanel>
+
+    </ScrollViewer>                        BorderThickness="1" Padding="16" CornerRadius="8">                             PlaceholderText="C:\Path\to\CPCRemote.Service.exe"
+
+</Page>
+
+                <TextBlock Text="Installation" FontWeight="SemiBold" FontSize="16"/>                             TextChanged="ServiceExePathTextBox_TextChanged"/>
+
+                                    
+
+                <TextBlock TextWrapping="Wrap"                     <Button x:Name="BrowseExeButton" Content="Browse..." Click="BrowseExeButton_Click">
+
+                           Text="Install or uninstall the Windows Service. Administrator privileges required."/>                        <Button.Icon>
+
+                                            <FontIcon Glyph="&#xE8E5;"/>
+
+                <TextBox x:Name="ServiceExePathTextBox"                         </Button.Icon>
+
+                         Header="Service Executable Path"                     </Button>
+
+                         PlaceholderText="C:\Path\to\CPCRemote.Service.exe"
+
+                         TextChanged="ServiceExePathTextBox_TextChanged"/>                    <StackPanel Orientation="Horizontal" Spacing="8">
+
+                                        <Button x:Name="InstallServiceButton" 
+
+                <Button x:Name="BrowseExeButton" Content="Browse..." Click="BrowseExeButton_Click">                                Content="Install Service" 
+
+                    <Button.Icon>                                Click="InstallServiceButton_Click"
+
+                        <SymbolIcon Symbol="Folder"/>                                Style="{StaticResource AccentButtonStyle}"
+
+                    </Button.Icon>                                IsEnabled="False">
+
+                </Button>                            <Button.Icon>
+
+                                <FontIcon Glyph="&#xE896;"/>
+
+                <StackPanel Orientation="Horizontal" Spacing="8">                            </Button.Icon>
+
+                    <Button x:Name="InstallServiceButton"                         </Button>
+
+                            Content="Install Service"                         
+
+                            Click="InstallServiceButton_Click"                        <Button x:Name="UninstallServiceButton" 
+
+                            IsEnabled="False">                                Content="Uninstall Service" 
+
+                        <Button.Icon>                                Click="UninstallServiceButton_Click"
+
+                            <SymbolIcon Symbol="Add"/>                                IsEnabled="False">
+
+                        </Button.Icon>                            <Button.Icon>
+
+                    </Button>                                <FontIcon Glyph="&#xE74D;"/>
+
+                                                </Button.Icon>
+
+                    <Button x:Name="UninstallServiceButton"                         </Button>
+
+                            Content="Uninstall Service"                     </StackPanel>
+
+                            Click="UninstallServiceButton_Click"
+
+                            IsEnabled="False">                    <InfoBar x:Name="InstallationInfoBar" IsOpen="False" IsClosable="True"/>
+
+                        <Button.Icon>                </StackPanel>
+
+                            <SymbolIcon Symbol="Delete"/>            </Expander>
+
+                        </Button.Icon>
+
+                    </Button>            <!-- Configuration Section -->
+
+                </StackPanel>            <Expander Header="Service Configuration" IsExpanded="False" HorizontalAlignment="Stretch">
+
+                <StackPanel Spacing="12" Padding="12">
+
+                <InfoBar x:Name="InstallationInfoBar" IsOpen="False" IsClosable="True"/>                    <TextBlock TextWrapping="Wrap" 
+
+            </StackPanel>                               Text="Configure the HTTP listener settings. Changes require service restart to take effect."/>
+
+                    
+
+            <!-- Configuration -->                    <TextBox x:Name="IpAddressTextBox" 
+
+            <StackPanel Spacing="8" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"                              Header="IP Address" 
+
+                        BorderThickness="1" Padding="16" CornerRadius="8">                             PlaceholderText="localhost or 10.0.0.69"
+
+                <TextBlock Text="Service Configuration" FontWeight="SemiBold" FontSize="16"/>                             Text="localhost"/>
+
+                                    
+
+                <TextBlock TextWrapping="Wrap"                     <NumberBox x:Name="PortNumberBox" 
+
+                           Text="Configure HTTP listener settings. Changes require service restart."/>                               Header="Port" 
+
+                                               PlaceholderText="5005"
+
+                <TextBox x:Name="IpAddressTextBox"                                Minimum="1" 
+
+                         Header="IP Address"                                Maximum="65535"
+
+                         PlaceholderText="localhost"                               Value="5005"
+
+                         Text="localhost"                               SpinButtonPlacementMode="Inline"/>
+
+                         TextChanged="UpdatePreviewUrl"/>                    
+
+                                    <PasswordBox x:Name="SecretPasswordBox" 
+
+                <NumberBox x:Name="PortNumberBox"                                  Header="Secret (Optional)" 
+
+                           Header="Port"                                  PlaceholderText="Leave empty for no secret"
+
+                           Value="5005"                                 PasswordRevealMode="Peek"/>
+
+                           Minimum="1" 
+
+                           Maximum="65535"                    <TextBlock Text="Preview URL:" FontWeight="SemiBold"/>
+
+                           SpinButtonPlacementMode="Inline"                    <TextBlock x:Name="PreviewUrlTextBlock" 
+
+                           ValueChanged="UpdatePreviewUrl"/>                               Text="http://localhost:5005/" 
+
+                                               FontFamily="Consolas"
+
+                <PasswordBox x:Name="SecretPasswordBox"                                IsTextSelectionEnabled="True"
+
+                             Header="Secret (Optional)"                                Foreground="{ThemeResource SystemAccentColor}"/>
+
+                             PlaceholderText="Leave empty for no authentication"
+
+                             PasswordRevealMode="Peek"                    <Button x:Name="SaveConfigButton" 
+
+                             PasswordChanged="UpdatePreviewUrl"/>                            Content="Save Configuration" 
+
+                            Click="SaveConfigButton_Click"
+
+                <TextBlock Text="Preview URL:" FontWeight="SemiBold"/>                            Style="{StaticResource AccentButtonStyle}">
+
+                <TextBlock x:Name="PreviewUrlTextBlock"                         <Button.Icon>
+
+                           Text="http://localhost:5005/"                             <FontIcon Glyph="&#xE74E;"/>
+
+                           FontFamily="Consolas"                        </Button.Icon>
+
+                           IsTextSelectionEnabled="True"/>                    </Button>
+
+
+
+                <Button x:Name="SaveConfigButton"                     <InfoBar x:Name="ConfigInfoBar" IsOpen="False" IsClosable="True"/>
+
+                        Content="Save Configuration"                 </StackPanel>
+
+                        Click="SaveConfigButton_Click">            </Expander>
+
+                    <Button.Icon>
+
+                        <SymbolIcon Symbol="Save"/>            <!-- Test Commands Section -->
+
+                    </Button.Icon>            <Expander Header="Test Commands" IsExpanded="False" HorizontalAlignment="Stretch">
+
+                </Button>                <StackPanel Spacing="12" Padding="12">
+
+                    <TextBlock TextWrapping="Wrap" 
+
+                <InfoBar x:Name="ConfigInfoBar" IsOpen="False" IsClosable="True"/>                               Text="Test the service by sending commands. Make sure the service is running before testing."/>
+
+            </StackPanel>                    
+
+                    <Button x:Name="TestPingButton" Content="Test Ping" Click="TestPingButton_Click">
+
+            <!-- Test Commands -->                        <Button.Icon>
+
+            <StackPanel Spacing="8" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"                             <FontIcon Glyph="&#xE968;"/>
+
+                        BorderThickness="1" Padding="16" CornerRadius="8">                        </Button.Icon>
+
+                <TextBlock Text="Test Service Connection" FontWeight="SemiBold" FontSize="16"/>                    </Button>
+
+                
+
+                <TextBlock TextWrapping="Wrap"                     <TextBlock Text="Send Command:" FontWeight="SemiBold"/>
+
+                           Text="Test that the service is responding to HTTP requests."/>                    <ComboBox x:Name="TestCommandComboBox" 
+
+                                              PlaceholderText="Select a command"
+
+                <Button x:Name="TestPingButton" Content="Test Ping" Click="TestPingButton_Click">                              MinWidth="200">
+
+                    <Button.Icon>                        <ComboBoxItem Content="Shutdown"/>
+
+                        <SymbolIcon Symbol="Globe"/>                        <ComboBoxItem Content="Restart"/>
+
+                    </Button.Icon>                        <ComboBoxItem Content="Lock"/>
+
+                </Button>                        <ComboBoxItem Content="TurnScreenOff"/>
+
+                        <ComboBoxItem Content="ForceShutdown"/>
+
+                <InfoBar x:Name="TestInfoBar" IsOpen="False" IsClosable="True"/>                        <ComboBoxItem Content="UEFIReboot"/>
+
+            </StackPanel>                    </ComboBox>
+
+        </StackPanel>
+
+    </ScrollViewer>                    <Button x:Name="SendTestCommandButton" 
+
+</Page>                            Content="Send Command (Warning: Will Execute!)" 
+
+                            Click="SendTestCommandButton_Click"
+                            IsEnabled="False">
+                        <Button.Icon>
+                            <FontIcon Glyph="&#xE7C1;"/>
+                        </Button.Icon>
+                    </Button>
+
+                    <InfoBar x:Name="TestInfoBar" 
+                             IsOpen="False" 
+                             IsClosable="True"
+                             Severity="Warning"/>
+                </StackPanel>
+            </Expander>
+
+            <!-- URL Reservation Section -->
+            <Expander Header="URL Reservation (Advanced)" IsExpanded="False" HorizontalAlignment="Stretch">
+                <StackPanel Spacing="12" Padding="12">
+                    <TextBlock TextWrapping="Wrap" 
+                               Text="If the service fails to start with 'Access Denied' error, you may need to reserve the URL. This requires administrator privileges."/>
+                    
+                    <TextBlock TextWrapping="Wrap" FontStyle="Italic">
+                        <Run Text="Command: "/>
+                        <Run Text="netsh http add urlacl url=http://[address]:[port]/ user=EVERYONE" FontFamily="Consolas"/>
+                    </TextBlock>
+
+                    <Button x:Name="ReserveUrlButton" 
+                            Content="Reserve URL (Requires Admin)" 
+                            Click="ReserveUrlButton_Click">
+                        <Button.Icon>
+                            <FontIcon Glyph="&#xE7EF;"/>
+                        </Button.Icon>
+                    </Button>
+
+                    <InfoBar x:Name="UrlReservationInfoBar" IsOpen="False" IsClosable="True"/>
+                </StackPanel>
+            </Expander>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

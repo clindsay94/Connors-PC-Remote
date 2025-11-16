@@ -1,0 +1,48 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+	<TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+	<TargetPlatformMinVersion>10.0.22621.0</TargetPlatformMinVersion>
+	<SupportedOSPlatformVersion>10.0.22621.0</SupportedOSPlatformVersion>
+	<OutputType>WinExe</OutputType>
+	<UseWinUI>true</UseWinUI>
+	<WindowsPackageType>MSIX</WindowsPackageType>
+	<AppxManifest>Package.appxmanifest</AppxManifest>
+	<AppxPackageSigningEnabled>true</AppxPackageSigningEnabled>
+	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	<RootNamespace>CPCRemote.UI</RootNamespace>
+	<RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+	<Configurations>Debug;Release</Configurations>
+	<Platforms>x64</Platforms>
+	<PlatformTarget>x64</PlatformTarget>
+	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+	<Company>Lindsay Inc</Company>
+	<NoWarn>$(NoWarn);CA1416</NoWarn>
+	<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+  </PropertyGroup>
+
+  <ItemGroup>
+	<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.0" />
+	<PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.0" />
+	<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
+	<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.251106002" />
+	<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.6901" />
+	<PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.0" />
+	<ProjectReference Include="..\CPCRemote.Core\CPCRemote.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<Content Include="Assets\**">
+	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</Content>
+	<Content Include="Properties\launchsettings.json">
+	  <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+	</Content>
+  </ItemGroup>
+
+  <!-- Include Service binaries in MSIX package -->
+  <ItemGroup>
+	<None Include="..\CPCRemote.Service\bin\$(Configuration)\net10.0-windows10.0.26100.0\win-x64\**\*.*" Link="ServiceBinaries\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\CPCRemote.Service\bin\$(Configuration)\net10.0-windows10.0.26100.0\win-x64\')">
+	  <Pack>true</Pack>
+	</None>
+  </ItemGroup>
+</Project>

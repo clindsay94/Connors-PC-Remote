@@ -1,0 +1,5 @@
+{
+	"gitlens.views.scm.grouped.hiddenViews": {
+		"tags": true
+	}
+}

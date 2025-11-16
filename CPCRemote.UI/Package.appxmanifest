@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  xmlns:iot="http://schemas.microsoft.com/appx/manifest/iot/windows10"
+  xmlns:uap18="http://schemas.microsoft.com/appx/manifest/uap/windows10/18"
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  IgnorableNamespaces="rescap iot uap uap18 uap3">
+	<Identity
+	  Name="Connor's PC Remote"
+	  Publisher="CN=CLindsay94" 
+	  Version="1.0.1.0" />
+	<Properties>
+		<DisplayName>Connor's PC Remote</DisplayName>
+		<PublisherDisplayName>Connor L</PublisherDisplayName>
+		<Logo>Assets\StoreLogo.png</Logo>
+	</Properties>
+	<Dependencies>
+<!-- Target min version bumped so restricted capabilities (rescap) are valid in schema -->
+	<TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.22621.0" MaxVersionTested="10.0.26100.0" />
+	</Dependencies>
+	<Resources>
+		<Resource Language="x-generate"/>
+	</Resources>
+	<Applications>
+		<Application Id="App"
+		  Executable="$targetnametoken$.exe"
+		  EntryPoint="$targetentrypoint$" uap18:TrustLevel="mediumIL" uap18:RuntimeBehavior="packagedClassicApp">
+			<uap:VisualElements
+			  DisplayName="Connor's PC Remote"
+			  Description="A tool that listens for HTTP GET requests to deliver a command to shutdown or restart your PC - Perfect for the Samsung SmartThings PC Control V1 Edge Driver"
+			  Square150x150Logo="Assets\Square150x150Logo.png"
+			  Square44x44Logo="Assets\Square44x44Logo.png"
+			  BackgroundColor="transparent">
+				<uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png"  Square310x310Logo="Assets\Square310x310Logo.png" Square71x71Logo="Assets\Square71x71Logo.png">
+					<uap:ShowNameOnTiles>
+						<uap:ShowOn Tile="square310x310Logo"/>
+					</uap:ShowNameOnTiles>
+				</uap:DefaultTile >
+				<uap:SplashScreen Image="Assets\SplashScreen.png" />
+				<uap:LockScreen BadgeLogo="Assets\BadgeLogo.png" Notification="badge"/>
+			</uap:VisualElements>
+		</Application>
+	</Applications>
+	<Capabilities>
+		<rescap:Capability Name="runFullTrust" />
+		<Capability Name="internetClientServer"/>
+		<Capability Name="internetClient"/>
+		<iot:Capability Name="systemManagement"/>
+		<uap3:Capability Name="remoteSystem"/>
+	</Capabilities>
+</Package>

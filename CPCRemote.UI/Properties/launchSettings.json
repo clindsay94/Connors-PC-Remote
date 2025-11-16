@@ -1,0 +1,19 @@
+{
+  "profiles": {
+    "CPCRemote.UI (Package)": {
+      "commandName": "Project"
+    },
+    "MsixPackage": {
+      "commandName": "MsixPackage",
+      "commandLineArgs": "",
+      "alwaysReinstallApp": false,
+      "remoteDebugEnabled": false,
+      "allowLocalNetworkLoopbackProperty": true,
+      "authenticationMode": "Windows",
+      "doNotLaunchApp": false,
+      "remoteDebugMachine": "",
+      "nativeDebugging": false
+    }
+  }
+}
+
