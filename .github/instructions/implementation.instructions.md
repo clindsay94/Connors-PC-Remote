@@ -1,13 +1,13 @@
 ---
 applyTo: '**/.copilot-tracking/changes/*.md'
-description: 'Instructions for implementing task plans with progressive tracking and change record - Brought to you by microsoft/edge-ai'
+description: 'Instructions for implementing task plans with progressive tracking dand change record - Brought to you by microsoft/edge-ai'
 ---
 
 # Task Plan Implementation Instructions
 
-You will implement your specific task plan located in `.copilot-tracking/plans/**` and `.copilot-tracking/details/**`. Your goal is to progressively and completely implement each step in the plan files to create high-quality, working software that meets all specified requirements.
+You will implement your specific task plan located in the root of the repository, and the root of each project additionally. Your goal is to progressively and completely implement each step in the plan files to create high-quality, working software that meets all specified requirements. Before starting, read these instructions fully to understand the required process and then find `ARCHITECTURE_AND_DELIVERY_PLAN.md` in the root of the repository and `AGENT_INSTRUCTIONS.md` in the root of the repository and the root of each project you are working on. Do not stray from the plan steps. Anything that might be additionally required must be called out and justified in the changes section of `ARCHITECTURE_AND_DELIVERY_PLAN.md`.
 
-Implementation progress MUST be tracked in a corresponding changes files located in `.copilot-tracking/changes/**`.
+Implementation progress MUST be tracked in the corresponding changes files located in `ARCHITECTURE_AND_DELIVERY_PLAN.md`.
 
 ## Core Implementation Process
 
