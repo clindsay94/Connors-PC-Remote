@@ -87,10 +87,10 @@ This plan keeps the ubiquitous language stable, ensures aggregates own their inv
 - [x] **Task 2 · Async Command Execution**
   - Introduce `Task RunCommandAsync(TrayCommandType, CancellationToken)` with platform checks and error propagation.
   - Update `Worker` and `HostHelper` to await command execution and propagate cancellation.
-- [ ] **Task 3 · Configuration Validation Enhancements**
+- [x] **Task 3 · Configuration Validation Enhancements**
   - Decorate `RsmOptions` with data annotations.
   - Inject `IValidateOptions<RsmOptions>` plus `.ValidateDataAnnotations()` to ensure consistent validation.
-- [ ] **Task 4 · Security Logging & Telemetry**
+- [x] **Task 4 · Security Logging & Telemetry**
   - Add structured logging scopes (`using var scope = _logger.BeginScope(new { Remote = context.Request.RemoteEndPoint })`).
   - Log unauthorized attempts at Warning level with throttling.
 

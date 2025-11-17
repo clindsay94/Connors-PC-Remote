@@ -416,23 +416,4 @@ FodyWeavers.xsd
 # Ignore tasks.vs.json files in any directory
 **/tasks.vs.json
 
-# Ignore GitHub configuration and workflows
-.github/
-.github/agents/*.md
-.github/instructions/*.md
-.github/prompts/*.md
-
-# Ignore copilot tracking 
-.copilot-tracking/
-
-# Ignore AI Toolkit files
-.aitk/
-
-# Ignore Agent Instructions
-AGENT_INSTRUCTIONS.md
-
-# Ignore Agent Logs
-agent_logs/
-ARCHITECTURE_AND_DELIVERY_PLAN.md
-
 

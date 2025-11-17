@@ -21,24 +21,6 @@ namespace CPCRemote.Service.Options
                 return ValidateOptionsResult.Fail("RsmOptions cannot be null.");
             }
 
-            // Validate port range
-            if (options.Port < 1 || options.Port > 65535)
-            {
-                return ValidateOptionsResult.Fail($"Port must be between 1 and 65535. Current value: {options.Port}");
-            }
-
-            // Validate HTTPS port range if HTTPS is enabled
-            if (options.UseHttps && (options.HttpsPort < 1 || options.HttpsPort > 65535))
-            {
-                return ValidateOptionsResult.Fail($"HttpsPort must be between 1 and 65535. Current value: {options.HttpsPort}");
-            }
-
-            // Validate certificate path if HTTPS is enabled
-            if (options.UseHttps && string.IsNullOrWhiteSpace(options.CertificatePath))
-            {
-                return ValidateOptionsResult.Fail("CertificatePath is required when UseHttps is true.");
-            }
-
             // Validate certificate file exists if HTTPS is enabled
             if (options.UseHttps && !string.IsNullOrWhiteSpace(options.CertificatePath))
             {
@@ -66,21 +48,6 @@ namespace CPCRemote.Service.Options
                         }
                     }
                 }
-            }
-            else
-            {
-                return ValidateOptionsResult.Fail("IP Address cannot be null or empty. Use 'localhost', '+', or a valid IP address.");
-            }
-
-            // Warn about security if secret is empty or too short
-            if (string.IsNullOrWhiteSpace(options.Secret))
-            {
-                // This is a warning, not an error - allow it but log
-                // The service will log this when it starts
-            }
-            else if (options.Secret.Length < 8)
-            {
-                return ValidateOptionsResult.Fail($"Secret must be at least 8 characters for security. Current length: {options.Secret.Length}");
             }
 
             return ValidateOptionsResult.Success;

@@ -24,6 +24,7 @@ builder.Services.AddSingleton<IValidateOptions<RsmOptions>, RsmOptionsValidator>
 builder.Services.Configure<RsmOptions>(builder.Configuration.GetSection("rsm"));
 builder.Services.AddOptions<RsmOptions>()
     .Bind(builder.Configuration.GetSection("rsm"))
+    .ValidateDataAnnotations()
     .ValidateOnStart();
 
 // Register shared command helper (executes power actions locally on the service
@@ -40,7 +41,7 @@ if (OperatingSystem.IsWindows())
 builder.Services.AddHostedService<Worker>();
 
 // Build the host from the same HostApplicationBuilder and run it.
-// Note: Do not call builder.Host.UseWindowsService() � HostApplicationBuilder doesn't expose a Host property.
+// Note: Do not call builder.Host.UseWindowsService()  HostApplicationBuilder doesn't expose a Host property.
 IHost host = builder.Build();
 
 host.Run();
