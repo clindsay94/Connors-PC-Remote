@@ -1,9 +1,12 @@
+using CPCRemote.UI.Helpers;
+using CPCRemote.UI.Services;
+using CPCRemote.UI.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.Windows.ApplicationModel.DynamicDependency;
 using System;
-using CPCRemote.UI.Helpers;
 using System.Diagnostics;
-using Microsoft.Extensions.Logging;
 
 namespace CPCRemote.UI
 {
@@ -13,6 +16,8 @@ namespace CPCRemote.UI
         public static ILogger? Logger { get; private set; }
         private static string? _bootstrapErrorMessage;
         private static ILoggerFactory? _loggerFactory;
+
+        public static IServiceProvider? Services { get; private set; }
 
         public App()
         {
@@ -29,12 +34,12 @@ namespace CPCRemote.UI
 
             // Initialize bootstrap BEFORE InitializeComponent()
             // This is critical because XAML resources need the Windows App SDK to be initialized
-            bool bootstrapInitialized = BootstrapHelper.Initialize(message => 
+            bool bootstrapInitialized = BootstrapHelper.Initialize(message =>
             {
                 Debug.WriteLine(message);
                 Logger?.LogDebug("Bootstrap: {Message}", message);
             });
-            
+
             if (!bootstrapInitialized)
             {
                 _bootstrapErrorMessage = "Windows App SDK bootstrap initialization failed. The application may not function correctly.";
@@ -42,8 +47,29 @@ namespace CPCRemote.UI
                 Logger?.LogError(_bootstrapErrorMessage);
             }
 
+            Services = ConfigureServices();
+
             // Initialize XAML components AFTER bootstrap
             this.InitializeComponent();
+        }
+
+        private static IServiceProvider ConfigureServices()
+        {
+            var services = new ServiceCollection();
+
+            services.AddSingleton<SettingsService>();
+            services.AddSingleton<ServiceManagementViewModel>();
+
+            return services.BuildServiceProvider();
+        }
+
+        public static T GetService<T>() where T : notnull
+        {
+            if (Services is null)
+            {
+                throw new InvalidOperationException("Service provider is not initialized.");
+            }
+            return Services.GetRequiredService<T>();
         }
 
         private Window? m_window; // Use a private field for the main window
@@ -86,14 +112,14 @@ namespace CPCRemote.UI
                 }
 
                 // The application is likely to crash here, but this will give you the error details first.
-                throw; 
+                throw;
             }
         }
 
         private async System.Threading.Tasks.Task ShowBootstrapErrorAsync()
         {
             await System.Threading.Tasks.Task.Delay(500); // Allow window to fully activate
-            
+
             if (CurrentMainWindow?.Content is Microsoft.UI.Xaml.FrameworkElement element)
             {
                 var dialog = new Microsoft.UI.Xaml.Controls.ContentDialog

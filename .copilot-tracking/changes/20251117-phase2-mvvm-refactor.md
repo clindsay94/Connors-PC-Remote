@@ -1,13 +1,15 @@
 <!-- markdownlint-disable-file -->
 
-# Release Changes: Phase 1 – Foundation Hardening
+# Release Changes: Phase 1 & 2 – Foundation Hardening & UI Modernization
 
 **Related Plan**: ARCHITECTURE_AND_DELIVERY_PLAN.md
-**Implementation Date**: 2025-11-16
+**Implementation Date**: 2025-11-17
 
 ## Summary
 
 Completed Phase 1 Task 1 by consolidating the command catalog into `CommandHelper`, introducing dedicated catalog/executor interfaces, updating DI/consumers, and removing the legacy helper implementation. Completed Task 2 by propagating asynchronous command execution across `HostHelper`, the service worker, and accompanying tests so cancellation flows from the Windows service through the OS command runners. Completed Task 3 by enhancing configuration validation using data annotations and `IValidateOptions`. Completed Task 4 by adding structured logging and throttling for unauthorized requests.
+
+Completed Phase 2, Task 1 by refactoring the `ServiceManagementPage` to use the MVVM pattern, improving separation of concerns and testability.
 
 ## Changes
 
@@ -16,9 +18,11 @@ Completed Phase 1 Task 1 by consolidating the command catalog into `CommandHelpe
 - `.copilot-tracking/details/phase1-task1-command-catalog.md` - Documented the detailed requirements and success criteria for the catalog consolidation task.
 - `.copilot-tracking/details/phase1-task3-config-validation.md` - Documented the detailed requirements and success criteria for the configuration validation task.
 - `.copilot-tracking/details/phase1-task4-security-logging.md` - Documented the detailed requirements and success criteria for the security logging task.
+- `.copilot-tracking/details/phase2-task1-mvvm-refactor.md` - Documented the detailed requirements and success criteria for the MVVM refactoring task.
 - `CPCRemote.Core/Interfaces/ICommandCatalog.cs` - Added read-only command catalog abstraction for metadata discovery.
 - `CPCRemote.Core/Interfaces/ICommandExecutor.cs` - Added execution abstraction to decouple command invocation from metadata consumers.
 - `CPCRemote.Service/Options/CertificatePathRequiredAttribute.cs` - Added custom validation attribute for certificate path.
+- `CPCRemote.UI/ViewModels/ServiceManagementViewModel.cs` - Added a view model for the `ServiceManagementPage`.
 
 ### Modified
 
@@ -42,6 +46,10 @@ Completed Phase 1 Task 1 by consolidating the command catalog into `CommandHelpe
 - `CPCRemote.Service/Program.cs` - Updated to use `.ValidateDataAnnotations()`.
 - `CPCRemote.Service/CPCRemote.Service.csproj` - Added `Microsoft.Extensions.Options.DataAnnotations` package.
 - `CPCRemote.Service/Worker.cs` - Added structured logging and throttling for unauthorized requests.
+- `CPCRemote.UI/Pages/ServiceManagementPage.xaml` - Refactored to use data binding with the new view model.
+- `CPCRemote.UI/Pages/ServiceManagementPage.xaml.cs` - Removed code-behind logic and connected the view to the view model.
+- `CPCRemote.UI/App.xaml.cs` - Registered the `ServiceManagementViewModel` for dependency injection.
+- `CPCRemote.UI/CPCRemote.UI.csproj` - Added `CommunityToolkit.Mvvm` and `Microsoft.Extensions.DependencyInjection` packages.
 
 ### Removed
 
@@ -50,18 +58,20 @@ Completed Phase 1 Task 1 by consolidating the command catalog into `CommandHelpe
 
 ## Release Summary
 
-**Total Files Affected**: 21
+**Total Files Affected**: 26
 
-### Files Created (6)
+### Files Created (8)
 
 - `.copilot-tracking/details/phase1-task1-command-catalog.md` - Task-specific implementation brief.
 - `.copilot-tracking/details/phase1-task3-config-validation.md` - Task-specific implementation brief.
 - `.copilot-tracking/details/phase1-task4-security-logging.md` - Task-specific implementation brief.
+- `.copilot-tracking/details/phase2-task1-mvvm-refactor.md` - Task-specific implementation brief.
 - `CPCRemote.Core/Interfaces/ICommandCatalog.cs` - Catalog interface definition.
 - `CPCRemote.Core/Interfaces/ICommandExecutor.cs` - Command execution interface definition.
 - `CPCRemote.Service/Options/CertificatePathRequiredAttribute.cs` - Custom validation attribute.
+- `CPCRemote.UI/ViewModels/ServiceManagementViewModel.cs` - View model for the `ServiceManagementPage`.
 
-### Files Modified (13)
+### Files Modified (16)
 
 - `.copilot-tracking/changes/20251116-phase1-foundation-changes.md` - Updated progress log.
 - `ARCHITECTURE_AND_DELIVERY_PLAN.md` - Reflected Task 1, 2, 3 and 4 completion and documented changes.
@@ -76,6 +86,10 @@ Completed Phase 1 Task 1 by consolidating the command catalog into `CommandHelpe
 - `CPCRemote.Service/Options/RsmOptions.cs` - Decorated with data annotations.
 - `CPCRemote.Service/Options/RsmOptionsValidator.cs` - Simplified validator.
 - `CPCRemote.Service/CPCRemote.Service.csproj` - Added new package reference.
+- `CPCRemote.UI/Pages/ServiceManagementPage.xaml` - Refactored to use data binding.
+- `CPCRemote.UI/Pages/ServiceManagementPage.xaml.cs` - Cleaned up code-behind.
+- `CPCRemote.UI/App.xaml.cs` - Registered view model for DI.
+- `CPCRemote.UI/CPCRemote.UI.csproj` - Added new package references.
 
 
 ### Files Removed (2)
@@ -87,6 +101,8 @@ Completed Phase 1 Task 1 by consolidating the command catalog into `CommandHelpe
 
 - **New Dependencies**:
   - `Microsoft.Extensions.Options.DataAnnotations`
+  - `CommunityToolkit.Mvvm`
+  - `Microsoft.Extensions.DependencyInjection`
 - **Updated Dependencies**: None
 - **Infrastructure Changes**: None
 - **Configuration Updates**: None

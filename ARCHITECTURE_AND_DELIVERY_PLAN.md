@@ -96,14 +96,14 @@ This plan keeps the ubiquitous language stable, ensures aggregates own their inv
 
 ### Phase 2 – UI & UX Modernization (WinUI 3)
 
-1. **Repair XAML + Introduce MVVM**
-   - Remove corrupted `.xaml.corrupted` file; refactor `ServiceManagementPage` into View + ViewModel (DI via `AppHostBuilder`).
-2. **Service Management Enhancements**
-   - Provide progress feedback and cancellation for long-running operations (install/uninstall/reserve URL) using `Task` + `CancellationTokenSource`.
-   - Persist configuration presets (IP, port, HTTPS, secrets) via `ApplicationData` or JSON file co-located with UI.
-3. **Quick Actions Telemetry & Safety**
-   - Inject `ICommandExecutor` via DI; centralize confirmation preferences.
-   - Introduce optional `PIN`/`secret` before executing local commands to prevent accidental triggers.
+- [x] **Task 1 · Repair XAML + Introduce MVVM**
+  - Remove corrupted `.xaml.corrupted` file; refactor `ServiceManagementPage` into View + ViewModel (DI via `AppHostBuilder`).
+- [x] **Task 2 · Service Management Enhancements**
+  - Provide progress feedback and cancellation for long-running operations (install/uninstall/reserve URL) using `Task` + `CancellationTokenSource`.
+  - Persist configuration presets (IP, port, HTTPS, secrets) via `ApplicationData` or JSON file co-located with UI.
+- [ ] **Task 3 · Quick Actions Telemetry & Safety**
+  - Inject `ICommandExecutor` via DI; centralize confirmation preferences.
+  - Introduce optional `PIN`/`secret` before executing local commands to prevent accidental triggers.
 
 ### Phase 3 – Packaging, Deployment & Observability
 

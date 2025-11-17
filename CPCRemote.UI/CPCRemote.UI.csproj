@@ -18,10 +18,13 @@
 	<Company>Lindsay Inc</Company>
 	<NoWarn>$(NoWarn);CA1416</NoWarn>
 	<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+	<LangVersion>preview</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
+	<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 	<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.0" />
+	<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
 	<PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.0" />
 	<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
 	<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.251106002" />
