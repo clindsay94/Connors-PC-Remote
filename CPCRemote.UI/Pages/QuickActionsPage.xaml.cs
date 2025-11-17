@@ -5,6 +5,7 @@ namespace CPCRemote.UI.Pages
     using Microsoft.UI.Xaml.Controls;
     using CPCRemote.Core.Enums;
     using CPCRemote.Core.Helpers;
+    using CPCRemote.Core.Interfaces;
 
     /// <summary>
     /// Page for quick power management actions
@@ -12,7 +13,8 @@ namespace CPCRemote.UI.Pages
     [SupportedOSPlatform("windows10.0.22621.0")]
     public sealed partial class QuickActionsPage : Page
     {
-        private readonly CommandHelper _commandHelper;
+        private readonly ICommandCatalog _commandCatalog;
+        private readonly ICommandExecutor _commandExecutor;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QuickActionsPage"/> class.
@@ -20,7 +22,9 @@ namespace CPCRemote.UI.Pages
         public QuickActionsPage()
         {
             this.InitializeComponent();
-            _commandHelper = new CommandHelper();
+            CommandHelper helper = new();
+            _commandCatalog = helper;
+            _commandExecutor = helper;
             
             // Wire up event handlers
             ShutdownButton.Click += async (s, e) => await ExecuteCommandSafelyAsync(TrayCommandType.Shutdown);
@@ -55,7 +59,7 @@ namespace CPCRemote.UI.Pages
 
                 if (showConfirmations)
                 {
-                    string commandName = _commandHelper.GetText(commandType) ?? commandType.ToString();
+                    string commandName = _commandCatalog.GetText(commandType) ?? commandType.ToString();
                     ContentDialog confirmDialog = new()
                     {
                         Title = "Confirm Action",
@@ -74,7 +78,7 @@ namespace CPCRemote.UI.Pages
                 }
 
                 // Execute the command
-                await Task.Run(() => _commandHelper.RunCommand(commandType));
+                await Task.Run(() => _commandExecutor.RunCommand(commandType));
             }
             catch (Exception ex)
             {

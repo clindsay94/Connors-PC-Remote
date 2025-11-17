@@ -32,12 +32,9 @@ builder.Services.AddOptions<RsmOptions>()
 // on non-Windows platforms when running the binary outside of Windows.
 if (OperatingSystem.IsWindows())
 {
-    // Register implementation by its interface so consumers depend on abstraction
-    builder.Services.AddSingleton<ITrayCommandHelper, CommandHelper>();
-
-    // The ITrayCommandHelper registration above is sufficient for consumers.
-    // Retain the platform gated behavior for exposing the tray helper only on supported Windows versions.
-    // (CommandHelper itself is [SupportedOSPlatform("windows")] so it's safe).
+    builder.Services.AddSingleton<CommandHelper>();
+    builder.Services.AddSingleton<ICommandCatalog>(static sp => sp.GetRequiredService<CommandHelper>());
+    builder.Services.AddSingleton<ICommandExecutor>(static sp => sp.GetRequiredService<CommandHelper>());
 }
 
 builder.Services.AddHostedService<Worker>();

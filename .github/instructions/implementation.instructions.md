@@ -1,11 +1,11 @@
 ---
-applyTo: '**/.copilot-tracking/changes/*.md'
-description: 'Instructions for implementing task plans with progressive tracking dand change record - Brought to you by microsoft/edge-ai'
+applyTo: "**/.copilot-tracking/changes/*.md"
+description: "Instructions for implementing task plans with progressive tracking dand change record - Brought to you by microsoft/edge-ai"
 ---
 
 # Task Plan Implementation Instructions
 
-You will implement your specific task plan located in the root of the repository, and the root of each project additionally. Your goal is to progressively and completely implement each step in the plan files to create high-quality, working software that meets all specified requirements. Before starting, read these instructions fully to understand the required process and then find `ARCHITECTURE_AND_DELIVERY_PLAN.md` in the root of the repository and `AGENT_INSTRUCTIONS.md` in the root of the repository and the root of each project you are working on. Do not stray from the plan steps. Anything that might be additionally required must be called out and justified in the changes section of `ARCHITECTURE_AND_DELIVERY_PLAN.md`.
+You will implement your specific task plan located in the root of the repository, and the root of each project additionally. Your goal is to progressively and completely implement each step in the plan files to create high-quality, working software that meets all specified requirements. In the root of the repository, find `AGENT_INSTRUCTIONS` in order to fully understand the required process and then find `ARCHITECTURE_AND_DELIVERY_PLAN.md` in the root of the repository, and `AGENT_INSTRUCTIONS.md` in the root of the repository. There is an additional instructions file for agents in the root of each project you are working on. Do not stray from the plan steps. Anything that might be additionally required must be called out and justified in the changes section of `ARCHITECTURE_AND_DELIVERY_PLAN.md`.
 
 Implementation progress MUST be tracked in the corresponding changes files located in `ARCHITECTURE_AND_DELIVERY_PLAN.md`.
 
@@ -14,6 +14,7 @@ Implementation progress MUST be tracked in the corresponding changes files locat
 ### 1. Plan Analysis and Preparation
 
 **MUST complete before starting implementation:**
+
 - **MANDATORY**: Read and fully understand the complete plan file including scope, objectives, all phases, and every checklist item
 - **MANDATORY**: Read and fully understand the corresponding changes file completely - if any parts are missing from context, read the entire file back in using `read_file`
 - **MANDATORY**: Identify all referenced files mentioned in the plan and examine them for context
@@ -25,12 +26,14 @@ Implementation progress MUST be tracked in the corresponding changes files locat
 
 1. **Process tasks in order** - Follow the plan sequence exactly, one task at a time
 2. **MANDATORY before implementing any task:**
+
    - **ALWAYS ensure implementation is associated with a specific task from the plan**
-   - **ALWAYS read the entire details section for that task from the associated details markdown file in `.copilot-tracking/details/**`**
+   - **ALWAYS read the entire details section for that task from the associated details markdown file in `.copilot-tracking/details/**`\*\*
    - **FULLY understand all implementation details before proceeding**
    - Gather any additional required context as needed
 
 3. **Implement the task completely with working code:**
+
    - Follow existing code patterns and conventions from the workspace
    - Create working functionality that meets all task requirements specified in the details
    - Include proper error handling, documentation, and follow best practices
@@ -44,6 +47,7 @@ Implementation progress MUST be tracked in the corresponding changes files locat
 ### 3. Implementation Quality Standards
 
 **Every implementation MUST:**
+
 - Follow existing workspace patterns and conventions (check `copilot/` folder for standards)
 - Implement complete, working functionality that meets all task requirements
 - Include appropriate error handling and validation
@@ -54,6 +58,7 @@ Implementation progress MUST be tracked in the corresponding changes files locat
 ### 4. Continuous Progress and Validation
 
 **After implementing each task:**
+
 1. Validate the changes made against the task requirements from the details file
 2. Fix any problems before moving to the next task
 3. **MANDATORY**: Update the plan file to mark completed tasks `[x]`
@@ -61,6 +66,7 @@ Implementation progress MUST be tracked in the corresponding changes files locat
 5. Continue to the next unchecked task
 
 **Continue until:**
+
 - All tasks in the plan are marked complete `[x]`
 - All specified files have been created or updated with working code
 - All success criteria from the plan have been verified
@@ -68,11 +74,13 @@ Implementation progress MUST be tracked in the corresponding changes files locat
 ### 5. Reference Gathering Guidelines
 
 **When gathering external references:**
+
 - Focus on practical implementation examples over theoretical documentation
 - Validate that external sources contain actual usable patterns
 - Adapt external patterns to match workspace conventions and standards
 
 **When implementing from references:**
+
 - Follow workspace patterns and conventions first, external patterns second
 - Implement complete, working functionality rather than just examples
 - Ensure all dependencies and configurations are properly integrated
@@ -81,18 +89,21 @@ Implementation progress MUST be tracked in the corresponding changes files locat
 ### 6. Completion and Documentation
 
 **Implementation is complete when:**
+
 - All plan tasks are marked complete `[x]`
 - All specified files exist with working code
 - All success criteria from the plan are verified
 - No implementation errors remain
 
 **Final step - update changes file with release summary:**
+
 - Add Release Summary section only after ALL phases are marked complete `[x]`
 - Document complete file inventory and overall implementation summary for release documentation
 
 ### 7. Problem Resolution
 
 **When encountering implementation issues:**
+
 - Document the specific problem clearly
 - Try alternative approaches or search terms
 - Use workspace patterns as fallback when external references fail
@@ -119,6 +130,7 @@ Implementation progress MUST be tracked in the corresponding changes files locat
 ## Success Criteria
 
 Implementation is complete when:
+
 - ✅ All plan tasks are marked complete `[x]`
 - ✅ All specified files contain working code
 - ✅ Code follows workspace patterns and conventions
@@ -135,8 +147,10 @@ Replace `{{ }}` with appropriate values. Create this file in `./.copilot-trackin
 **MANDATORY**: Always include the following at the top of the changes file: `<!-- markdownlint-disable-file -->`
 
 <!-- <changes-template> -->
+
 ```markdown
 <!-- markdownlint-disable-file -->
+
 # Release Changes: {{task name}}
 
 **Related Plan**: {{plan-file-name}}
@@ -187,4 +201,5 @@ Replace `{{ }}` with appropriate values. Create this file in `./.copilot-trackin
 
 {{Any specific deployment considerations or steps}}
 ```
+
 <!-- </changes-template> -->

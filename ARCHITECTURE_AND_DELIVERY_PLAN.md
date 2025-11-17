@@ -81,18 +81,18 @@ This plan keeps the ubiquitous language stable, ensures aggregates own their inv
 
 ### Phase 1 – Foundation Hardening (Core + Service)
 
-1. **Command Catalog Consolidation**
-   - Remove `TrayCommandHelper`; extend `CommandHelper` to expose immutable command metadata via `ICommandCatalog`.
-   - Update tests and UI to consume catalog interface; ensure XML docs for public APIs.
-2. **Async Command Execution**
-   - Introduce `Task RunCommandAsync(TrayCommandType, CancellationToken)` with platform checks and error propagation.
-   - Update `Worker` and `HostHelper` to await command execution and propagate cancellation.
-3. **Configuration Validation Enhancements**
-   - Decorate `RsmOptions` with data annotations.
-   - Inject `IValidateOptions<RsmOptions>` plus `.ValidateDataAnnotations()` to ensure consistent validation.
-4. **Security Logging & Telemetry**
-   - Add structured logging scopes (`using var scope = _logger.BeginScope(new { Remote = context.Request.RemoteEndPoint })`).
-   - Log unauthorized attempts at Warning level with throttling.
+- [x] **Task 1 · Command Catalog Consolidation**
+  - Remove `TrayCommandHelper`; extend `CommandHelper` to expose immutable command metadata via `ICommandCatalog`.
+  - Update tests and UI to consume catalog interface; ensure XML docs for public APIs.
+- [x] **Task 2 · Async Command Execution**
+  - Introduce `Task RunCommandAsync(TrayCommandType, CancellationToken)` with platform checks and error propagation.
+  - Update `Worker` and `HostHelper` to await command execution and propagate cancellation.
+- [ ] **Task 3 · Configuration Validation Enhancements**
+  - Decorate `RsmOptions` with data annotations.
+  - Inject `IValidateOptions<RsmOptions>` plus `.ValidateDataAnnotations()` to ensure consistent validation.
+- [ ] **Task 4 · Security Logging & Telemetry**
+  - Add structured logging scopes (`using var scope = _logger.BeginScope(new { Remote = context.Request.RemoteEndPoint })`).
+  - Log unauthorized attempts at Warning level with throttling.
 
 ### Phase 2 – UI & UX Modernization (WinUI 3)
 
@@ -180,6 +180,12 @@ This plan keeps the ubiquitous language stable, ensures aggregates own their inv
 4. **Establish release cadence** (semantic versioning). Tag releases, attach MSIX & service bundle artifacts.
 
 With these steps, Connor's PC Remote will stay aligned with modern C#/.NET 10 and WinUI 3 patterns, maintain SOLID/DDD integrity, and ship in a repeatable, secure manner without drifting from its core objective: trustworthy remote power control via HTTP.
+
+## Change Tracking
+
+- _2025-11-16 – GitHub Copilot (GPT-5.1-Codex Preview):_ Added checkbox tracking for Phase 1 tasks to support implementation progress reporting per `.copilot-tracking` workflow.
+- _2025-11-16 – GitHub Copilot (GPT-5.1-Codex Preview):_ Completed Phase 1 Task 1 by consolidating the command catalog into `CommandHelper`, adding `ICommandCatalog`/`ICommandExecutor`, and updating UI/service/tests.
+- _2025-11-16 – GitHub Copilot (GPT-5.1-Codex Preview):_ Completed Phase 1 Task 2 by introducing async command execution, propagating cancellation through `HostHelper` and the service worker, and extending tests.
 
 ---
 

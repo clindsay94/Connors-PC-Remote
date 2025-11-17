@@ -1,69 +1,91 @@
-namespace CPCRemote.Core.Helpers
-{
-    using System.Threading.Tasks;
+namespace CPCRemote.Core.Helpers;
 
-    using CPCRemote.Core.Enums;
-    using CPCRemote.Core.Interfaces;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+using CPCRemote.Core.Enums;
+using CPCRemote.Core.Interfaces;
+
+/// <summary>
+/// Validates inbound remote requests and dispatches commands through the catalog/executor abstractions.
+/// </summary>
+public sealed class HostHelper
+{
+    private readonly ICommandCatalog _commandCatalog;
+    private readonly ICommandExecutor _commandExecutor;
 
     /// <summary>
-    /// Defines the <see cref="HostHelper" />
+    /// Initializes a new instance of the <see cref="HostHelper"/> class.
     /// </summary>
-    public class HostHelper(ITrayCommandHelper trayCommandHelper)
+    /// <param name="commandCatalog">Catalog used to resolve command metadata.</param>
+    /// <param name="commandExecutor">Executor responsible for issuing OS power commands.</param>
+    public HostHelper(ICommandCatalog commandCatalog, ICommandExecutor commandExecutor)
     {
-        /// <summary>
-        /// Defines the _trayCommandHelper
-        /// </summary>
-        private readonly ITrayCommandHelper _trayCommandHelper = trayCommandHelper;
+        _commandCatalog = commandCatalog ?? throw new ArgumentNullException(nameof(commandCatalog));
+        _commandExecutor = commandExecutor ?? throw new ArgumentNullException(nameof(commandExecutor));
+    }
 
-        /// <summary>
-        /// Gets or sets the DefaultCommand
-        /// </summary>
-        public TrayCommandType DefaultCommand { get; set; }
+    /// <summary>
+    /// Gets or sets the fallback command executed when no explicit match is found.
+    /// </summary>
+    public TrayCommandType DefaultCommand { get; set; }
 
-        /// <summary>
-        /// Gets or sets the SecretCode
-        /// </summary>
-        public string? SecretCode { get; set; }
+    /// <summary>
+    /// Gets or sets the optional shared secret required before processing commands.
+    /// </summary>
+    public string? SecretCode { get; set; }
 
-        /// <summary>
-        /// The ProcessRequestAsync
-        /// </summary>
-        /// <param name="request">The request<see cref="string"/></param>
-        /// <returns>The <see cref="Task"/></returns>
-        public async Task ProcessRequestAsync(string request)
+    /// <summary>
+    /// Processes the remote request asynchronously without a cancellation token.
+    /// </summary>
+    /// <param name="request">The inbound request path (e.g., "/shutdown" or "/secret/shutdown").</param>
+    /// <returns>A task that completes when processing finishes.</returns>
+    public Task ProcessRequestAsync(string request)
+    {
+        return ProcessRequestAsync(request, CancellationToken.None);
+    }
+
+    /// <summary>
+    /// Processes the remote request asynchronously, honoring cooperative cancellation.
+    /// </summary>
+    /// <param name="request">The inbound request path.</param>
+    /// <param name="cancellationToken">Token propagated from the host to stop execution.</param>
+    /// <returns>A task that completes when processing finishes.</returns>
+    public async Task ProcessRequestAsync(string request, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request) || !request.StartsWith('/'))
         {
-            // Simplified logic based on usage in tests
-            if (string.IsNullOrEmpty(request) || !request.StartsWith('/'))
-            {
-                return;
-            }
+            return;
+        }
 
-            string[] parts = request[1..].Split('/');
+        cancellationToken.ThrowIfCancellationRequested();
 
-            string commandText = parts[0];
-            string? secret = null;
+        string[] segments = request[1..].Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length == 0)
+        {
+            return;
+        }
 
-            if (parts.Length > 1)
-            {
-                secret = parts[0];
-                commandText = parts[1];
-            }
+        string? providedSecret = segments.Length > 1 ? segments[0] : null;
+        string commandText = segments.Length > 1 ? segments[1] : segments[0];
 
-            if (!string.IsNullOrEmpty(SecretCode) && secret != SecretCode)
-            {
-                return; // Secret mismatch
-            }
+        if (!string.IsNullOrEmpty(SecretCode) &&
+            !string.Equals(providedSecret, SecretCode, StringComparison.Ordinal))
+        {
+            return;
+        }
 
-            TrayCommandType? commandType = _trayCommandHelper.GetCommandType(commandText);
+        TrayCommandType? resolvedCommand = _commandCatalog.GetCommandType(commandText);
+        if (resolvedCommand.HasValue)
+        {
+            await _commandExecutor.RunCommandAsync(resolvedCommand.Value, cancellationToken).ConfigureAwait(false);
+            return;
+        }
 
-            if (commandType.HasValue)
-            {
-                await Task.Run(() => _trayCommandHelper.RunCommand(commandType.Value));
-            }
-            else if (DefaultCommand != 0) // Assuming 0 is a default/invalid value
-            {
-                await Task.Run(() => _trayCommandHelper.RunCommand(DefaultCommand));
-            }
+        if (DefaultCommand != TrayCommandType.None)
+        {
+            await _commandExecutor.RunCommandAsync(DefaultCommand, cancellationToken).ConfigureAwait(false);
         }
     }
 }

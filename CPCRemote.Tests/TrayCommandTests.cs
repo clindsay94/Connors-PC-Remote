@@ -1,36 +1,32 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.Versioning;
+
 using CPCRemote.Core.Enums;
 using CPCRemote.Core.Helpers;
+using CPCRemote.Core.Interfaces;
 using CPCRemote.Core.Models;
 
 using NUnit.Framework;
 
-using System.Runtime.Versioning;
-
 namespace CPCRemote.Tests;
 
 /// <summary>
-/// Defines the <see cref="TrayCommandTests" />
+/// Verifies the consolidated command catalog implementation.
 /// </summary>
 [TestFixture]
-[SupportedOSPlatform("windows10.0.22621.0")] // Add this attribute to the class to ensure all usages of Windows-only APIs are guarded
+[SupportedOSPlatform("windows10.0.22621.0")]
 public class TrayCommandTests
 {
-    /// <summary>
-    /// Defines the _trayCommandHelper
-    /// </summary>
-    private TrayCommandHelper _trayCommandHelper = null!;
+    private ICommandCatalog _commandCatalog = null!;
 
-    /// <summary>
-    /// The Setup
-    /// </summary>
-    [SetUp] public void Setup() { _trayCommandHelper = new TrayCommandHelper(); }
+    [SetUp]
+    public void Setup()
+    {
+        CommandHelper helper = new();
+        _commandCatalog = helper;
+    }
 
-    /// <summary>
-    /// The GetText_Returns_Correct_String_For_Known_CommandType
-    /// </summary>
-    /// <param name="commandType">The commandType<see
-    /// cref="TrayCommandType"/></param> <param name="expectedText">The
-    /// expectedText<see cref="string"/></param>
     [Test]
     [TestCase(TrayCommandType.Shutdown, "Shutdown")]
     [TestCase(TrayCommandType.Restart, "Restart")]
@@ -38,104 +34,59 @@ public class TrayCommandTests
     [TestCase(TrayCommandType.ForceShutdown, "Force Shutdown")]
     [TestCase(TrayCommandType.Lock, "Lock")]
     [TestCase(TrayCommandType.UEFIReboot, "UEFI Reboot")]
-    public void
-          GetText_Returns_Correct_String_For_Known_CommandType(
-              TrayCommandType commandType,
-              string expectedText)
+    public void GetText_KnownCommandType_ReturnsDisplayName(TrayCommandType commandType, string expectedText)
     {
-        string actualText = _trayCommandHelper.GetText(commandType);
-        Assert.That(actualText, Is.EqualTo(expectedText));
+        string? actual = _commandCatalog.GetText(commandType);
+        Assert.That(actual, Is.EqualTo(expectedText));
     }
 
-    /// <summary>
-    /// The GetText_Returns_Empty_String_For_Unknown_CommandType
-    /// </summary>
     [Test]
-    public void GetText_Returns_Empty_String_For_Unknown_CommandType()
+    public void GetText_UnknownCommandType_ReturnsNull()
     {
-        TrayCommandType unknownCommandType = (TrayCommandType)999;
-        string actualText = _trayCommandHelper.GetText(unknownCommandType);
-        Assert.That(actualText, Is.Empty);
+        TrayCommandType invalidType = (TrayCommandType)999;
+        string? actual = _commandCatalog.GetText(invalidType);
+        Assert.That(actual, Is.Null);
     }
 
-    /// <summary>
-    /// The GetCommandType_Returns_Correct_CommandType_For_Known_Name
-    /// </summary>
-    /// <param name="commandName">The commandName<see cref="string"/></param>
-    /// <param name="expectedCommandType">The expectedCommandType<see
-    /// cref="TrayCommandType"/></param>
     [Test]
     [TestCase("Shutdown", TrayCommandType.Shutdown)]
-    [TestCase("restart", TrayCommandType.Restart)]  // Test case insensitivity
-    [TestCase("TURN SCREEN OFF",
-                  TrayCommandType.TurnScreenOff)]  // Test case insensitivity
+    [TestCase("restart", TrayCommandType.Restart)]
+    [TestCase("TURN SCREEN OFF", TrayCommandType.TurnScreenOff)]
     [TestCase("Force Shutdown", TrayCommandType.ForceShutdown)]
     [TestCase("Lock", TrayCommandType.Lock)]
     [TestCase("UEFI Reboot", TrayCommandType.UEFIReboot)]
-    public void
-        GetCommandType_Returns_Correct_CommandType_For_Known_Name(
-            string commandName,
-            TrayCommandType expectedCommandType)
+    public void GetCommandType_KnownName_ReturnsCommand(string commandName, TrayCommandType expected)
     {
-        TrayCommandType? actualCommandType =
-                              _trayCommandHelper.GetCommandType(commandName);
-        Assert.That(actualCommandType, Is.EqualTo(expectedCommandType));
+        TrayCommandType? actual = _commandCatalog.GetCommandType(commandName);
+        Assert.That(actual, Is.EqualTo(expected));
     }
 
-    /// <summary>
-    /// The GetCommandType_Returns_Null_For_Unknown_Name
-    /// </summary>
-    /// <param name="commandName">The commandName<see cref="string"/></param>
     [Test]
     [TestCase("NonExistentCommand")]
     [TestCase("ShutDownNow")]
     [TestCase("")]
-    public void
-          GetCommandType_Returns_Null_For_Unknown_Name(string commandName)
+    public void GetCommandType_UnknownName_ReturnsNull(string commandName)
     {
-        TrayCommandType? actualCommandType =
-                              _trayCommandHelper.GetCommandType(commandName);
-        Assert.That(actualCommandType, Is.Null);
+        TrayCommandType? actual = _commandCatalog.GetCommandType(commandName);
+        Assert.That(actual, Is.Null);
     }
 
-    /// <summary>
-    /// The Commands_Property_Returns_Expected_Commands
-    /// </summary>
     [Test]
-    [SupportedOSPlatform("windows10.0.22621.0")] // Add this attribute to restrict test to supported platform
-    public void Commands_Property_Returns_Expected_Commands()
+    public void Commands_WhenRequested_ReturnsImmutableCatalog()
     {
-        TrayCommand[] commands = _trayCommandHelper.Commands;
+        IReadOnlyList<TrayCommand> commands = _commandCatalog.Commands;
 
         Assert.That(commands, Is.Not.Null);
-        Assert.That(commands,
-                    Has.Length.EqualTo(6));  // Based on the current implementation
+        Assert.That(commands.Count, Is.EqualTo(6));
 
-        using (Assert.EnterMultipleScope())
+        Assert.Multiple(() =>
         {
-            Assert.That(
-                commands.Any(c => c.CommandType == TrayCommandType.Shutdown &&
-                                 c.Name == "Shutdown"),
-                Is.True);
-            Assert.That(commands.Any(c => c.CommandType == TrayCommandType.Restart &&
-                                         c.Name == "Restart"),
-                        Is.True);
-            Assert.That(
-                commands.Any(c => c.CommandType == TrayCommandType.TurnScreenOff &&
-                                 c.Name == "Turn screen off"),
-                Is.True);
-            Assert.That(
-                commands.Any(c => c.CommandType == TrayCommandType.ForceShutdown &&
-                                 c.Name == "Force Shutdown"),
-                Is.True);
-            Assert.That(commands.Any(c => c.CommandType == TrayCommandType.Lock &&
-                                         c.Name == "Lock"),
-                        Is.True);
-            Assert.That(
-                commands.Any(c => c.CommandType == TrayCommandType.UEFIReboot &&
-                                 c.Name == "UEFI Reboot"),
-                Is.True);
-        }
+            Assert.That(commands.Any(c => c.CommandType == TrayCommandType.Shutdown && c.Name == "Shutdown"));
+            Assert.That(commands.Any(c => c.CommandType == TrayCommandType.Restart && c.Name == "Restart"));
+            Assert.That(commands.Any(c => c.CommandType == TrayCommandType.TurnScreenOff && c.Name == "Turn screen off"));
+            Assert.That(commands.Any(c => c.CommandType == TrayCommandType.ForceShutdown && c.Name == "Force Shutdown"));
+            Assert.That(commands.Any(c => c.CommandType == TrayCommandType.Lock && c.Name == "Lock"));
+            Assert.That(commands.Any(c => c.CommandType == TrayCommandType.UEFIReboot && c.Name == "UEFI Reboot"));
+        });
     }
 }
-// namespace CPCRemote.Tests
