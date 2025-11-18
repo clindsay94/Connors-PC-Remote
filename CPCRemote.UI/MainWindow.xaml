@@ -6,13 +6,13 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <!-- Requires Windows App SDK 1.3+ -->
     <Window.SystemBackdrop>
         <MicaBackdrop/>
     </Window.SystemBackdrop>
 
     <Grid>
         <NavigationView x:Name="NavView"
+                        SelectionChanged="NavView_SelectionChanged"
                         IsBackButtonVisible="Collapsed"
                         IsBackEnabled="False"
                         PaneDisplayMode="Left"
@@ -43,7 +43,6 @@
             </NavigationView.MenuItems>
 
             <Frame x:Name="ContentFrame"/>
-
         </NavigationView>
     </Grid>
 </Window>
