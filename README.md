@@ -1,6 +1,6 @@
 # Connor's PC Remote
 
-A Windows application for remotely controlling PC power functions via HTTP commands. Built with .NET 8 and WinUI 3.
+A Windows application for remotely controlling PC power functions via HTTP commands. Built with .NET 10 and WinUI 3.
 
 ## Features
 
@@ -29,7 +29,7 @@ The project consists of four main components:
 ## Prerequisites
 
 - Windows 10/11 (version 22H2 or later)
-- .NET 8 SDK or later
+- .NET 10 SDK
 - Visual Studio 2022 (for building) or .NET Runtime (for running)
 - Administrator privileges (for service installation)
 
@@ -69,13 +69,14 @@ The project consists of four main components:
 ## Configuration
 
 Configuration is stored in `appsettings.json` located in the service installation directory.
+Note that the ip address of the pc must match the configuration of the app sending the request. 
 
 ### Example Configuration
 
 ```json
 {
   "rsm": {
-    "ipAddress": "localhost",
+    "ipAddress": 00.0.0.0, 
     "port": 5005,
     "secret": "your-secret-token-here"
   }
@@ -86,7 +87,7 @@ Configuration is stored in `appsettings.json` located in the service installatio
 
 | Option | Description | Default | Required |
 |--------|-------------|---------|----------|
-| `ipAddress` | IP address to bind to (`localhost`, `+`, `*`, or specific IP) | `localhost` | Yes |
+| `ipAddress` | IP address to bind to (specific IP) | | | yes |
 | `port` | Port number (1-65535) | `5005` | Yes |
 | `secret` | Authentication token (min 8 characters, empty = no auth) | `""` | No |
 
@@ -138,14 +139,17 @@ curl -H "Authorization: Bearer your-secret-token" http://localhost:5005/restart
 | 401 | Unauthorized (invalid or missing secret) |
 | 500 | Internal server error |
 
+**not every companion app will have any responses displayed. 
+
+
 ## Building from Source
 
 ### Requirements
 
 - Visual Studio 2022 (17.8 or later) with:
   - .NET desktop development workload
-  - Windows App SDK (WinUI 3)
-- .NET 8 SDK
+  - Windows App SDK 1.3 (WinUI 3)
+- .NET 10 SDK
 
 ### Build Steps
 
