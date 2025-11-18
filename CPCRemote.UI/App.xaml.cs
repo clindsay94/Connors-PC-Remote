@@ -1,3 +1,4 @@
+using CPCRemote.UI;
 using CPCRemote.UI.Helpers;
 using CPCRemote.UI.Services;
 using CPCRemote.UI.ViewModels;
@@ -8,7 +9,7 @@ using Microsoft.Windows.ApplicationModel.DynamicDependency;
 using System;
 using System.Diagnostics;
 
-namespace CPCRemote.UI
+namespace CPCRemote 
 {
     public partial class App : Application
     {
@@ -21,7 +22,7 @@ namespace CPCRemote.UI
 
         public App()
         {
-            // Initialize logging FIRST (before anything else)
+            // Initialize logging FIRST
             _loggerFactory = LoggerFactory.Create(builder =>
             {
                 builder
@@ -32,8 +33,7 @@ namespace CPCRemote.UI
 
             Logger?.LogInformation("Application starting...");
 
-            // Initialize bootstrap BEFORE InitializeComponent()
-            // This is critical because XAML resources need the Windows App SDK to be initialized
+            // Initialize bootstrap
             bool bootstrapInitialized = BootstrapHelper.Initialize(message =>
             {
                 Debug.WriteLine(message);
@@ -42,14 +42,13 @@ namespace CPCRemote.UI
 
             if (!bootstrapInitialized)
             {
-                _bootstrapErrorMessage = "Windows App SDK bootstrap initialization failed. The application may not function correctly.";
+                _bootstrapErrorMessage = "Windows App SDK bootstrap initialization failed.";
                 Debug.WriteLine(_bootstrapErrorMessage);
                 Logger?.LogError(_bootstrapErrorMessage);
             }
 
             Services = ConfigureServices();
 
-            // Initialize XAML components AFTER bootstrap
             this.InitializeComponent();
         }
 
@@ -57,6 +56,7 @@ namespace CPCRemote.UI
         {
             var services = new ServiceCollection();
 
+            // MAKE SURE THESE CLASSES EXIST IN YOUR PROJECT
             services.AddSingleton<SettingsService>();
             services.AddSingleton<ServiceManagementViewModel>();
 
@@ -72,17 +72,17 @@ namespace CPCRemote.UI
             return Services.GetRequiredService<T>();
         }
 
-        private Window? m_window; // Use a private field for the main window
+        private Window? m_window;
 
         [System.Runtime.Versioning.SupportedOSPlatform("windows10.0.22621.0")]
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
             try
             {
+                // This now works because of the "using CPCRemote.UI;" at the top
                 m_window = new MainWindow();
                 CurrentMainWindow = m_window as MainWindow;
 
-                // Tweak 2: Subscribe to the Closed event to call Shutdown
                 m_window.Closed += (sender, e) =>
                 {
                     Logger?.LogInformation("Application shutting down...");
@@ -92,7 +92,6 @@ namespace CPCRemote.UI
 
                 m_window.Activate();
 
-                // Show bootstrap error dialog if initialization failed
                 if (!string.IsNullOrEmpty(_bootstrapErrorMessage))
                 {
                     _ = ShowBootstrapErrorAsync();
@@ -100,32 +99,27 @@ namespace CPCRemote.UI
             }
             catch (Exception e)
             {
-                // Log the exception details to the debug output.
                 Debug.WriteLine("Unhandled exception in OnLaunched:");
                 Debug.WriteLine(e);
-
-                // It's also a good idea to check the inner exception.
                 if (e.InnerException != null)
                 {
                     Debug.WriteLine("\nInner Exception:");
                     Debug.WriteLine(e.InnerException);
                 }
-
-                // The application is likely to crash here, but this will give you the error details first.
                 throw;
             }
         }
 
         private async System.Threading.Tasks.Task ShowBootstrapErrorAsync()
         {
-            await System.Threading.Tasks.Task.Delay(500); // Allow window to fully activate
+            await System.Threading.Tasks.Task.Delay(500);
 
             if (CurrentMainWindow?.Content is Microsoft.UI.Xaml.FrameworkElement element)
             {
                 var dialog = new Microsoft.UI.Xaml.Controls.ContentDialog
                 {
                     Title = "Initialization Warning",
-                    Content = _bootstrapErrorMessage + "\n\nThe application will continue to run, but some features may not work properly. Please ensure Windows App SDK 1.8 runtime is installed.",
+                    Content = _bootstrapErrorMessage + "\n\nThe application will continue to run, but some features may not work properly.",
                     CloseButtonText = "OK",
                     XamlRoot = element.XamlRoot
                 };
