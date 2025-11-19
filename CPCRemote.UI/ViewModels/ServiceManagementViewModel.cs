@@ -105,9 +105,6 @@ namespace CPCRemote.UI.ViewModels
                         IpAddress = this.IpAddress,
                         Port = (int)this.Port,
                         Secret = this.Secret,
-                        UseHttps = false,
-                        CertificatePath = string.Empty,
-                        CertificatePassword = string.Empty
                     }
                 };
 

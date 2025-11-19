@@ -12,7 +12,7 @@ namespace CPCRemote.Service.Options
         /// Gets or sets the IP address to bind the RSM service to.
         /// Must be configured in appsettings.json. Valid values: IP address, "localhost", "+", or "*"
         /// </summary>
-        [Required(AllowEmptyStrings = false, ErrorMessage = "IP Address cannot be null or empty. Use 'localhost', '+', or a valid IP address.")]
+        [Required(AllowEmptyStrings = false, ErrorMessage = "IP Address cannot be null or empty. Use a valid IP address.")]
         public string? IpAddress { get; set; }
 
         /// <summary>
@@ -21,30 +21,6 @@ namespace CPCRemote.Service.Options
         /// </summary>
         [Range(1, 65535, ErrorMessage = "Port must be between 1 and 65535.")]
         public int Port { get; set; } = 5005;
-
-        /// <summary>
-        /// Gets or sets the HTTPS port number to listen on when HTTPS is enabled.
-        /// Must be between 1 and 65535.
-        /// </summary>
-        [Range(1, 65535, ErrorMessage = "HttpsPort must be between 1 and 65535.")]
-        public int HttpsPort { get; set; } = 5006;
-
-        /// <summary>
-        /// Gets or sets whether to use HTTPS instead of HTTP.
-        /// </summary>
-        public bool UseHttps { get; set; } = false;
-
-        /// <summary>
-        /// Gets or sets the path to the SSL certificate file (.pfx).
-        /// Required when UseHttps is true.
-        /// </summary>
-        public string? CertificatePath { get; set; }
-
-        /// <summary>
-        /// Gets or sets the password for the SSL certificate.
-        /// Required when UseHttps is true and certificate is password-protected.
-        /// </summary>
-        public string? CertificatePassword { get; set; }
 
         /// <summary>
         /// Gets or sets the secret used for authenticating RSM requests.
