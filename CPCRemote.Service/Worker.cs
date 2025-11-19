@@ -1,10 +1,8 @@
 namespace CPCRemote.Service
 {
     using System;
-    using System.Diagnostics;
+    using System.Collections.Generic;
     using System.Net;
-    using System.Security.Cryptography;
-    using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -33,12 +31,7 @@ namespace CPCRemote.Service
         private static readonly char[] SlashSeparator = ['/'];
         private HttpListener? _listener;
         private string _currentPrefix = string.Empty;
-        private string? _boundSslIpPort;
-        private X509Certificate2? _serviceCertificate;
-        private const string DefaultSslIp = "0.0.0.0";
-        private static readonly Guid SslAppId = new("4fbdab34-09c3-4c3c-9219-61bff33f5d80");
 
-        // Retry configuration constants
         private const int MaxRetryAttempts = 10;
         private const int InitialRetryDelayMs = 1000;
         private const int MaxRetryDelayMs = 60000;
@@ -61,17 +54,8 @@ namespace CPCRemote.Service
 
                     RsmOptions current = _rsmOptionsMonitor.CurrentValue;
                     string ipAddress = current.IpAddress ?? "localhost";
-                    int port = current.UseHttps ? current.HttpsPort : current.Port;
+                    int port = current.Port;
                     string secret = current.Secret ?? string.Empty;
-                    bool useHttps = current.UseHttps;
-
-                    if (useHttps && !string.IsNullOrWhiteSpace(current.CertificatePath))
-                    {
-                        if (_logger.IsEnabled(LogLevel.Warning))
-                        {
-                            _logger.LogWarning("HTTPS is configured but HttpListener requires manual certificate binding via netsh. See documentation for setup.");
-                        }
-                    }
 
                     if (port < 1 || port > 65535)
                     {
@@ -80,8 +64,7 @@ namespace CPCRemote.Service
                             _logger.LogError("Invalid port number: {Port}. Port must be between 1 and 65535.", port);
                         }
 
-                        _retryAttempts++;
-                        if (_retryAttempts >= MaxRetryAttempts)
+                        if (++_retryAttempts >= MaxRetryAttempts)
                         {
                             if (_logger.IsEnabled(LogLevel.Critical))
                             {
@@ -101,17 +84,9 @@ namespace CPCRemote.Service
                         continue;
                     }
 
-                    string prefix = useHttps
-                        ? $"https://{ipAddress}:{port}/"
-                        : $"http://{ipAddress}:{port}/";
-
+                    string prefix = $"http://{ipAddress}:{port}/";
                     if (_currentPrefix != prefix || !_listener.IsListening)
                     {
-                        if (useHttps)
-                        {
-                            await EnsureHttpsBindingAsync(ipAddress, port, current, stoppingToken).ConfigureAwait(false);
-                        }
-
                         try
                         {
                             if (_listener.IsListening)
@@ -131,9 +106,8 @@ namespace CPCRemote.Service
                             if (_logger.IsEnabled(LogLevel.Information))
                             {
                                 _logger.LogInformation(
-                                    "Listening on {Prefix} (HTTPS: {UseHttps}, secret configured: {SecretConfigured})",
+                                    "Listening on {Prefix} (secret configured: {SecretConfigured})",
                                     prefix,
-                                    useHttps,
                                     !string.IsNullOrEmpty(secret));
                             }
 
@@ -146,8 +120,7 @@ namespace CPCRemote.Service
                                 _logger.LogError("Access denied when binding to {Prefix}. URL reservation may be required. Run: netsh http add urlacl url={Prefix} user=DOMAIN\\USER", prefix, prefix);
                             }
 
-                            _retryAttempts++;
-                            if (_retryAttempts >= MaxRetryAttempts)
+                            if (++_retryAttempts >= MaxRetryAttempts)
                             {
                                 if (_logger.IsEnabled(LogLevel.Critical))
                                 {
@@ -173,8 +146,7 @@ namespace CPCRemote.Service
                                 _logger.LogError(ex, "Failed to start HttpListener on prefix {Prefix}.", prefix);
                             }
 
-                            _retryAttempts++;
-                            if (_retryAttempts >= MaxRetryAttempts)
+                            if (++_retryAttempts >= MaxRetryAttempts)
                             {
                                 if (_logger.IsEnabled(LogLevel.Critical))
                                 {
@@ -228,12 +200,8 @@ namespace CPCRemote.Service
                         HttpListenerRequest httpRequest = context.Request;
                         HttpListenerResponse response = context.Response;
 
-                        bool authorized = false;
-                        if (string.IsNullOrEmpty(secret))
-                        {
-                            authorized = true;
-                        }
-                        else
+                        bool authorized = string.IsNullOrEmpty(secret);
+                        if (!authorized)
                         {
                             string? authHeader = httpRequest.Headers["Authorization"];
                             if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
@@ -245,14 +213,19 @@ namespace CPCRemote.Service
 
                         if (!authorized)
                         {
-                            var remoteIp = httpRequest.RemoteEndPoint.Address;
-                            if (!_unauthorizedLogTimestamps.TryGetValue(remoteIp, out var lastLogTime) || (DateTime.UtcNow - lastLogTime).TotalSeconds > UnauthorizedLogThrottlingSeconds)
+                            IPAddress? remoteIp = httpRequest.RemoteEndPoint?.Address;
+                            if (remoteIp is not null)
                             {
-                                if (_logger.IsEnabled(LogLevel.Warning))
+                                if (!_unauthorizedLogTimestamps.TryGetValue(remoteIp, out DateTime lastLogTime) ||
+                                    (DateTime.UtcNow - lastLogTime).TotalSeconds > UnauthorizedLogThrottlingSeconds)
                                 {
-                                    _logger.LogWarning("Unauthorized request from {RemoteEndPoint}", httpRequest.RemoteEndPoint);
+                                    if (_logger.IsEnabled(LogLevel.Warning))
+                                    {
+                                        _logger.LogWarning("Unauthorized request from {RemoteEndPoint}", httpRequest.RemoteEndPoint);
+                                    }
+
+                                    _unauthorizedLogTimestamps[remoteIp] = DateTime.UtcNow;
                                 }
-                                _unauthorizedLogTimestamps[remoteIp] = DateTime.UtcNow;
                             }
 
                             response.StatusCode = (int)HttpStatusCode.Unauthorized;
@@ -261,71 +234,71 @@ namespace CPCRemote.Service
                             continue;
                         }
 
-                        string[] urlParts = httpRequest.Url != null
-                            ? httpRequest.Url.AbsolutePath.Split(SlashSeparator, StringSplitOptions.RemoveEmptyEntries)
-                            : Array.Empty<string>();
+                    string[] urlParts = httpRequest.Url != null
+                        ? httpRequest.Url.AbsolutePath.Split(SlashSeparator, StringSplitOptions.RemoveEmptyEntries)
+                        : Array.Empty<string>();
 
-                        string commandStr = urlParts.Length > 0 ? urlParts[0] : string.Empty;
+                    string commandStr = urlParts.Length > 0 ? urlParts[0] : string.Empty;
 
-                        if (string.Equals(commandStr, "ping", StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(commandStr, "ping", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (_logger.IsEnabled(LogLevel.Information))
                         {
-                            if (_logger.IsEnabled(LogLevel.Information))
-                            {
-                                _logger.LogInformation("Ping received, responding with OK.");
-                            }
-
-                            response.StatusCode = (int)HttpStatusCode.OK;
-                            response.Close();
-                            continue;
+                            _logger.LogInformation("Ping received, responding with OK.");
                         }
 
-                        TrayCommandType? command = _commandCatalog.GetCommandType(commandStr);
-                        if (command.HasValue)
-                        {
-                            if (_logger.IsEnabled(LogLevel.Information))
-                            {
-                                _logger.LogInformation("Executing command: {Command}", command.Value);
-                            }
-
-                            try
-                            {
-                                await _commandExecutor.RunCommandAsync(command.Value, stoppingToken).ConfigureAwait(false);
-                                response.StatusCode = (int)HttpStatusCode.OK;
-                            }
-                            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-                            {
-                                if (_logger.IsEnabled(LogLevel.Information))
-                                {
-                                    _logger.LogInformation("Command execution cancelled while shutting down.");
-                                }
-
-                                response.StatusCode = (int)HttpStatusCode.ServiceUnavailable;
-                            }
-                            catch (Exception ex)
-                            {
-                                if (_logger.IsEnabled(LogLevel.Error))
-                                {
-                                    _logger.LogError(ex, "Error executing command {Command}", command.Value);
-                                }
-
-                                response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                            }
-                        }
-                        else
-                        {
-                            if (_logger.IsEnabled(LogLevel.Warning))
-                            {
-                                _logger.LogWarning("Invalid command: {CommandStr}", commandStr);
-                            }
-
-                            response.StatusCode = (int)HttpStatusCode.BadRequest;
-                        }
-
+                        response.StatusCode = (int)HttpStatusCode.OK;
                         response.Close();
+                        continue;
                     }
+
+                    TrayCommandType? command = _commandCatalog.GetCommandType(commandStr);
+                    if (command.HasValue)
+                    {
+                        if (_logger.IsEnabled(LogLevel.Information))
+                        {
+                            _logger.LogInformation("Executing command: {Command}", command.Value);
+                        }
+
+                        try
+                        {
+                            await _commandExecutor.RunCommandAsync(command.Value, stoppingToken).ConfigureAwait(false);
+                            response.StatusCode = (int)HttpStatusCode.OK;
+                        }
+                        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                        {
+                            if (_logger.IsEnabled(LogLevel.Information))
+                            {
+                                _logger.LogInformation("Command execution cancelled while shutting down.");
+                            }
+
+                            response.StatusCode = (int)HttpStatusCode.ServiceUnavailable;
+                        }
+                        catch (Exception ex)
+                        {
+                            if (_logger.IsEnabled(LogLevel.Error))
+                            {
+                                _logger.LogError(ex, "Error executing command {Command}", command.Value);
+                            }
+
+                            response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                        }
+                    }
+                    else
+                    {
+                        if (_logger.IsEnabled(LogLevel.Warning))
+                        {
+                            _logger.LogWarning("Invalid command: {CommandStr}", commandStr);
+                        }
+
+                        response.StatusCode = (int)HttpStatusCode.BadRequest;
+                    }
+
+                    response.Close();
                 }
             }
-            finally
+        }
+        finally
             {
                 try
                 {
@@ -343,142 +316,8 @@ namespace CPCRemote.Service
                         _logger.LogError(ex, "Error cleaning up HttpListener");
                     }
                 }
-
-                try
-                {
-                    _serviceCertificate?.Dispose();
-                }
-                catch (Exception ex)
-                {
-                    if (_logger.IsEnabled(LogLevel.Debug))
-                    {
-                        _logger.LogDebug(ex, "Failed to dispose service certificate");
-                    }
-                }
             }
         }
-
-        private async Task EnsureHttpsBindingAsync(string ipAddress, int port, RsmOptions options, CancellationToken token)
-        {
-            if (!options.UseHttps)
-            {
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(options.CertificatePath))
-            {
-                throw new InvalidOperationException("HTTPS requires a certificatePath configuration.");
-            }
-
-            X509Certificate2 certificate = LoadCertificate(options);
-            if (_serviceCertificate == null || !_serviceCertificate.Thumbprint.Equals(certificate.Thumbprint, StringComparison.OrdinalIgnoreCase))
-            {
-                _serviceCertificate?.Dispose();
-                _serviceCertificate = certificate;
-            }
-            else
-            {
-                certificate.Dispose();
-            }
-
-            string bindingIp = DetermineBindingIpAddress(ipAddress);
-            string ipPortKey = $"{bindingIp}:{options.HttpsPort}";
-            if (_boundSslIpPort == ipPortKey)
-            {
-                return;
-            }
-
-            await EnsureSslBindingAsync(ipPortKey, _serviceCertificate!, token).ConfigureAwait(false);
-            _boundSslIpPort = ipPortKey;
-        }
-
-        private static string DetermineBindingIpAddress(string? ipAddress)
-        {
-            return string.IsNullOrWhiteSpace(ipAddress) || ipAddress is "+" or "*" ? DefaultSslIp : ipAddress;
-        }
-
-        private async Task EnsureSslBindingAsync(string ipPort, X509Certificate2 certificate, CancellationToken token)
-        {
-            string thumbprint = NormalizeThumbprint(certificate.Thumbprint!);
-            var (showExitCode, showOutput) = await RunNetshCommandAsync($"http show sslcert ipport={ipPort}", token).ConfigureAwait(false);
-
-            if (showExitCode == 0 && showOutput.Contains(thumbprint, StringComparison.OrdinalIgnoreCase))
-            {
-                if (_logger.IsEnabled(LogLevel.Debug))
-                {
-                    _logger.LogDebug("SSL binding for {IpPort} already uses thumbprint {Thumbprint}", ipPort, thumbprint);
-                }
-
-                return;
-            }
-
-            if (showExitCode == 0)
-            {
-                await RunNetshCommandAsync($"http delete sslcert ipport={ipPort}", token).ConfigureAwait(false);
-            }
-
-            string addArgs = $"http add sslcert ipport={ipPort} certhash={thumbprint} appid={SslAppId:D} certstorename=MY";
-            var (addExitCode, addOutput) = await RunNetshCommandAsync(addArgs, token).ConfigureAwait(false);
-            if (addExitCode != 0)
-            {
-                throw new InvalidOperationException($"Failed to bind SSL certificate via netsh: {addOutput}");
-            }
-
-            if (_logger.IsEnabled(LogLevel.Information))
-            {
-                _logger.LogInformation("Bound certificate {Thumbprint} to {IpPort}", thumbprint, ipPort);
-            }
-        }
-
-        private static string NormalizeThumbprint(string thumbprint)
-        {
-            return thumbprint.Replace(" ", string.Empty, StringComparison.Ordinal);
-        }
-
-        private static X509Certificate2 LoadCertificate(RsmOptions options)
-        {
-            string path = options.CertificatePath ?? throw new InvalidOperationException("Certificate path is required when configuring HTTPS.");
-            string password = options.CertificatePassword ?? string.Empty;
-
-            X509Certificate2 certificate = X509CertificateLoader.LoadPkcs12FromFile(path, password, X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet);
-
-            using var store = new X509Store(StoreName.My, StoreLocation.LocalMachine);
-            store.Open(OpenFlags.ReadWrite);
-            var existing = store.Certificates.Find(X509FindType.FindByThumbprint, certificate.Thumbprint, false);
-            X509Certificate2 result;
-            if (existing.Count == 0)
-            {
-                store.Add(certificate);
-                result = certificate;
-            }
-            else
-            {
-                result = new X509Certificate2(existing[0]);
-                certificate.Dispose();
-            }
-
-            store.Close();
-            return result;
-        }
-
-        private static async Task<(int ExitCode, string Output)> RunNetshCommandAsync(string arguments, CancellationToken token)
-        {
-            var startInfo = new ProcessStartInfo("netsh", arguments)
-            {
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false
-            };
-
-            using Process process = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start netsh.exe");
-            string stdout = await process.StandardOutput.ReadToEndAsync(token).ConfigureAwait(false);
-            string stderr = await process.StandardError.ReadToEndAsync(token).ConfigureAwait(false);
-            await process.WaitForExitAsync(token).ConfigureAwait(false);
-
-            return (process.ExitCode, string.Join(Environment.NewLine, stdout, stderr).Trim());
-        }
-
     }
 }
 

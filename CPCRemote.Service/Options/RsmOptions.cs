@@ -5,7 +5,6 @@ namespace CPCRemote.Service.Options
     /// <summary>
     /// Represents configuration options for the Remote Shutdown Manager (RSM) service.
     /// </summary>
-    [CertificatePathRequired]
     public sealed class RsmOptions
     {
         /// <summary>

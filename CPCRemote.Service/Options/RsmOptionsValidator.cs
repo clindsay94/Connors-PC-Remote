@@ -21,15 +21,6 @@ namespace CPCRemote.Service.Options
                 return ValidateOptionsResult.Fail("RsmOptions cannot be null.");
             }
 
-            // Validate certificate file exists if HTTPS is enabled
-            if (options.UseHttps && !string.IsNullOrWhiteSpace(options.CertificatePath))
-            {
-                if (!System.IO.File.Exists(options.CertificatePath))
-                {
-                    return ValidateOptionsResult.Fail($"Certificate file not found: {options.CertificatePath}");
-                }
-            }
-
             // Validate IP address format if provided
             if (!string.IsNullOrWhiteSpace(options.IpAddress))
             {
