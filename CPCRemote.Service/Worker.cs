@@ -234,71 +234,71 @@ namespace CPCRemote.Service
                             continue;
                         }
 
-                    string[] urlParts = httpRequest.Url != null
-                        ? httpRequest.Url.AbsolutePath.Split(SlashSeparator, StringSplitOptions.RemoveEmptyEntries)
-                        : Array.Empty<string>();
+                        string[] urlParts = httpRequest.Url != null
+                            ? httpRequest.Url.AbsolutePath.Split(SlashSeparator, StringSplitOptions.RemoveEmptyEntries)
+                            : Array.Empty<string>();
 
-                    string commandStr = urlParts.Length > 0 ? urlParts[0] : string.Empty;
+                        string commandStr = urlParts.Length > 0 ? urlParts[0] : string.Empty;
 
-                    if (string.Equals(commandStr, "ping", StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (_logger.IsEnabled(LogLevel.Information))
-                        {
-                            _logger.LogInformation("Ping received, responding with OK.");
-                        }
-
-                        response.StatusCode = (int)HttpStatusCode.OK;
-                        response.Close();
-                        continue;
-                    }
-
-                    TrayCommandType? command = _commandCatalog.GetCommandType(commandStr);
-                    if (command.HasValue)
-                    {
-                        if (_logger.IsEnabled(LogLevel.Information))
-                        {
-                            _logger.LogInformation("Executing command: {Command}", command.Value);
-                        }
-
-                        try
-                        {
-                            await _commandExecutor.RunCommandAsync(command.Value, stoppingToken).ConfigureAwait(false);
-                            response.StatusCode = (int)HttpStatusCode.OK;
-                        }
-                        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                        if (string.Equals(commandStr, "ping", StringComparison.OrdinalIgnoreCase))
                         {
                             if (_logger.IsEnabled(LogLevel.Information))
                             {
-                                _logger.LogInformation("Command execution cancelled while shutting down.");
+                                _logger.LogInformation("Ping received, responding with OK.");
                             }
 
-                            response.StatusCode = (int)HttpStatusCode.ServiceUnavailable;
+                            response.StatusCode = (int)HttpStatusCode.OK;
+                            response.Close();
+                            continue;
                         }
-                        catch (Exception ex)
+
+                        TrayCommandType? command = _commandCatalog.GetCommandType(commandStr);
+                        if (command.HasValue)
                         {
-                            if (_logger.IsEnabled(LogLevel.Error))
+                            if (_logger.IsEnabled(LogLevel.Information))
                             {
-                                _logger.LogError(ex, "Error executing command {Command}", command.Value);
+                                _logger.LogInformation("Executing command: {Command}", command.Value);
                             }
 
-                            response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                            try
+                            {
+                                await _commandExecutor.RunCommandAsync(command.Value, stoppingToken).ConfigureAwait(false);
+                                response.StatusCode = (int)HttpStatusCode.OK;
+                            }
+                            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                            {
+                                if (_logger.IsEnabled(LogLevel.Information))
+                                {
+                                    _logger.LogInformation("Command execution cancelled while shutting down.");
+                                }
+
+                                response.StatusCode = (int)HttpStatusCode.ServiceUnavailable;
+                            }
+                            catch (Exception ex)
+                            {
+                                if (_logger.IsEnabled(LogLevel.Error))
+                                {
+                                    _logger.LogError(ex, "Error executing command {Command}", command.Value);
+                                }
+
+                                response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                            }
                         }
-                    }
-                    else
-                    {
-                        if (_logger.IsEnabled(LogLevel.Warning))
+                        else
                         {
-                            _logger.LogWarning("Invalid command: {CommandStr}", commandStr);
+                            if (_logger.IsEnabled(LogLevel.Warning))
+                            {
+                                _logger.LogWarning("Invalid command: {CommandStr}", commandStr);
+                            }
+
+                            response.StatusCode = (int)HttpStatusCode.BadRequest;
                         }
 
-                        response.StatusCode = (int)HttpStatusCode.BadRequest;
+                        response.Close();
                     }
-
-                    response.Close();
                 }
             }
-        }
-        finally
+            finally
             {
                 try
                 {
@@ -319,5 +319,4 @@ namespace CPCRemote.Service
             }
         }
     }
-}
 

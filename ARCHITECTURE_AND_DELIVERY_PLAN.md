@@ -13,7 +13,7 @@
   - `TrayCommand` (Core) – encapsulates command metadata; aggregate root for command catalogue.
   - `RemoteSession` (implicit) – represented via `HostHelper`/`Worker`; governs authentication, authorization, and execution for a single request.
 - **Domain Services:**
-  - `CommandHelper`/`ITrayCommandHelper` – executes commands via shell/PInvoke.
+  - `CommandHelper` (via `ICommandCatalog`/`ICommandExecutor`) – exposes catalog metadata and executes commands via shell/PInvoke.
   - `HostHelper` – validates inbound requests and orchestrates command execution.
 - **Ubiquitous Terms:** _Command_, _Secret_, _Ping_, _Service Management_, _Service Installer_.
 - **Security & Compliance:** Remote execution must enforce bearer-token authentication (Authorization header), log administrative actions, and require elevation for privileged operations. HTTPS is optional but recommended when exposing beyond localhost.
@@ -24,13 +24,13 @@ This plan keeps the ubiquitous language stable, ensures aggregates own their inv
 
 ## 2. Current State Assessment (Per Layer)
 
-| Layer                                         | Strengths                                                                                                                            | Gaps / Risks                                                                                                                                                                                                                                                                                                                                                          |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Domain/Core (`CPCRemote.Core`)**            | C# 14, nullable enabled, DI-first interfaces. `CommandHelper` already OS-gated.                                                      | Duplicate command catalog (`TrayCommandHelper` vs `CommandHelper`). Asynchronous orchestration handled via `Task.Run` in `HostHelper` rather than cooperative cancellation. Limited XML docs.                                                                                                                                                                         |
-| **Application/Service (`CPCRemote.Service`)** | Worker service uses `BackgroundService`, `IOptionsMonitor`, exponential backoff, HTTPS certificate binding logic.                    | HttpListener-based pipeline lacks structured metrics, cancellation token propagation, and rate limiting. Configuration validator does not leverage data annotations. Netsh automation needs error classification and audit trail.                                                                                                                                     |
-| **Presentation/UI (`CPCRemote.UI`)**          | WinUI 3 MSIX packaging, logging via `Microsoft.Extensions.Logging`, service management workflows, modern nav shell.                  | `ServiceManagementPage.xaml` corrupted backup still present; code-behind consolidates multiple responsibilities (service control, config editing, HTTP testing). No MVVM separation, no DI container. Quick Actions page instantiates `CommandHelper` directly (missing interface abstraction & centralized telemetry). Settings not persisted beyond local settings. |
-| **Testing (`CPCRemote.Tests`)**               | NUnit + Moq, OS-gated tests, coverage for `HostHelper`/`TrayCommandHelper`.                                                          | No service integration tests, duplicated domain catalog tests, naming doesn’t follow `MethodName_Condition_ExpectedResult` consistently, no HTTPS/auth negative tests.                                                                                                                                                                                                |
-| **Packaging/Delivery**                        | MSIX manifest already requests `runFullTrust`, service binaries included via `Link` item, .NET 10 global.json ensures SDK alignment. | Service not packaged separately for headless deployment, no CI pipeline scripts, certificate/signing workflow undocumented, no deterministic artifact layout (PublishSingleFile false, no zipped outputs).                                                                                                                                                            |
+| Layer                                         | Strengths                                                                                                                                 | Gaps / Risks                                                                                                                                                                                                                                                                                                                                                          |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Domain/Core (`CPCRemote.Core`)**            | C# 14, nullable enabled, DI-first interfaces. `CommandHelper` already OS-gated.                                                           | Duplicate command catalog (`TrayCommandHelper` vs `CommandHelper`). Asynchronous orchestration handled via `Task.Run` in `HostHelper` rather than cooperative cancellation. Limited XML docs.                                                                                                                                                                         |
+| **Application/Service (`CPCRemote.Service`)** | Worker service uses `BackgroundService`, `IOptionsMonitor`, exponential backoff, and an HTTP-only `HttpListener` with structured logging. | HttpListener-based pipeline lacks structured metrics, cancellation token propagation, and rate limiting guidance. Need documented reverse-proxy/TLS guidance now that HTTPS is delegated outside the service. Configuration validator does not leverage data annotations.                                                                                             |
+| **Presentation/UI (`CPCRemote.UI`)**          | WinUI 3 MSIX packaging, logging via `Microsoft.Extensions.Logging`, service management workflows, modern nav shell.                       | `ServiceManagementPage.xaml` corrupted backup still present; code-behind consolidates multiple responsibilities (service control, config editing, HTTP testing). No MVVM separation, no DI container. Quick Actions page instantiates `CommandHelper` directly (missing interface abstraction & centralized telemetry). Settings not persisted beyond local settings. |
+| **Testing (`CPCRemote.Tests`)**               | NUnit + Moq, OS-gated tests, coverage for `HostHelper`/`TrayCommandHelper`.                                                               | No service integration tests, duplicated domain catalog tests, naming doesn’t follow `MethodName_Condition_ExpectedResult` consistently, no HTTPS/auth negative tests.                                                                                                                                                                                                |
+| **Packaging/Delivery**                        | MSIX manifest already requests `runFullTrust`, service binaries included via `Link` item, .NET 10 global.json ensures SDK alignment.      | Service not packaged separately for headless deployment, no CI pipeline scripts, certificate/signing workflow undocumented, no deterministic artifact layout (PublishSingleFile false, no zipped outputs).                                                                                                                                                            |
 
 ---
 
@@ -49,11 +49,11 @@ This plan keeps the ubiquitous language stable, ensures aggregates own their inv
 3. **Configuration & Validation**
 
    - Model `RsmOptions` with data annotations (`[Required]`, `[Range]`, `[RegularExpression]`).
-   - Use `OptionsBuilder.ValidateDataAnnotations()` plus custom `IValidateOptions` for cross-field rules (e.g., HTTPS requires certificate path/password pair).
+   - Use `OptionsBuilder.ValidateDataAnnotations()` plus custom `IValidateOptions` for host/IP validation and future extensibility (HTTPS responsibilities have moved to external reverse proxies).
 
 4. **Security**
 
-   - Document HTTPS binding process end to end, including certificate creation, `netsh` automation, and revocation.
+   - Document HTTPS/TLS expectations via reverse proxy (IIS, nginx, Cloudflare Tunnel) now that the worker is HTTP-only; provide URL reservation guidance for HTTP bindings.
    - Add structured logging for authorization failures, include remote endpoint info.
    - Consider optional request throttling (simple token bucket) to prevent abuse on exposed endpoints.
 
@@ -93,6 +93,9 @@ This plan keeps the ubiquitous language stable, ensures aggregates own their inv
 - [x] **Task 4 · Security Logging & Telemetry**
   - Add structured logging scopes (`using var scope = _logger.BeginScope(new { Remote = context.Request.RemoteEndPoint })`).
   - Log unauthorized attempts at Warning level with throttling.
+- [ ] **Task 5 · HTTP Listener Simplification**
+  - Remove built-in HTTPS binding/certificate dependencies from the service worker and configuration.
+  - Document HTTP-only posture plus reverse-proxy expectations in the architecture plan, options metadata, and default appsettings.
 
 ### Phase 2 – UI & UX Modernization (WinUI 3)
 
@@ -100,7 +103,7 @@ This plan keeps the ubiquitous language stable, ensures aggregates own their inv
   - Remove corrupted `.xaml.corrupted` file; refactor `ServiceManagementPage` into View + ViewModel (DI via `AppHostBuilder`).
 - [x] **Task 2 · Service Management Enhancements**
   - Provide progress feedback and cancellation for long-running operations (install/uninstall/reserve URL) using `Task` + `CancellationTokenSource`.
-  - Persist configuration presets (IP, port, HTTPS, secrets) via `ApplicationData` or JSON file co-located with UI.
+  - Persist configuration presets (IP, port, secret) via `ApplicationData` or JSON file co-located with UI.
 - [ ] **Task 3 · Quick Actions Telemetry & Safety**
   - Inject `ICommandExecutor` via DI; centralize confirmation preferences.
   - Introduce optional `PIN`/`secret` before executing local commands to prevent accidental triggers.
@@ -146,12 +149,7 @@ This plan keeps the ubiquitous language stable, ensures aggregates own their inv
    sc.exe start "CPCRemote.Service"
    ```
 
-3. For HTTPS, bind certificate:
-
-   ```powershell
-   $thumb = "<PFX Thumbprint Without Spaces>"
-   netsh http add sslcert ipport=0.0.0.0:5006 certhash=$thumb appid="{4fbdab34-09c3-4c3c-9219-61bff33f5d80}" certstorename=MY
-   ```
+3. For HTTPS termination, front the service with a trusted reverse proxy (IIS, nginx, Caddy, Cloudflare Tunnel) and forward HTTP traffic to the worker. Document proxy configuration in deployment runbooks instead of binding certificates directly inside the service.
 
 ### 5.3 MSIX Distribution Workflow
 
@@ -164,7 +162,7 @@ This plan keeps the ubiquitous language stable, ensures aggregates own their inv
 
 ## 6. Testing & Quality Gates
 
-1. **Unit Tests**: Expand coverage for new catalog/executor interfaces, configuration validation failure cases, and HTTPS binding logic (mock `netsh`).
+1. **Unit Tests**: Expand coverage for new catalog/executor interfaces, configuration validation failure cases, and HTTP authorization negative tests.
 2. **Integration Tests**: Launch `Worker` on ephemeral port inside tests, issue HTTP requests with/without Authorization header, validate responses.
 3. **UI Smoke Tests**: Use WinAppDriver or Playwright for Windows to automate button flows (service install/reserve URL dialogs mocked via interfaces).
 4. **Performance/Load**: Simple script hitting `ping` endpoint 50 req/s to ensure listener remains responsive; monitor CPU/memory.
@@ -186,6 +184,7 @@ With these steps, Connor's PC Remote will stay aligned with modern C#/.NET 10 an
 - _2025-11-16 – GitHub Copilot (GPT-5.1-Codex Preview):_ Added checkbox tracking for Phase 1 tasks to support implementation progress reporting per `.copilot-tracking` workflow.
 - _2025-11-16 – GitHub Copilot (GPT-5.1-Codex Preview):_ Completed Phase 1 Task 1 by consolidating the command catalog into `CommandHelper`, adding `ICommandCatalog`/`ICommandExecutor`, and updating UI/service/tests.
 - _2025-11-16 – GitHub Copilot (GPT-5.1-Codex Preview):_ Completed Phase 1 Task 2 by introducing async command execution, propagating cancellation through `HostHelper` and the service worker, and extending tests.
+- _2025-11-18 – GitHub Copilot (GPT-5.1-Codex Preview):_ Added Phase 1 Task 5 to track removal of built-in HTTPS binding, updated documentation to emphasize HTTP-only hosting, and aligned packaging/testing guidance with the new posture.
 
 ---
 
