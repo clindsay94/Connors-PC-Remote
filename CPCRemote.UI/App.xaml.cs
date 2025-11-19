@@ -59,6 +59,11 @@ namespace CPCRemote
             // MAKE SURE THESE CLASSES EXIST IN YOUR PROJECT
             services.AddSingleton<SettingsService>();
             services.AddSingleton<ServiceManagementViewModel>();
+            
+            // Register Core services
+            services.AddSingleton<CPCRemote.Core.Helpers.CommandHelper>();
+            services.AddSingleton<CPCRemote.Core.Interfaces.ICommandCatalog>(sp => sp.GetRequiredService<CPCRemote.Core.Helpers.CommandHelper>());
+            services.AddSingleton<CPCRemote.Core.Interfaces.ICommandExecutor>(sp => sp.GetRequiredService<CPCRemote.Core.Helpers.CommandHelper>());
 
             return services.BuildServiceProvider();
         }

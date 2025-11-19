@@ -1,4 +1,5 @@
 using CPCRemote.UI.Services;
+using CPCRemote.UI.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -98,6 +99,7 @@ namespace CPCRemote.UI.ViewModels
 
             try
             {
+                // 1. Save to local UI settings (existing logic)
                 var config = new ServiceConfiguration
                 {
                     Rsm = new RsmOptions
@@ -109,11 +111,51 @@ namespace CPCRemote.UI.ViewModels
                 };
 
                 await _settingsService.SaveServiceConfigurationAsync(config);
-
                 _settingsService.Set(nameof(IsSafetyLockEnabled), IsSafetyLockEnabled);
 
-                ShowInfoBar("Configuration saved successfully. Restart the service for these settings to be applied to the service itself.", InfoBarSeverity.Success);
-                _logger.LogInformation("Configuration saved successfully to local settings.");
+                // 2. Save to Service's appsettings.json
+                string? serviceConfigPath = FindServiceConfigPath();
+                if (!string.IsNullOrEmpty(serviceConfigPath))
+                {
+                    try
+                    {
+                        string jsonContent = await System.IO.File.ReadAllTextAsync(serviceConfigPath);
+                        var jsonNode = System.Text.Json.Nodes.JsonNode.Parse(jsonContent);
+
+                        if (jsonNode != null)
+                        {
+                            // Ensure 'rsm' section exists
+                            if (jsonNode["rsm"] is not System.Text.Json.Nodes.JsonObject rsmNode)
+                            {
+                                rsmNode = new System.Text.Json.Nodes.JsonObject();
+                                jsonNode["rsm"] = rsmNode;
+                            }
+
+                            rsmNode["IpAddress"] = this.IpAddress;
+                            rsmNode["Port"] = this.Port;
+                            rsmNode["Secret"] = this.Secret;
+
+                            var options = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
+                            await System.IO.File.WriteAllTextAsync(serviceConfigPath, jsonNode.ToJsonString(options));
+                            
+                            _logger.LogInformation("Updated service configuration at {Path}", serviceConfigPath);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to write to service configuration file at {Path}", serviceConfigPath);
+                        throw new Exception($"Saved to UI settings, but failed to update Service config file: {ex.Message}. Try running as Administrator.");
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("Could not locate service configuration file to update.");
+                    ShowInfoBar("Saved to UI, but could not find Service config file. Service may not be updated.", InfoBarSeverity.Warning);
+                    return;
+                }
+
+                ShowInfoBar("Configuration saved successfully. Restart the service for these settings to be applied.", InfoBarSeverity.Success);
+                _logger.LogInformation("Configuration saved successfully.");
             }
             catch (Exception ex)
             {
@@ -249,7 +291,7 @@ namespace CPCRemote.UI.ViewModels
         private CancellationTokenSource? _cancellationTokenSource;
 
         [ObservableProperty]
-        public double Progress { get; set; }
+        public partial double Progress { get; set; }
 
         [RelayCommand]
         private async Task InstallService(string exePath)
@@ -461,28 +503,6 @@ namespace CPCRemote.UI.ViewModels
         }
 
         public string PreviewUrl => $"http://{IpAddress}:{Port}/";
-
-        [RelayCommand]
-        private async Task SaveConfiguration()
-        {
-            ShowInfoBar("Saving configuration...", InfoBarSeverity.Informational);
-
-            try
-            {
-                _settingsService.Set(nameof(IpAddress), IpAddress);
-                _settingsService.Set(nameof(Port), Port);
-                _settingsService.Set(nameof(Secret), Secret);
-                _settingsService.Set(nameof(IsSafetyLockEnabled), IsSafetyLockEnabled);
-
-                ShowInfoBar("Configuration saved successfully. Restart the service for these settings to be applied to the service itself.", InfoBarSeverity.Success);
-                _logger.LogInformation("Configuration saved successfully to local settings.");
-            }
-            catch (Exception ex)
-            {
-                ShowInfoBar($"Error saving configuration: {ex.Message}", InfoBarSeverity.Error);
-                _logger.LogError(ex, "Failed to save configuration.");
-            }
-        }
 
         [RelayCommand]
         private async Task Shutdown() => await SendCommandAsync("shutdown");

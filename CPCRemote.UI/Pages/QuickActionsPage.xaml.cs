@@ -22,9 +22,8 @@ namespace CPCRemote.UI.Pages
         public QuickActionsPage()
         {
             this.InitializeComponent();
-            CommandHelper helper = new();
-            _commandCatalog = helper;
-            _commandExecutor = helper;
+            _commandCatalog = App.GetService<ICommandCatalog>();
+            _commandExecutor = App.GetService<ICommandExecutor>();
             
             // Wire up event handlers
             ShutdownButton.Click += async (s, e) => await ExecuteCommandSafelyAsync(TrayCommandType.Shutdown);
