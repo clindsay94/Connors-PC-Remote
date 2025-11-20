@@ -6,10 +6,63 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid>
-        <TextBlock Text="Quick Actions Page" 
-                   HorizontalAlignment="Center" 
-                   VerticalAlignment="Center" 
-                   Style="{StaticResource TitleTextBlockStyle}"/>
-    </Grid>
+    <ScrollViewer>
+        <StackPanel Spacing="20" Padding="24">
+            <TextBlock Text="Quick Actions" Style="{StaticResource TitleTextBlockStyle}"/>
+            <TextBlock Text="Send commands to the local service (test functionality)." 
+                       Style="{StaticResource BodyTextBlockStyle}"/>
+
+            <GridView SelectionMode="None">
+                <GridView.ItemContainerStyle>
+                    <Style TargetType="GridViewItem">
+                        <Setter Property="Margin" Value="0,0,12,12"/>
+                    </Style>
+                </GridView.ItemContainerStyle>
+
+                <!-- Shutdown -->
+                <Button x:Name="ShutdownBtn" Click="ShutdownBtn_Click" Width="160" Height="120" Padding="0">
+                    <StackPanel Spacing="8" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xE7E8;" FontSize="32"/>
+                        <TextBlock Text="Shutdown" HorizontalAlignment="Center" Style="{StaticResource BodyTextBlockStyle}"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Restart -->
+                <Button x:Name="RestartBtn" Click="RestartBtn_Click" Width="160" Height="120" Padding="0">
+                    <StackPanel Spacing="8" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xE777;" FontSize="32"/>
+                        <TextBlock Text="Restart" HorizontalAlignment="Center" Style="{StaticResource BodyTextBlockStyle}"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Lock -->
+                <Button x:Name="LockBtn" Click="LockBtn_Click" Width="160" Height="120" Padding="0">
+                    <StackPanel Spacing="8" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xE72E;" FontSize="32"/>
+                        <TextBlock Text="Lock" HorizontalAlignment="Center" Style="{StaticResource BodyTextBlockStyle}"/>
+                    </StackPanel>
+                </Button>
+
+                 <!-- Screen Off -->
+                <Button x:Name="ScreenOffBtn" Click="ScreenOffBtn_Click" Width="160" Height="120" Padding="0">
+                    <StackPanel Spacing="8" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xE7F4;" FontSize="32"/>
+                        <TextBlock Text="Screen Off" HorizontalAlignment="Center" Style="{StaticResource BodyTextBlockStyle}"/>
+                    </StackPanel>
+                </Button>
+                
+                 <!-- Wake on LAN -->
+                <Button x:Name="WolBtn" Click="WolBtn_Click" Width="160" Height="120" Padding="0">
+                    <StackPanel Spacing="8" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xE966;" FontSize="32"/>
+                        <TextBlock Text="Wake on LAN" HorizontalAlignment="Center" Style="{StaticResource BodyTextBlockStyle}"/>
+                    </StackPanel>
+                </Button>
+
+            </GridView>
+
+            <TextBlock Text="Response Log" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,10,0,0"/>
+            <TextBox x:Name="ResponseLog" Height="150" IsReadOnly="True" AcceptsReturn="True" FontFamily="Consolas" FontSize="12"/>
+        </StackPanel>
+    </ScrollViewer>
 </Page>

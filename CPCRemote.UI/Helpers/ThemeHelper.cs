@@ -4,7 +4,6 @@ namespace CPCRemote.UI.Helpers
     using System.Text.Json;
     using System.Threading;
     using Microsoft.UI.Xaml;
-    using Windows.UI;
     using System.IO; // Ensure this is included
 
     /// <summary>
@@ -159,42 +158,6 @@ namespace CPCRemote.UI.Helpers
         }
 
         /// <summary>
-        /// Gets light theme color resources
-        /// </summary>
-        /// <returns>Light theme resource dictionary</returns>
-        public static ResourceDictionary GetLightColors()
-        {
-            return new ResourceDictionary
-            {
-                { "PrimaryColor", Color.FromArgb(255, 103, 80, 164) },
-                { "OnPrimaryColor", Color.FromArgb(255, 255, 255, 255) },
-                { "BackgroundColor", Color.FromArgb(255, 250, 250, 250) },
-                { "OnBackgroundColor", Color.FromArgb(255, 0, 0, 0) },
-                { "SurfaceColor", Color.FromArgb(255, 255, 255, 255) },
-                { "OnSurfaceColor", Color.FromArgb(255, 0, 0, 0) },
-                { "ErrorColor", Color.FromArgb(255, 176, 0, 32) },
-            };
-        }
-
-        /// <summary>
-        /// Gets dark theme color resources
-        /// </summary>
-        /// <returns>Dark theme resource dictionary</returns>
-        public static ResourceDictionary GetDarkColors()
-        {
-            return new ResourceDictionary
-            {
-                { "PrimaryColor", Color.FromArgb(255, 147, 125, 214) },
-                { "OnPrimaryColor", Color.FromArgb(255, 255, 255, 255) },
-                { "BackgroundColor", Color.FromArgb(255, 32, 32, 32) },
-                { "OnBackgroundColor", Color.FromArgb(255, 230, 230, 230) },
-                { "SurfaceColor", Color.FromArgb(255, 18, 18, 18) },
-                { "OnSurfaceColor", Color.FromArgb(255, 230, 230, 230) },
-                { "ErrorColor", Color.FromArgb(255, 255, 82, 82) },
-            };
-        }
-
-        /// <summary>
         /// Applies theme to the application
         /// </summary>
         /// <param name="theme">Theme name (Light, Dark, or System)</param>
@@ -203,39 +166,6 @@ namespace CPCRemote.UI.Helpers
             // Note: In WinUI 3, theme application is typically handled at the app level
             // This method is kept for compatibility but may not be fully functional
             // without proper main window reference
-        }
-
-        /// <summary>
-        /// Applies accent color to the application
-        /// </summary>
-        /// <param name="color">Accent color to apply</param>
-        public static void ApplyAccentColor(Color color)
-        {
-            try
-            {
-                if (Application.Current?.Resources?.ThemeDictionaries == null)
-                    return;
-
-                if (Application.Current.Resources.ThemeDictionaries.TryGetValue("Light", out object? lightObj) 
-                    && lightObj is ResourceDictionary lightTheme)
-                {
-                    lightTheme.MergedDictionaries.Clear();
-                    lightTheme.MergedDictionaries.Add(GetLightColors());
-                    lightTheme["AccentColor"] = color;
-                }
-
-                if (Application.Current.Resources.ThemeDictionaries.TryGetValue("Dark", out object? darkObj) 
-                    && darkObj is ResourceDictionary darkTheme)
-                {
-                    darkTheme.MergedDictionaries.Clear();
-                    darkTheme.MergedDictionaries.Add(GetDarkColors());
-                    darkTheme["AccentColor"] = color;
-                }
-            }
-            catch
-            {
-                // Ignore accent color application errors
-            }
         }
     }
 

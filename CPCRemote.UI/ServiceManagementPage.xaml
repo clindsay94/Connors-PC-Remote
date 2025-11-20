@@ -6,10 +6,29 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid>
-        <TextBlock Text="Service Management" 
-                   HorizontalAlignment="Center" 
-                   VerticalAlignment="Center" 
-                   Style="{StaticResource TitleTextBlockStyle}"/>
-    </Grid>
+    <StackPanel Spacing="20" Padding="24">
+        <TextBlock Text="Service Management" Style="{StaticResource TitleTextBlockStyle}"/>
+        
+        <Border CornerRadius="8" BorderThickness="1" Padding="16">
+            <Grid ColumnDefinitions="Auto,*">
+                <FontIcon x:Name="StatusIcon" Glyph="&#xE7E7;" FontSize="32" Margin="0,0,16,0"/>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="Service Status"/>
+                    <TextBlock x:Name="StatusText" Text="Checking..."/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <StackPanel Spacing="12">
+            <TextBlock Text="Actions" Style="{StaticResource SubtitleTextBlockStyle}"/>
+            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
+                <Button x:Name="InstallBtn" Content="Install" Click="InstallBtn_Click" HorizontalAlignment="Stretch"/>
+                <Button x:Name="UninstallBtn" Content="Uninstall" Click="UninstallBtn_Click" HorizontalAlignment="Stretch"/>
+                <Button x:Name="StartBtn" Content="Start" Click="StartBtn_Click" HorizontalAlignment="Stretch"/>
+                <Button x:Name="StopBtn" Content="Stop" Click="StopBtn_Click" HorizontalAlignment="Stretch"/>
+            </Grid>
+        </StackPanel>
+
+        <TextBox x:Name="OutputLog" Height="150" IsReadOnly="True" AcceptsReturn="True" FontFamily="Consolas" FontSize="12"/>
+    </StackPanel>
 </Page>

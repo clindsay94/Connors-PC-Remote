@@ -20,20 +20,7 @@ namespace CPCRemote.UI.Pages
         {
             this.InitializeComponent();
             ThemeComboBox.SelectionChanged += ThemeComboBox_SelectionChanged;
-            AccentColorPicker.ColorChanged += AccentColorPicker_ColorChanged;
             ConfirmationsToggle.Toggled += ConfirmationsToggle_Toggled;
-        }
-
-        /// <summary>
-        /// The AccentColorPicker_ColorChanged
-        /// </summary>
-        /// <param name="_">The sender<see cref="ColorPicker"/></param>
-        /// <param name="args">The args<see cref="ColorChangedEventArgs"/></param>
-        [SupportedOSPlatform("windows10.0.17763.0")]
-        private static void
-        AccentColorPicker_ColorChanged(ColorPicker _, ColorChangedEventArgs args)
-        {
-            Helpers.ThemeHelper.ApplyAccentColor(args.NewColor);
         }
 
         /// <summary>

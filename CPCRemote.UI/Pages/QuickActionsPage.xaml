@@ -15,12 +15,12 @@
             </TransitionCollection>
         </Grid.ChildrenTransitions>
         <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
-            <Button x:Name="ShutdownButton" Content="Shutdown" Style="{StaticResource FilledButtonStyle}" MinWidth="200" />
-            <Button x:Name="RestartButton" Content="Restart" Style="{StaticResource FilledButtonStyle}" MinWidth="200" />
-            <Button x:Name="ForceShutdownButton" Content="Force Shutdown" Style="{StaticResource FilledButtonStyle}" MinWidth="200" />
-            <Button x:Name="UEFIRebootButton" Content="UEFI Reboot" Style="{StaticResource FilledButtonStyle}" MinWidth="200" />
-            <Button x:Name="LockButton" Content="Lock" Style="{StaticResource FilledButtonStyle}" MinWidth="200" />
-            <Button x:Name="TurnScreenOffButton" Content="Turn Screen Off" Style="{StaticResource FilledButtonStyle}" MinWidth="200" />
+            <Button x:Name="ShutdownButton" Content="Shutdown" Style="{StaticResource AccentButtonStyle}" MinWidth="200" />
+            <Button x:Name="RestartButton" Content="Restart" Style="{StaticResource AccentButtonStyle}" MinWidth="200" />
+            <Button x:Name="ForceShutdownButton" Content="Force Shutdown" Style="{StaticResource AccentButtonStyle}" MinWidth="200" />
+            <Button x:Name="UEFIRebootButton" Content="UEFI Reboot" Style="{StaticResource AccentButtonStyle}" MinWidth="200" />
+            <Button x:Name="LockButton" Content="Lock" Style="{StaticResource AccentButtonStyle}" MinWidth="200" />
+            <Button x:Name="TurnScreenOffButton" Content="Turn Screen Off" Style="{StaticResource AccentButtonStyle}" MinWidth="200" />
         </StackPanel>
     </Grid>
 </Page>

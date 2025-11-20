@@ -8,11 +8,11 @@
   xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
   IgnorableNamespaces="rescap iot uap uap18 uap3">
 	<Identity
-	  Name="Connor's PC Remote"
+	  Name="Connors-PC-Remote"
 	  Publisher="CN=CLindsay94" 
 	  Version="1.0.1.0" />
 	<Properties>
-		<DisplayName>Connor's PC Remote</DisplayName>
+		<DisplayName>Connors PC Remote</DisplayName>
 		<PublisherDisplayName>Connor L</PublisherDisplayName>
 		<Logo>Assets\StoreLogo.png</Logo>
 	</Properties>
@@ -30,16 +30,16 @@
 			<uap:VisualElements
 			  DisplayName="Connor's PC Remote"
 			  Description="A tool that listens for HTTP GET requests to deliver a command to shutdown or restart your PC - Perfect for the Samsung SmartThings PC Control V1 Edge Driver"
-			  Square150x150Logo="Assets\Square150x150Logo.png"
-			  Square44x44Logo="Assets\Square44x44Logo.png"
-			  BackgroundColor="transparent">
-				<uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png"  Square310x310Logo="Assets\Square310x310Logo.png" Square71x71Logo="Assets\Square71x71Logo.png">
+			  BackgroundColor="transparent" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\Square44x44Logo.png">
+				<uap:DefaultTile  Square71x71Logo="Assets\Square71x71Logo.png" Wide310x150Logo="Assets\Wide310x150Logo.png" Square310x310Logo="Assets\Square310x310Logo.png">
 					<uap:ShowNameOnTiles>
 						<uap:ShowOn Tile="square310x310Logo"/>
+						<uap:ShowOn Tile="square150x150Logo"/>
+						<uap:ShowOn Tile="wide310x150Logo"/>
 					</uap:ShowNameOnTiles>
 				</uap:DefaultTile >
-				<uap:SplashScreen Image="Assets\SplashScreen.png" />
-				<uap:LockScreen BadgeLogo="Assets\BadgeLogo.png" Notification="badge"/>
+				<uap:LockScreen Notification="badge" BadgeLogo="Assets\BadgeLogo.png"/>
+				<uap:SplashScreen Image="Assets\SplashScreen.png"/>
 			</uap:VisualElements>
 		</Application>
 	</Applications>

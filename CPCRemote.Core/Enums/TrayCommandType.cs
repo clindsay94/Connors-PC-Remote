@@ -9,5 +9,6 @@ enum TrayCommandType
     Shutdown,
     ForceShutdown,
     Lock,
-    UEFIReboot
+    UEFIReboot,
+    WakeOnLan
 }

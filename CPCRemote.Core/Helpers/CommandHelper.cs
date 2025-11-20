@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
@@ -18,8 +20,10 @@ using CPCRemote.Core.Models;
 /// Provides immutable command metadata as well as the concrete implementations that execute each power action.
 /// </summary>
 [SupportedOSPlatform("windows")]
-public sealed partial class CommandHelper : ICommandCatalog, ICommandExecutor
+public sealed partial class CommandHelper(WolOptions wolOptions) : ICommandCatalog, ICommandExecutor
 {
+    private readonly WolOptions _wolOptions = wolOptions;
+
     private static readonly TrayCommand[] SeedCommands =
     [
         new(TrayCommandType.Restart, "Restart"),
@@ -27,7 +31,8 @@ public sealed partial class CommandHelper : ICommandCatalog, ICommandExecutor
         new(TrayCommandType.Shutdown, "Shutdown"),
         new(TrayCommandType.ForceShutdown, "Force Shutdown"),
         new(TrayCommandType.Lock, "Lock"),
-        new(TrayCommandType.UEFIReboot, "UEFI Reboot")
+        new(TrayCommandType.UEFIReboot, "UEFI Reboot"),
+        new(TrayCommandType.WakeOnLan, "Wake on LAN")
     ];
 
     private static readonly IReadOnlyList<TrayCommand> Catalog = new ReadOnlyCollection<TrayCommand>(SeedCommands);
@@ -65,6 +70,11 @@ public sealed partial class CommandHelper : ICommandCatalog, ICommandExecutor
             return type;
         }
 
+        if (Enum.TryParse(commandName, true, out TrayCommandType enumResult) && Enum.IsDefined(enumResult))
+        {
+            return enumResult;
+        }
+
         return null;
     }
 
@@ -95,10 +105,9 @@ public sealed partial class CommandHelper : ICommandCatalog, ICommandExecutor
     }
 
     /// <inheritdoc />
-    public Task RunCommandAsync(TrayCommandType commandType, CancellationToken cancellationToken)
+    public async Task RunCommandAsync(TrayCommandType commandType, CancellationToken cancellationToken)
     {
-        ExecuteCommandInternal(commandType, cancellationToken);
-        return Task.CompletedTask;
+        await ExecuteCommandInternalAsync(commandType, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -120,7 +129,7 @@ public sealed partial class CommandHelper : ICommandCatalog, ICommandExecutor
         }
     }
 
-    private static void ExecuteCommandInternal(TrayCommandType commandType, CancellationToken cancellationToken)
+    private async Task ExecuteCommandInternalAsync(TrayCommandType commandType, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -150,6 +159,9 @@ public sealed partial class CommandHelper : ICommandCatalog, ICommandExecutor
                     break;
                 case TrayCommandType.UEFIReboot:
                     ExecuteShutdownCommand("/r /fw /t 0", commandType, cancellationToken);
+                    break;
+                case TrayCommandType.WakeOnLan:
+                    await SendWakeOnLanAsync(commandType, cancellationToken).ConfigureAwait(false);
                     break;
                 default:
                     throw new InvalidOperationException($"Unknown command type: {commandType}");
@@ -208,5 +220,46 @@ public sealed partial class CommandHelper : ICommandCatalog, ICommandExecutor
         {
             throw new InvalidOperationException($"Failed to lock workstation for command '{commandType}'.", ex);
         }
+    }
+
+    private async Task SendWakeOnLanAsync(TrayCommandType commandType, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(_wolOptions.MacAddress))
+        {
+             throw new InvalidOperationException("MAC address is not configured for Wake-on-LAN.");
+        }
+
+        // Parse MAC address
+        string mac = _wolOptions.MacAddress.Replace(":", "").Replace("-", "");
+        if (mac.Length != 12)
+        {
+             throw new InvalidOperationException("Invalid MAC address format.");
+        }
+
+        byte[] macBytes = new byte[6];
+        for (int i = 0; i < 6; i++)
+        {
+            macBytes[i] = Convert.ToByte(mac.Substring(i * 2, 2), 16);
+        }
+
+        // Construct magic packet: 6x 0xFF followed by 16x MAC address
+        byte[] packet = new byte[6 + 16 * 6];
+        for (int i = 0; i < 6; i++)
+        {
+            packet[i] = 0xFF;
+        }
+
+        for (int i = 0; i < 16; i++)
+        {
+            Array.Copy(macBytes, 0, packet, 6 + i * 6, 6);
+        }
+
+        using UdpClient client = new();
+        client.EnableBroadcast = true;
+        
+        IPAddress broadcastIp = IPAddress.Parse(_wolOptions.BroadcastAddress);
+        IPEndPoint endPoint = new(broadcastIp, _wolOptions.Port);
+
+        await client.SendAsync(packet, packet.Length, endPoint).ConfigureAwait(false);
     }
 }

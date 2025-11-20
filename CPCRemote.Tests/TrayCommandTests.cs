@@ -23,7 +23,8 @@ public class TrayCommandTests
     [SetUp]
     public void Setup()
     {
-        CommandHelper helper = new();
+        WolOptions options = new();
+        CommandHelper helper = new(options);
         _commandCatalog = helper;
     }
 
@@ -34,6 +35,7 @@ public class TrayCommandTests
     [TestCase(TrayCommandType.ForceShutdown, "Force Shutdown")]
     [TestCase(TrayCommandType.Lock, "Lock")]
     [TestCase(TrayCommandType.UEFIReboot, "UEFI Reboot")]
+    [TestCase(TrayCommandType.WakeOnLan, "Wake on LAN")]
     public void GetText_KnownCommandType_ReturnsDisplayName(TrayCommandType commandType, string expectedText)
     {
         string? actual = _commandCatalog.GetText(commandType);
@@ -55,6 +57,8 @@ public class TrayCommandTests
     [TestCase("Force Shutdown", TrayCommandType.ForceShutdown)]
     [TestCase("Lock", TrayCommandType.Lock)]
     [TestCase("UEFI Reboot", TrayCommandType.UEFIReboot)]
+    [TestCase("Wake on LAN", TrayCommandType.WakeOnLan)]
+    [TestCase("WakeOnLan", TrayCommandType.WakeOnLan)] // Verify slug fallback
     public void GetCommandType_KnownName_ReturnsCommand(string commandName, TrayCommandType expected)
     {
         TrayCommandType? actual = _commandCatalog.GetCommandType(commandName);
@@ -77,7 +81,7 @@ public class TrayCommandTests
         IReadOnlyList<TrayCommand> commands = _commandCatalog.Commands;
 
         Assert.That(commands, Is.Not.Null);
-        Assert.That(commands.Count, Is.EqualTo(6));
+        Assert.That(commands.Count, Is.EqualTo(7));
 
         Assert.Multiple(() =>
         {
@@ -87,6 +91,7 @@ public class TrayCommandTests
             Assert.That(commands.Any(c => c.CommandType == TrayCommandType.ForceShutdown && c.Name == "Force Shutdown"));
             Assert.That(commands.Any(c => c.CommandType == TrayCommandType.Lock && c.Name == "Lock"));
             Assert.That(commands.Any(c => c.CommandType == TrayCommandType.UEFIReboot && c.Name == "UEFI Reboot"));
+            Assert.That(commands.Any(c => c.CommandType == TrayCommandType.WakeOnLan && c.Name == "Wake on LAN"));
         });
     }
 }

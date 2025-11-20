@@ -8,6 +8,8 @@ using System;
 using System.Net.Http;
 using System.ServiceProcess;
 using System.Threading.Tasks;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace CPCRemote.UI.ViewModels
 {
@@ -62,6 +64,20 @@ namespace CPCRemote.UI.ViewModels
 
         [ObservableProperty]
         public partial bool IsSafetyLockEnabled { get; set; }
+
+        private bool _isShutdownEnabled;
+        public bool IsShutdownEnabled
+        {
+            get => _isShutdownEnabled;
+            set
+            {
+                if (_isShutdownEnabled != value)
+                {
+                    _isShutdownEnabled = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
         public ServiceManagementViewModel(ILogger<ServiceManagementViewModel> logger, SettingsService settingsService)
         {
@@ -703,5 +719,6 @@ namespace CPCRemote.UI.ViewModels
                 _logger.LogError(ex, "Ping test failed for {Url}", url);
             }
         }
+
     }
 }

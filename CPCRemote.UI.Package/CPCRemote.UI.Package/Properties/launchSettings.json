@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "CPCRemote.UI.Package": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  },
+  "MsixPackage": {
+    "commandName": "MsixPackage",
+    "nativeDebugging": true
+  }
+}

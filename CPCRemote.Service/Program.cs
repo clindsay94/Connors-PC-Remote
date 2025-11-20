@@ -27,6 +27,11 @@ builder.Services.AddOptions<RsmOptions>()
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
+// Bind WOL options
+builder.Services.Configure<CPCRemote.Core.Models.WolOptions>(builder.Configuration.GetSection("wol"));
+var wolOptions = builder.Configuration.GetSection("wol").Get<CPCRemote.Core.Models.WolOptions>() ?? new CPCRemote.Core.Models.WolOptions();
+builder.Services.AddSingleton(wolOptions);
+
 // Register shared command helper (executes power actions locally on the service
 // machine)
 // Perform a runtime platform check to avoid registering Windows-only services
