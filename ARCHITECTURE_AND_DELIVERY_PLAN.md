@@ -101,6 +101,9 @@ This plan keeps the ubiquitous language stable, ensures aggregates own their inv
 
 - [x] **Task 1 · Repair XAML + Introduce MVVM**
   - Remove corrupted `.xaml.corrupted` file; refactor `ServiceManagementPage` into View + ViewModel (DI via `AppHostBuilder`).
+- [x] **Task 1.5 · QuickActionsPage MVVM Refactor**
+  - Refactor `QuickActionsPage` into View + ViewModel using `CommunityToolkit.Mvvm`.
+  - Implement `RelayCommand` for power actions and inject `SettingsService`.
 - [x] **Task 2 · Service Management Enhancements**
   - Provide progress feedback and cancellation for long-running operations (install/uninstall/reserve URL) using `Task` + `CancellationTokenSource`.
   - Persist configuration presets (IP, port, secret) via `ApplicationData` or JSON file co-located with UI.
@@ -185,6 +188,11 @@ With these steps, Connor's PC Remote will stay aligned with modern C#/.NET 10 an
 - _2025-11-16 – GitHub Copilot (GPT-5.1-Codex Preview):_ Completed Phase 1 Task 1 by consolidating the command catalog into `CommandHelper`, adding `ICommandCatalog`/`ICommandExecutor`, and updating UI/service/tests.
 - _2025-11-16 – GitHub Copilot (GPT-5.1-Codex Preview):_ Completed Phase 1 Task 2 by introducing async command execution, propagating cancellation through `HostHelper` and the service worker, and extending tests.
 - _2025-11-18 – GitHub Copilot (GPT-5.1-Codex Preview):_ Added Phase 1 Task 5 to track removal of built-in HTTPS binding, updated documentation to emphasize HTTP-only hosting, and aligned packaging/testing guidance with the new posture.
+- _2025-11-21 – GitHub Copilot (Gemini 3 Pro Preview):_ Fixed `EEMessageException` in `CommandHelper` by replacing `PostMessage` with `SendMessageTimeout` for the "Turn Screen Off" command.
+- _2025-11-21 – GitHub Copilot (Gemini 3 Pro Preview):_ Fixed `System.IO.IOException` in `Worker.cs` by adding robust error handling around `HttpListener.GetContextAsync` and request processing to prevent service crashes on socket aborts.
+- _2025-11-21 – GitHub Copilot (Gemini 3 Pro Preview):_ Fixed UI state issue where "Start Service" button remained disabled after installation by adding `[NotifyCanExecuteChangedFor]` attributes to `ServiceManagementViewModel`.
+- _2025-11-21 – GitHub Copilot (Gemini 3 Pro Preview):_ Enhanced `Worker.cs` logging to provide specific reasons for authorization failures (missing header vs invalid token) to aid debugging.
+- _2025-11-21 – GitHub Copilot (Gemini 3 Pro Preview):_ Fixed MSB3270 architecture mismatch by updating solution configuration to force x64 build for CPCRemote.UI.Package.
 
 ---
 

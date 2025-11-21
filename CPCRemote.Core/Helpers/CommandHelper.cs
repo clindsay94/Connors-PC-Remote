@@ -41,8 +41,15 @@ public sealed partial class CommandHelper(WolOptions wolOptions) : ICommandCatal
     private static readonly IReadOnlyDictionary<TrayCommandType, string> CommandTextByType =
         SeedCommands.ToDictionary(static c => c.CommandType, static c => c.Name);
 
-    [LibraryImport("user32.dll")]
-    private static partial IntPtr SendMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+    [LibraryImport("user32.dll", EntryPoint = "SendMessageTimeoutW")]
+    private static partial IntPtr SendMessageTimeout(
+        IntPtr hWnd,
+        uint Msg,
+        IntPtr wParam,
+        IntPtr lParam,
+        uint fuFlags,
+        uint uTimeout,
+        out IntPtr lpdwResult);
 
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -197,11 +204,16 @@ public sealed partial class CommandHelper(WolOptions wolOptions) : ICommandCatal
 
         try
         {
-            _ = SendMessage((IntPtr)0xffff, 0x0112, (IntPtr)0xf170, (IntPtr)0x0002);
+            // Use SendMessageTimeout to prevent blocking indefinitely and avoid EEMessageException in Session 0
+            // HWND_BROADCAST = 0xffff, WM_SYSCOMMAND = 0x0112, SC_MONITORPOWER = 0xf170, PowerOff = 2
+            // SMTO_ABORTIFHUNG = 0x0002
+            const uint SMTO_ABORTIFHUNG = 0x0002;
+            SendMessageTimeout((IntPtr)0xffff, 0x0112, (IntPtr)0xf170, (IntPtr)0x0002, SMTO_ABORTIFHUNG, 1000, out _);
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException($"Failed to turn screen off for command '{commandType}'.", ex);
+            // Swallow exceptions here to prevent service crashes for non-critical UI operations
+            Debug.WriteLine($"Failed to turn screen off for command '{commandType}': {ex}");
         }
     }
 

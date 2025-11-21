@@ -106,9 +106,9 @@ namespace CPCRemote.Service
                             if (_logger.IsEnabled(LogLevel.Information))
                             {
                                 _logger.LogInformation(
-                                    "Listening on {Prefix} (secret configured: {SecretConfigured})",
+                                    "Listening on {Prefix} (Secret protection: {SecretStatus})",
                                     prefix,
-                                    !string.IsNullOrEmpty(secret));
+                                    !string.IsNullOrEmpty(secret) ? "ENABLED" : "DISABLED");
                             }
 
                             _retryAttempts = 0;
@@ -180,6 +180,16 @@ namespace CPCRemote.Service
                     {
                         break;
                     }
+                    catch (System.IO.IOException)
+                    {
+                        // Transport connection aborted or reset
+                        continue;
+                    }
+                    catch (System.Net.Sockets.SocketException)
+                    {
+                        // Socket error
+                        continue;
+                    }
                     catch (Exception ex) when (stoppingToken.IsCancellationRequested)
                     {
                         if (_logger.IsEnabled(LogLevel.Debug))
@@ -189,112 +199,188 @@ namespace CPCRemote.Service
 
                         break;
                     }
+                    catch (Exception ex)
+                    {
+                        if (_logger.IsEnabled(LogLevel.Warning))
+                        {
+                            _logger.LogWarning(ex, "Unexpected error accepting HTTP context.");
+                        }
+                        // Prevent tight loop on persistent errors
+                        await Task.Delay(100, stoppingToken);
+                        continue;
+                    }
 
                     if (context is null)
                     {
                         continue;
                     }
 
-                    using (_logger.BeginScope(new Dictionary<string, object> { ["RemoteEndPoint"] = context.Request.RemoteEndPoint }))
+                    try
                     {
-                        HttpListenerRequest httpRequest = context.Request;
-                        HttpListenerResponse response = context.Response;
-
-                        bool authorized = string.IsNullOrEmpty(secret);
-                        if (!authorized)
+                        // Safely get RemoteEndPoint as it might throw if connection is closed
+                        IPEndPoint? remoteEndPoint = null;
+                        try 
+                        { 
+                            remoteEndPoint = context.Request.RemoteEndPoint; 
+                        } 
+                        catch (Exception ex)
                         {
-                            string? authHeader = httpRequest.Headers["Authorization"];
-                            if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                            if (_logger.IsEnabled(LogLevel.Debug))
                             {
-                                string token = authHeader[7..];
-                                authorized = string.Equals(token, secret, StringComparison.Ordinal);
+                                _logger.LogDebug(ex, "Could not retrieve RemoteEndPoint.");
                             }
                         }
 
-                        if (!authorized)
+                        using (_logger.BeginScope(new Dictionary<string, object> { ["RemoteEndPoint"] = remoteEndPoint ?? (object)"Unknown" }))
                         {
-                            IPAddress? remoteIp = httpRequest.RemoteEndPoint?.Address;
-                            if (remoteIp is not null)
-                            {
-                                if (!_unauthorizedLogTimestamps.TryGetValue(remoteIp, out DateTime lastLogTime) ||
-                                    (DateTime.UtcNow - lastLogTime).TotalSeconds > UnauthorizedLogThrottlingSeconds)
-                                {
-                                    if (_logger.IsEnabled(LogLevel.Warning))
-                                    {
-                                        _logger.LogWarning("Unauthorized request from {RemoteEndPoint}", httpRequest.RemoteEndPoint);
-                                    }
+                            HttpListenerRequest httpRequest = context.Request;
+                            HttpListenerResponse response = context.Response;
 
-                                    _unauthorizedLogTimestamps[remoteIp] = DateTime.UtcNow;
+                            string[] urlParts = httpRequest.Url != null
+                                ? httpRequest.Url.AbsolutePath.Split(SlashSeparator, StringSplitOptions.RemoveEmptyEntries)
+                                : Array.Empty<string>();
+
+                            bool authorized = string.IsNullOrEmpty(secret);
+                            string authFailureReason = "Unknown";
+
+                            // 1. Try Header Auth
+                            if (!authorized)
+                            {
+                                string? authHeader = httpRequest.Headers["Authorization"];
+                                if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    string token = authHeader[7..];
+                                    if (string.Equals(token, secret, StringComparison.Ordinal))
+                                    {
+                                        authorized = true;
+                                    }
+                                    else
+                                    {
+                                        authFailureReason = "Invalid token";
+                                    }
+                                }
+                                else
+                                {
+                                    authFailureReason = string.IsNullOrEmpty(authHeader) ? "Missing Authorization header" : "Invalid Authorization scheme";
                                 }
                             }
 
-                            response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                            response.Headers.Add("WWW-Authenticate", "Bearer");
-                            response.Close();
-                            continue;
-                        }
+                            string commandStr = string.Empty;
 
-                        string[] urlParts = httpRequest.Url != null
-                            ? httpRequest.Url.AbsolutePath.Split(SlashSeparator, StringSplitOptions.RemoveEmptyEntries)
-                            : Array.Empty<string>();
-
-                        string commandStr = urlParts.Length > 0 ? urlParts[0] : string.Empty;
-
-                        if (string.Equals(commandStr, "ping", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (_logger.IsEnabled(LogLevel.Information))
+                            // 2. Try URL Auth if Header failed
+                            if (!authorized && urlParts.Length >= 2)
                             {
-                                _logger.LogInformation("Ping received, responding with OK.");
+                                if (string.Equals(urlParts[0], secret, StringComparison.Ordinal))
+                                {
+                                    authorized = true;
+                                    commandStr = urlParts[1];
+                                }
+                                else if (authFailureReason == "Missing Authorization header")
+                                {
+                                     authFailureReason += " and invalid URL secret";
+                                }
+                            }
+                            else if (authorized)
+                            {
+                                // Header auth worked (or no secret), so command is the first part
+                                commandStr = urlParts.Length > 0 ? urlParts[0] : string.Empty;
                             }
 
-                            response.StatusCode = (int)HttpStatusCode.OK;
-                            response.Close();
-                            continue;
-                        }
-
-                        TrayCommandType? command = _commandCatalog.GetCommandType(commandStr);
-                        if (command.HasValue)
-                        {
-                            if (_logger.IsEnabled(LogLevel.Information))
+                            if (!authorized)
                             {
-                                _logger.LogInformation("Executing command: {Command}", command.Value);
+                                IPAddress? remoteIp = remoteEndPoint?.Address;
+                                if (remoteIp is not null)
+                                {
+                                    if (!_unauthorizedLogTimestamps.TryGetValue(remoteIp, out DateTime lastLogTime) ||
+                                        (DateTime.UtcNow - lastLogTime).TotalSeconds > UnauthorizedLogThrottlingSeconds)
+                                    {
+                                        if (_logger.IsEnabled(LogLevel.Warning))
+                                        {
+                                            _logger.LogWarning("Unauthorized request from {RemoteEndPoint}. Reason: {Reason}", remoteEndPoint, authFailureReason);
+                                        }
+
+                                        _unauthorizedLogTimestamps[remoteIp] = DateTime.UtcNow;
+                                    }
+                                }
+
+                                response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                                response.Headers.Add("WWW-Authenticate", "Bearer");
+                                response.Close();
+                                continue;
                             }
 
-                            try
-                            {
-                                await _commandExecutor.RunCommandAsync(command.Value, stoppingToken).ConfigureAwait(false);
-                                response.StatusCode = (int)HttpStatusCode.OK;
-                            }
-                            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                            if (string.Equals(commandStr, "ping", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (_logger.IsEnabled(LogLevel.Information))
                                 {
-                                    _logger.LogInformation("Command execution cancelled while shutting down.");
+                                    _logger.LogInformation("Ping received, responding with OK.");
                                 }
 
-                                response.StatusCode = (int)HttpStatusCode.ServiceUnavailable;
+                                response.StatusCode = (int)HttpStatusCode.OK;
+                                response.Close();
+                                continue;
                             }
-                            catch (Exception ex)
+
+                            TrayCommandType? command = _commandCatalog.GetCommandType(commandStr);
+                            if (command.HasValue)
                             {
-                                if (_logger.IsEnabled(LogLevel.Error))
+                                if (_logger.IsEnabled(LogLevel.Information))
                                 {
-                                    _logger.LogError(ex, "Error executing command {Command}", command.Value);
+                                    _logger.LogInformation("Executing command: {Command}", command.Value);
                                 }
 
-                                response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                                try
+                                {
+                                    await _commandExecutor.RunCommandAsync(command.Value, stoppingToken).ConfigureAwait(false);
+                                    response.StatusCode = (int)HttpStatusCode.OK;
+                                }
+                                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                                {
+                                    if (_logger.IsEnabled(LogLevel.Information))
+                                    {
+                                        _logger.LogInformation("Command execution cancelled while shutting down.");
+                                    }
+
+                                    response.StatusCode = (int)HttpStatusCode.ServiceUnavailable;
+                                }
+                                catch (Exception ex)
+                                {
+                                    if (_logger.IsEnabled(LogLevel.Error))
+                                    {
+                                        _logger.LogError(ex, "Error executing command {Command}", command.Value);
+                                    }
+
+                                    response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                                }
                             }
-                        }
-                        else
-                        {
-                            if (_logger.IsEnabled(LogLevel.Warning))
+                            else
                             {
-                                _logger.LogWarning("Invalid command: {CommandStr}", commandStr);
+                                if (_logger.IsEnabled(LogLevel.Warning))
+                                {
+                                    _logger.LogWarning("Invalid command: {CommandStr}", commandStr);
+                                }
+
+                                response.StatusCode = (int)HttpStatusCode.BadRequest;
                             }
 
-                            response.StatusCode = (int)HttpStatusCode.BadRequest;
+                            response.Close();
                         }
-
-                        response.Close();
+                    }
+                    catch (Exception ex)
+                    {
+                        if (_logger.IsEnabled(LogLevel.Error))
+                        {
+                            _logger.LogError(ex, "Error processing request from {RemoteEndPoint}", context.Request.RemoteEndPoint);
+                        }
+                        
+                        try
+                        {
+                            context.Response.Close();
+                        }
+                        catch
+                        {
+                            // Ignore errors when closing response after an exception
+                        }
                     }
                 }
             }

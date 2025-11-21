@@ -4,31 +4,122 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:local="using:CPCRemote.UI"
+    xmlns:converters="using:CPCRemote.UI.Converters"
     mc:Ignorable="d">
 
-    <StackPanel Spacing="20" Padding="24">
-        <TextBlock Text="Service Management" Style="{StaticResource TitleTextBlockStyle}"/>
-        
-        <Border CornerRadius="8" BorderThickness="1" Padding="16">
-            <Grid ColumnDefinitions="Auto,*">
-                <FontIcon x:Name="StatusIcon" Glyph="&#xE7E7;" FontSize="32" Margin="0,0,16,0"/>
-                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Text="Service Status"/>
-                    <TextBlock x:Name="StatusText" Text="Checking..."/>
+    <Page.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converters:BoolToGlyphConverter x:Key="BoolToGlyphConverter"/>
+        <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
+    </Page.Resources>
+
+    <ScrollViewer>
+        <StackPanel Spacing="20" Padding="24">
+            <TextBlock Text="Service Management" Style="{StaticResource TitleTextBlockStyle}"/>
+
+            <!-- InfoBar for status messages -->
+            <InfoBar IsOpen="{x:Bind ViewModel.IsInfoBarOpen, Mode=OneWay}"
+                     Severity="{x:Bind ViewModel.InfoBarSeverity, Mode=OneWay}"
+                     Message="{x:Bind ViewModel.InfoBarMessage, Mode=OneWay}"
+                     IsClosable="False" />
+
+            <!-- Service Status Card -->
+            <Border CornerRadius="8" BorderThickness="1" BorderBrush="{ThemeResource SurfaceStrokeColorDefaultBrush}" Padding="16">
+                <Grid ColumnDefinitions="Auto,*">
+                    <FontIcon Glyph="{x:Bind ViewModel.IsServiceRunning, Mode=OneWay, Converter={StaticResource BoolToGlyphConverter}}" 
+                              Foreground="{x:Bind ViewModel.IsServiceRunning, Mode=OneWay, Converter={StaticResource BoolToColorConverter}}"
+                              FontSize="32" Margin="0,0,16,0"/>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Service Status" Style="{StaticResource CaptionTextBlockStyle}"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="{x:Bind ViewModel.ServiceStatusText, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                            <TextBlock Text="|" Style="{StaticResource SubtitleTextBlockStyle}" Opacity="0.5"/>
+                            <TextBlock Text="{x:Bind ViewModel.ServiceInstalledText, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" Opacity="0.7"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <Button Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Command="{x:Bind ViewModel.RefreshStatusCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE72C;" FontSize="14"/>
+                            <TextBlock Text="Refresh"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- Configuration Section -->
+            <Expander Header="Configuration" IsExpanded="True" HorizontalAlignment="Stretch">
+                <StackPanel Spacing="16" Padding="0,16,0,0">
+                    <TextBox Header="IP Address" Text="{x:Bind ViewModel.IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="localhost"/>
+                    <NumberBox Header="Port" Value="{x:Bind ViewModel.Port, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SpinButtonPlacementMode="Inline" Minimum="1" Maximum="65535"/>
+                    <PasswordBox Header="Secret (Optional)" Password="{x:Bind ViewModel.Secret, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Leave empty for no auth"/>
+                    
+                    <ToggleSwitch Header="Safety Lock" 
+                                  IsOn="{x:Bind ViewModel.IsSafetyLockEnabled, Mode=TwoWay}"
+                                  OffContent="Disabled" OnContent="Enabled"/>
+                    <TextBlock Text="Require confirmation for critical actions" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" Margin="0,-12,0,0"/>
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Command="{x:Bind ViewModel.SaveConfigurationCommand}" Style="{StaticResource AccentButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE74E;" FontSize="14"/>
+                                <TextBlock Text="Save Settings"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{x:Bind ViewModel.LoadConfigurationCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE777;" FontSize="14"/>
+                                <TextBlock Text="Reload"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                    
+                    <TextBlock Text="Note: Saving settings will update both the UI and the Service configuration (if accessible)." 
+                               Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.6" TextWrapping="Wrap"/>
                 </StackPanel>
-            </Grid>
-        </Border>
+            </Expander>
 
-        <StackPanel Spacing="12">
-            <TextBlock Text="Actions" Style="{StaticResource SubtitleTextBlockStyle}"/>
+            <!-- Service Actions -->
+            <TextBlock Text="Service Control" Style="{StaticResource SubtitleTextBlockStyle}"/>
+
+            <!-- Install Path Input (Only visible when not installed) -->
+            <StackPanel Visibility="{x:Bind ViewModel.IsServiceInstalled, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}" Spacing="8">
+                <TextBox Header="Service Executable Path" 
+                         Text="{x:Bind ViewModel.ServiceExecutablePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                         PlaceholderText="Path to CPCRemote.Service.exe"/>
+            </StackPanel>
+
             <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
-                <Button x:Name="InstallBtn" Content="Install" Click="InstallBtn_Click" HorizontalAlignment="Stretch"/>
-                <Button x:Name="UninstallBtn" Content="Uninstall" Click="UninstallBtn_Click" HorizontalAlignment="Stretch"/>
-                <Button x:Name="StartBtn" Content="Start" Click="StartBtn_Click" HorizontalAlignment="Stretch"/>
-                <Button x:Name="StopBtn" Content="Stop" Click="StopBtn_Click" HorizontalAlignment="Stretch"/>
+                <Button Grid.Column="0" Content="Install" Command="{x:Bind ViewModel.InstallServiceCommand}" 
+                        CommandParameter="{x:Bind ViewModel.ServiceExecutablePath, Mode=OneWay}" 
+                        Visibility="{x:Bind ViewModel.IsServiceInstalled, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}"
+                        HorizontalAlignment="Stretch"/>
+                <Button Grid.Column="0" Content="Uninstall" Command="{x:Bind ViewModel.UninstallServiceCommand}" 
+                        Visibility="{x:Bind ViewModel.IsServiceInstalled, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                        HorizontalAlignment="Stretch"/>
+                <Button Grid.Column="1" Content="Start" Command="{x:Bind ViewModel.StartServiceCommand}" HorizontalAlignment="Stretch"/>
+                <Button Grid.Column="2" Content="Stop" Command="{x:Bind ViewModel.StopServiceCommand}" HorizontalAlignment="Stretch"/>
+                <Button Grid.Column="3" Content="Restart" Command="{x:Bind ViewModel.RestartServiceCommand}" HorizontalAlignment="Stretch"/>
             </Grid>
-        </StackPanel>
 
-        <TextBox x:Name="OutputLog" Height="150" IsReadOnly="True" AcceptsReturn="True" FontFamily="Consolas" FontSize="12"/>
-    </StackPanel>
+            <!-- Testing -->
+            <TextBlock Text="Diagnostics" Style="{StaticResource SubtitleTextBlockStyle}"/>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <Button Command="{x:Bind ViewModel.TestPingCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE9D2;" FontSize="14"/>
+                        <TextBlock Text="Test Connection (Ping)"/>
+                    </StackPanel>
+                </Button>
+                <TextBlock VerticalAlignment="Center" Opacity="0.7">
+                    <Run Text="Target: "/>
+                    <Run Text="{x:Bind ViewModel.PreviewUrl, Mode=OneWay}"/>
+                </TextBlock>
+            </StackPanel>
+
+            <!-- Progress Overlay -->
+            <ProgressBar IsIndeterminate="True" Visibility="{x:Bind ViewModel.IsBusy, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"/>
+        </StackPanel>
+    </ScrollViewer>
 </Page>

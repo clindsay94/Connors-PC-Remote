@@ -42,15 +42,18 @@ namespace CPCRemote.UI
         {
             try
             {
-                // 3. Configure Services NOW
-                Services = ConfigureServices();
-
-                // 4. Create the Window
+                // 3. Create the Window (without navigation)
                 m_window = new MainWindow();
                 CurrentMainWindow = m_window as MainWindow;
 
-                // 5. Activate
+                // 4. Activate the window FIRST
                 m_window.Activate();
+
+                // 5. Configure Services AFTER window activation (ApplicationData.Current now available)
+                Services = ConfigureServices();
+
+                // 6. Perform initial navigation after services are ready
+                CurrentMainWindow?.PerformInitialNavigation();
 
                 // Cleanup on exit
                 m_window.Closed += (s, e) =>
@@ -71,9 +74,17 @@ namespace CPCRemote.UI
         {
             var services = new ServiceCollection();
 
+            // Logging
+            services.AddLogging(builder =>
+            {
+                builder.AddDebug();
+                builder.SetMinimumLevel(LogLevel.Debug);
+            });
+
             // ViewModels
             services.AddSingleton<SettingsService>();
             services.AddSingleton<ServiceManagementViewModel>();
+            services.AddTransient<QuickActionsViewModel>();
 
             // Core Services
             services.AddSingleton<CPCRemote.Core.Helpers.CommandHelper>();

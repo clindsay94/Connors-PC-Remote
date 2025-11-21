@@ -10,6 +10,7 @@ using System.ServiceProcess;
 using System.Threading.Tasks;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Linq;
 
 namespace CPCRemote.UI.ViewModels
 {
@@ -34,9 +35,15 @@ namespace CPCRemote.UI.ViewModels
         public partial string? ServiceInstalledText { get; set; }
 
         [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(StartServiceCommand))]
+        [NotifyCanExecuteChangedFor(nameof(StopServiceCommand))]
+        [NotifyCanExecuteChangedFor(nameof(RestartServiceCommand))]
         public partial bool IsServiceInstalled { get; set; }
 
         [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(StartServiceCommand))]
+        [NotifyCanExecuteChangedFor(nameof(StopServiceCommand))]
+        [NotifyCanExecuteChangedFor(nameof(RestartServiceCommand))]
         public partial bool IsServiceRunning { get; set; }
 
         [ObservableProperty]
@@ -65,6 +72,9 @@ namespace CPCRemote.UI.ViewModels
         [ObservableProperty]
         public partial bool IsSafetyLockEnabled { get; set; }
 
+        [ObservableProperty]
+        public partial string? ServiceExecutablePath { get; set; }
+
         private bool _isShutdownEnabled;
         public bool IsShutdownEnabled
         {
@@ -86,8 +96,10 @@ namespace CPCRemote.UI.ViewModels
             ServiceStatusText = "Unknown";
             ServiceInstalledText = "Unknown";
             IsSafetyLockEnabled = _settingsService.Get<bool>(nameof(IsSafetyLockEnabled), true);
+            ServiceExecutablePath = FindServiceExecutable();
 
             LoadConfigurationCommand.Execute(null);
+            RefreshStatusCommand.Execute(null);
         }
 
         [RelayCommand]
@@ -147,9 +159,23 @@ namespace CPCRemote.UI.ViewModels
                                 jsonNode["rsm"] = rsmNode;
                             }
 
-                            rsmNode["IpAddress"] = this.IpAddress;
-                            rsmNode["Port"] = this.Port;
-                            rsmNode["Secret"] = this.Secret;
+                            // Helper to update or add property case-insensitively
+                            void UpdateProperty(System.Text.Json.Nodes.JsonObject node, string propertyName, System.Text.Json.Nodes.JsonNode? value)
+                            {
+                                var existingKey = node.Select(x => x.Key).FirstOrDefault(k => k.Equals(propertyName, StringComparison.OrdinalIgnoreCase));
+                                if (existingKey != null)
+                                {
+                                    node[existingKey] = value;
+                                }
+                                else
+                                {
+                                    node[propertyName] = value;
+                                }
+                            }
+
+                            UpdateProperty(rsmNode, "IpAddress", System.Text.Json.Nodes.JsonValue.Create(this.IpAddress));
+                            UpdateProperty(rsmNode, "Port", System.Text.Json.Nodes.JsonValue.Create(this.Port));
+                            UpdateProperty(rsmNode, "Secret", System.Text.Json.Nodes.JsonValue.Create(this.Secret));
 
                             var options = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
                             await System.IO.File.WriteAllTextAsync(serviceConfigPath, jsonNode.ToJsonString(options));
@@ -211,13 +237,18 @@ namespace CPCRemote.UI.ViewModels
         {
             try
             {
-                using var service = new ServiceController(ServiceName);
-                string statusText = service.Status.ToString();
-                return (true, statusText);
-            }
-            catch (InvalidOperationException)
-            {
+                using var service = GetServiceControllerSafe();
+                if (service != null)
+                {
+                    return (true, service.Status.ToString());
+                }
+                
                 return (false, "Not Installed");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to refresh service status.");
+                return (false, "Error");
             }
         }
 
@@ -248,14 +279,21 @@ namespace CPCRemote.UI.ViewModels
                 await Task.Run(() =>
                 {
                     _logger.LogInformation("Service restarted successfully from the UI.");
-                    using var service = new ServiceController(ServiceName);
-                    if (service.Status == ServiceControllerStatus.Running)
+                    using var service = GetServiceControllerSafe();
+                    if (service != null)
                     {
-                        service.Stop();
-                        service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(ServiceOperationTimeout));
+                        if (service.Status == ServiceControllerStatus.Running)
+                        {
+                            service.Stop();
+                            service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(ServiceOperationTimeout));
+                        }
+                        service.Start();
+                        service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(ServiceOperationTimeout));
                     }
-                    service.Start();
-                    service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(ServiceOperationTimeout));
+                    else
+                    {
+                        throw new InvalidOperationException("Service not found.");
+                    }
                 });
 
                 ShowInfoBar("Service restarted successfully.", InfoBarSeverity.Success);
@@ -278,7 +316,8 @@ namespace CPCRemote.UI.ViewModels
             {
                 await Task.Run(() =>
                 {
-                    using var service = new ServiceController(ServiceName);
+                    using var service = GetServiceControllerSafe();
+                    if (service == null) throw new InvalidOperationException("Service not found.");
 
                     switch (command)
                     {
@@ -373,8 +412,8 @@ namespace CPCRemote.UI.ViewModels
                 {
                     try
                     {
-                        using var service = new ServiceController(ServiceName);
-                        if (service.Status == ServiceControllerStatus.Running)
+                        using var service = GetServiceControllerSafe();
+                        if (service != null && service.Status == ServiceControllerStatus.Running)
                         {
                             service.Stop();
                             service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(ServiceOperationTimeout));
@@ -580,8 +619,6 @@ namespace CPCRemote.UI.ViewModels
         {
             try
             {
-                using var service = new ServiceController(ServiceName);
-
                 string exePath = GetServiceExecutablePath();
                 if (!string.IsNullOrEmpty(exePath))
                 {
@@ -623,6 +660,34 @@ namespace CPCRemote.UI.ViewModels
                 }
             }
 
+            return null;
+        }
+
+        private string? FindServiceExecutable()
+        {
+            string? baseDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            if (string.IsNullOrEmpty(baseDir)) return null;
+
+            // Search paths for the service executable
+            string[] searchPaths = new[]
+            {
+                // Copied to ServiceBinaries folder (via csproj)
+                System.IO.Path.Combine(baseDir, "ServiceBinaries", "CPCRemote.Service.exe"),
+                // Published side-by-side
+                System.IO.Path.Combine(baseDir, "CPCRemote.Service.exe"),
+                // Development structure (Debug/Release)
+                System.IO.Path.Combine(baseDir, "..", "..", "..", "..", "CPCRemote.Service", "bin", "Debug", "net10.0", "CPCRemote.Service.exe"),
+                System.IO.Path.Combine(baseDir, "..", "..", "..", "..", "CPCRemote.Service", "bin", "Release", "net10.0", "CPCRemote.Service.exe"),
+                // If running from bin/x64/Debug
+                System.IO.Path.Combine(baseDir, "..", "..", "..", "..", "..", "CPCRemote.Service", "bin", "Debug", "net10.0", "CPCRemote.Service.exe"),
+            };
+
+            foreach (var path in searchPaths)
+            {
+                string fullPath = System.IO.Path.GetFullPath(path);
+                if (System.IO.File.Exists(fullPath)) return fullPath;
+            }
+            
             return null;
         }
 
@@ -717,6 +782,26 @@ namespace CPCRemote.UI.ViewModels
             {
                 ShowInfoBar($"Error: {ex.Message}", InfoBarSeverity.Error);
                 _logger.LogError(ex, "Ping test failed for {Url}", url);
+            }
+        }
+
+        private ServiceController? GetServiceControllerSafe()
+        {
+            try
+            {
+                var services = ServiceController.GetServices();
+                var service = services.FirstOrDefault(s => s.ServiceName == ServiceName);
+
+                foreach (var s in services)
+                {
+                    if (s != service) s.Dispose();
+                }
+
+                return service;
+            }
+            catch
+            {
+                return null;
             }
         }
 

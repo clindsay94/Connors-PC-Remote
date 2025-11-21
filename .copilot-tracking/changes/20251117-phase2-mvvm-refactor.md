@@ -10,6 +10,7 @@
 Completed Phase 1 Task 1 by consolidating the command catalog into `CommandHelper`, introducing dedicated catalog/executor interfaces, updating DI/consumers, and removing the legacy helper implementation. Completed Task 2 by propagating asynchronous command execution across `HostHelper`, the service worker, and accompanying tests so cancellation flows from the Windows service through the OS command runners. Completed Task 3 by enhancing configuration validation using data annotations and `IValidateOptions`. Completed Task 4 by adding structured logging and throttling for unauthorized requests.
 
 Completed Phase 2, Task 1 by refactoring the `ServiceManagementPage` to use the MVVM pattern, improving separation of concerns and testability.
+Completed Phase 2, Task 1.5 by refactoring the `QuickActionsPage` to use the MVVM pattern, introducing `QuickActionsViewModel` and `RelayCommand` for power actions.
 
 ## Changes
 
@@ -23,6 +24,36 @@ Completed Phase 2, Task 1 by refactoring the `ServiceManagementPage` to use the 
 - `CPCRemote.Core/Interfaces/ICommandExecutor.cs` - Added execution abstraction to decouple command invocation from metadata consumers.
 - `CPCRemote.Service/Options/CertificatePathRequiredAttribute.cs` - Added custom validation attribute for certificate path.
 - `CPCRemote.UI/ViewModels/ServiceManagementViewModel.cs` - Added a view model for the `ServiceManagementPage`.
+- `CPCRemote.UI/ViewModels/QuickActionsViewModel.cs` - Added a view model for the `QuickActionsPage`.
+
+### Modified
+
+- `.copilot-tracking/changes/20251116-phase1-foundation-changes.md` - Logged progress and summarized files impacted by Task 1.
+- `ARCHITECTURE_AND_DELIVERY_PLAN.md` - Marked Phase 1 Task 1 complete and recorded the change in the tracking section.
+- `CPCRemote.Core/Helpers/CommandHelper.cs` - Centralized catalog data, implemented new interfaces, and hardened execution logic.
+- `CPCRemote.Core/Models/TrayCommand.cs` - Converted to an immutable record with documentation to back the catalog contract.
+- `CPCRemote.Core/Helpers/HostHelper.cs` - Consumed `ICommandCatalog`/`ICommandExecutor` through DI-friendly abstractions.
+- `CPCRemote.Service/Program.cs` - Registered `CommandHelper` behind the new interfaces for service consumption.
+- `CPCRemote.Service/Worker.cs` - Switched request handling to rely on catalog lookups and executor dispatch.
+- `CPCRemote.UI/QuickActionsPage.xaml.cs` - Removed code-behind logic and connected the view to the view model.
+- `CPCRemote.UI/QuickActionsPage.xaml` - Refactored to use data binding with the new view model.
+- `CPCRemote.Tests/HostHelperTests.cs` - Adapted mocks/assertions to the new abstractions.
+- `CPCRemote.Tests/TrayCommandTests.cs` - Validated catalog behaviors via the new interfaces and immutable command data.
+- `.copilot-tracking/changes/20251116-phase1-foundation-changes.md` - Documented completion of Task 2 and the associated async execution updates.
+- `ARCHITECTURE_AND_DELIVERY_PLAN.md` - Marked Task 2 complete and added the async execution milestone to the change tracking section.
+- `CPCRemote.Core/Helpers/HostHelper.cs` - Rebuilt the helper to parse secrets safely and await `ICommandExecutor.RunCommandAsync` with cooperative cancellation.
+- `CPCRemote.Service/Worker.cs` - Reimplemented the HTTP listener to await async command execution, handle cancellation tokens, and keep the retry logic intact.
+- `CPCRemote.Tests/HostHelperTests.cs` - Updated unit tests to verify `RunCommandAsync` invocation and secret validation behavior.
+- `CPCRemote.Service/Options/RsmOptions.cs` - Decorated with data annotations for validation.
+- `CPCRemote.Service/Options/RsmOptionsValidator.cs` - Simplified validator.
+- `CPCRemote.Service/Program.cs` - Updated to use `.ValidateDataAnnotations()`.
+- `CPCRemote.Service/CPCRemote.Service.csproj` - Added `Microsoft.Extensions.Options.DataAnnotations` package.
+- `CPCRemote.Service/Worker.cs` - Added structured logging and throttling for unauthorized requests.
+- `CPCRemote.UI/ServiceManagementPage.xaml` - Refactored to use data binding with the new view model.
+- `CPCRemote.UI/ServiceManagementPage.xaml.cs` - Cleaned up code-behind.
+- `CPCRemote.UI/App.xaml.cs` - Registered view models for DI.
+- `CPCRemote.UI/CPCRemote.UI.csproj` - Added `CommunityToolkit.Mvvm` and `Microsoft.Extensions.DependencyInjection` packages.
+- `CPCRemote.UI/Services/SettingsService.cs` - Updated to support both packaged (MSIX) and unpackaged (Debug) execution modes.
 
 ### Modified
 
@@ -50,6 +81,9 @@ Completed Phase 2, Task 1 by refactoring the `ServiceManagementPage` to use the 
 - `CPCRemote.UI/Pages/ServiceManagementPage.xaml.cs` - Removed code-behind logic and connected the view to the view model.
 - `CPCRemote.UI/App.xaml.cs` - Registered the `ServiceManagementViewModel` for dependency injection.
 - `CPCRemote.UI/CPCRemote.UI.csproj` - Added `CommunityToolkit.Mvvm` and `Microsoft.Extensions.DependencyInjection` packages.
+- `CPCRemote.UI/QuickActionsPage.xaml` - Refactored to use data binding with the new view model.
+- `CPCRemote.UI/QuickActionsPage.xaml.cs` - Removed code-behind logic and connected the view to the view model.
+- `CPCRemote.UI/App.xaml.cs` - Registered the `QuickActionsViewModel` for dependency injection.
 
 ### Removed
 
@@ -90,7 +124,6 @@ Completed Phase 2, Task 1 by refactoring the `ServiceManagementPage` to use the 
 - `CPCRemote.UI/Pages/ServiceManagementPage.xaml.cs` - Cleaned up code-behind.
 - `CPCRemote.UI/App.xaml.cs` - Registered view model for DI.
 - `CPCRemote.UI/CPCRemote.UI.csproj` - Added new package references.
-
 
 ### Files Removed (2)
 

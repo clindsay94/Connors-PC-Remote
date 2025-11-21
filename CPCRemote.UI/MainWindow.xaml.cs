@@ -11,11 +11,16 @@ namespace CPCRemote.UI
         public MainWindow()
         {
             this.InitializeComponent();
+            // Navigation moved to PerformInitialNavigation() method
+            // Called from App.OnLaunched after window activation and service configuration
+        }
 
-            // Safe Activation
-            this.Activate();
-
-            // Robust Navigation Setup
+        /// <summary>
+        /// Performs the initial navigation after the window is activated and services are configured.
+        /// This ensures ApplicationData.Current is available when services are instantiated.
+        /// </summary>
+        public void PerformInitialNavigation()
+        {
             try
             {
                 // Ensure the page type exists before navigating
@@ -31,7 +36,7 @@ namespace CPCRemote.UI
             }
             catch (Exception ex)
             {
-                // This catches the 0x80070002 if it happens during Page construction
+                // This catches any errors during page construction
                 Debug.WriteLine($"CRITICAL NAV ERROR: {ex}");
 
                 // Optional: Show a dialog or fallback content so the app doesn't just vanish

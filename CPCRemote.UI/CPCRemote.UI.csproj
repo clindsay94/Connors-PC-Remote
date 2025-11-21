@@ -5,12 +5,15 @@
 	<SupportedOSPlatformVersion>10.0.22621.0</SupportedOSPlatformVersion>
 	<OutputType>WinExe</OutputType>
 	<UseWinUI>true</UseWinUI>
-	<WindowsPackageType>MSIX</WindowsPackageType>
-	<AppxManifest>Package.appxmanifest</AppxManifest>
-	<AppxPackageSigningEnabled>true</AppxPackageSigningEnabled>
+	<!-- Disable MSIX packaging for development/debugging -->
+	<WindowsPackageType Condition="'$(Configuration)' == 'Debug'">None</WindowsPackageType>
+	<WindowsPackageType Condition="'$(Configuration)' == 'Release'">MSIX</WindowsPackageType>
+	<AppxManifest Condition="'$(WindowsPackageType)' == 'MSIX'">Package.appxmanifest</AppxManifest>
+	<AppxPackageSigningEnabled Condition="'$(WindowsPackageType)' == 'MSIX'">true</AppxPackageSigningEnabled>
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	<RootNamespace>CPCRemote.UI</RootNamespace>
 	<RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+	<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 	<Configurations>Debug;Release</Configurations>
 	<Platforms>x64</Platforms>
 	<Platform Condition="'$(Platform)' == ''">x64</Platform>

@@ -20,7 +20,7 @@
                 </GridView.ItemContainerStyle>
 
                 <!-- Shutdown -->
-                <Button x:Name="ShutdownBtn" Click="ShutdownBtn_Click" Width="160" Height="120" Padding="0">
+                <Button x:Name="ShutdownBtn" Command="{x:Bind ViewModel.ShutdownCommand}" Width="160" Height="120" Padding="0">
                     <StackPanel Spacing="8" VerticalAlignment="Center">
                         <FontIcon Glyph="&#xE7E8;" FontSize="32"/>
                         <TextBlock Text="Shutdown" HorizontalAlignment="Center" Style="{StaticResource BodyTextBlockStyle}"/>
@@ -28,7 +28,7 @@
                 </Button>
 
                 <!-- Restart -->
-                <Button x:Name="RestartBtn" Click="RestartBtn_Click" Width="160" Height="120" Padding="0">
+                <Button x:Name="RestartBtn" Command="{x:Bind ViewModel.RestartCommand}" Width="160" Height="120" Padding="0">
                     <StackPanel Spacing="8" VerticalAlignment="Center">
                         <FontIcon Glyph="&#xE777;" FontSize="32"/>
                         <TextBlock Text="Restart" HorizontalAlignment="Center" Style="{StaticResource BodyTextBlockStyle}"/>
@@ -36,7 +36,7 @@
                 </Button>
 
                 <!-- Lock -->
-                <Button x:Name="LockBtn" Click="LockBtn_Click" Width="160" Height="120" Padding="0">
+                <Button x:Name="LockBtn" Command="{x:Bind ViewModel.LockCommand}" Width="160" Height="120" Padding="0">
                     <StackPanel Spacing="8" VerticalAlignment="Center">
                         <FontIcon Glyph="&#xE72E;" FontSize="32"/>
                         <TextBlock Text="Lock" HorizontalAlignment="Center" Style="{StaticResource BodyTextBlockStyle}"/>
@@ -44,7 +44,7 @@
                 </Button>
 
                  <!-- Screen Off -->
-                <Button x:Name="ScreenOffBtn" Click="ScreenOffBtn_Click" Width="160" Height="120" Padding="0">
+                <Button x:Name="ScreenOffBtn" Command="{x:Bind ViewModel.TurnScreenOffCommand}" Width="160" Height="120" Padding="0">
                     <StackPanel Spacing="8" VerticalAlignment="Center">
                         <FontIcon Glyph="&#xE7F4;" FontSize="32"/>
                         <TextBlock Text="Screen Off" HorizontalAlignment="Center" Style="{StaticResource BodyTextBlockStyle}"/>
@@ -52,7 +52,7 @@
                 </Button>
                 
                  <!-- Wake on LAN -->
-                <Button x:Name="WolBtn" Click="WolBtn_Click" Width="160" Height="120" Padding="0">
+                <Button x:Name="WolBtn" Command="{x:Bind ViewModel.WakeOnLanCommand}" Width="160" Height="120" Padding="0">
                     <StackPanel Spacing="8" VerticalAlignment="Center">
                         <FontIcon Glyph="&#xE966;" FontSize="32"/>
                         <TextBlock Text="Wake on LAN" HorizontalAlignment="Center" Style="{StaticResource BodyTextBlockStyle}"/>
@@ -62,7 +62,7 @@
             </GridView>
 
             <TextBlock Text="Response Log" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,10,0,0"/>
-            <TextBox x:Name="ResponseLog" Height="150" IsReadOnly="True" AcceptsReturn="True" FontFamily="Consolas" FontSize="12"/>
+            <TextBox x:Name="ResponseLog" Text="{x:Bind ViewModel.ResponseLog, Mode=OneWay}" Height="150" IsReadOnly="True" AcceptsReturn="True" FontFamily="Consolas" FontSize="12"/>
         </StackPanel>
     </ScrollViewer>
 </Page>
