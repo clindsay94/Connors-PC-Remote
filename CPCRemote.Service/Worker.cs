@@ -2,13 +2,16 @@ namespace CPCRemote.Service
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Net;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
 
     using CPCRemote.Core.Enums;
     using CPCRemote.Core.Interfaces;
     using CPCRemote.Service.Options;
+    using CPCRemote.Service.Services;
 
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
@@ -20,11 +23,15 @@ namespace CPCRemote.Service
     public partial class Worker(
         ILogger<Worker> logger,
         IOptionsMonitor<RsmOptions> rsmOptionsMonitor,
+        IOptionsMonitor<AppOptions> appOptionsMonitor,
+        HardwareMonitor hardwareMonitor,
         ICommandCatalog commandCatalog,
         ICommandExecutor commandExecutor) : BackgroundService
     {
         private readonly ILogger<Worker> _logger = logger;
         private readonly IOptionsMonitor<RsmOptions> _rsmOptionsMonitor = rsmOptionsMonitor;
+        private readonly IOptionsMonitor<AppOptions> _appOptionsMonitor = appOptionsMonitor;
+        private readonly HardwareMonitor _hardwareMonitor = hardwareMonitor;
         private readonly ICommandCatalog _commandCatalog = commandCatalog;
         private readonly ICommandExecutor _commandExecutor = commandExecutor;
 
@@ -321,6 +328,44 @@ namespace CPCRemote.Service
                                 continue;
                             }
 
+                            if (string.Equals(commandStr, "stats", StringComparison.OrdinalIgnoreCase))
+                            {
+                                var stats = _hardwareMonitor.GetStats();
+                                byte[] buffer = JsonSerializer.SerializeToUtf8Bytes(stats);
+                                response.ContentType = "application/json";
+                                response.ContentLength64 = buffer.Length;
+                                await response.OutputStream.WriteAsync(buffer, stoppingToken);
+                                response.Close();
+                                continue;
+                            }
+
+                            if (string.Equals(commandStr, "launch", StringComparison.OrdinalIgnoreCase))
+                            {
+                                int cmdIdx = -1;
+                                for (int i = 0; i < urlParts.Length; i++)
+                                {
+                                    if (string.Equals(urlParts[i], commandStr, StringComparison.Ordinal))
+                                    {
+                                        cmdIdx = i;
+                                        break;
+                                    }
+                                }
+                                
+                                string? slot = (cmdIdx >= 0 && cmdIdx + 1 < urlParts.Length) ? urlParts[cmdIdx + 1] : null;
+
+                                if (!string.IsNullOrEmpty(slot))
+                                {
+                                    LaunchApp(slot);
+                                    response.StatusCode = (int)HttpStatusCode.OK;
+                                }
+                                else
+                                {
+                                    response.StatusCode = (int)HttpStatusCode.BadRequest;
+                                }
+                                response.Close();
+                                continue;
+                            }
+
                             TrayCommandType? command = _commandCatalog.GetCommandType(commandStr);
                             if (command.HasValue)
                             {
@@ -402,6 +447,42 @@ namespace CPCRemote.Service
                         _logger.LogError(ex, "Error cleaning up HttpListener");
                     }
                 }
+            }
+        }
+
+        private void LaunchApp(string slot)
+        {
+            var apps = _appOptionsMonitor.CurrentValue;
+            string? path = slot.ToLowerInvariant() switch
+            {
+                "app1" => apps.App1,
+                "app2" => apps.App2,
+                "app3" => apps.App3,
+                "app4" => apps.App4,
+                "app5" => apps.App5,
+                "app6" => apps.App6,
+                "app7" => apps.App7,
+                "app8" => apps.App8,
+                "app9" => apps.App9,
+                "app10" => apps.App10,
+                _ => null
+            };
+
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
+                    _logger.LogInformation("Launched {Slot}: {Path}", slot, path);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to launch {Slot}", slot);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("Slot {Slot} not configured", slot);
             }
         }
     }

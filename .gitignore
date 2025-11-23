@@ -419,3 +419,5 @@ FodyWeavers.xsd
 
 /.copilot-tracking/details
 ARCHITECTURE_AND_DELIVERY_PLAN.md
+.github/agents/CPCRemote Bridge Architect.agent.md
+.github/instructions/CPC Bridge Workspace Instructions.instructions.md
