@@ -9,7 +9,6 @@ using System.Runtime.Versioning;
 
 using CPCRemote.UI.Services;
 
-using Microsoft.Graphics.Canvas.Text;
 using Microsoft.UI;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
@@ -52,8 +51,8 @@ public sealed partial class SettingsPage : Page
     {
         try
         {
-            // Get all system fonts using Win2D
-            var fontFamilies = CanvasTextFormat.GetSystemFontFamilies()
+            // Get system fonts using GDI+ interop
+            var fontFamilies = GetInstalledFontFamilies()
                 .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
@@ -102,12 +101,130 @@ public sealed partial class SettingsPage : Page
             
             // Fallback to basic fonts
             FontFamilyComboBox.Items.Clear();
-            var fallbackFonts = new[] { "Segoe UI Variable", "Segoe UI", "Cascadia Code", "Consolas", "Arial", "Verdana" };
+            var fallbackFonts = new[] { "Segoe UI Variable", "Segoe UI", "Cascadia Code", "Consolas", "Arial", "Verdana", "Tahoma", "Times New Roman", "Courier New" };
             foreach (var font in fallbackFonts)
             {
-                FontFamilyComboBox.Items.Add(new ComboBoxItem { Content = font, Tag = font });
+                FontFamilyComboBox.Items.Add(new ComboBoxItem { Content = font, Tag = font, FontFamily = new FontFamily(font) });
             }
         }
+    }
+
+    /// <summary>
+    /// Gets all installed font families using GDI32 EnumFontFamilies.
+    /// </summary>
+    private static List<string> GetInstalledFontFamilies()
+    {
+        var fonts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        
+        IntPtr hdc = GetDC(IntPtr.Zero);
+        try
+        {
+            var logFont = new LOGFONT { lfCharSet = 1 }; // DEFAULT_CHARSET
+            EnumFontFamiliesEx(hdc, ref logFont, (ref ENUMLOGFONTEX lpelfe, ref NEWTEXTMETRICEX lpntme, uint fontType, IntPtr lParam) =>
+            {
+                string fontName = lpelfe.elfLogFont.lfFaceName;
+                if (!string.IsNullOrEmpty(fontName) && !fontName.StartsWith("@"))
+                {
+                    fonts.Add(fontName);
+                }
+                return 1; // Continue enumeration
+            }, IntPtr.Zero, 0);
+        }
+        finally
+        {
+            ReleaseDC(IntPtr.Zero, hdc);
+        }
+
+        return [.. fonts];
+    }
+
+    // P/Invoke declarations for font enumeration
+    private delegate int EnumFontFamExProc(ref ENUMLOGFONTEX lpelfe, ref NEWTEXTMETRICEX lpntme, uint fontType, IntPtr lParam);
+
+    [DllImport("gdi32.dll", CharSet = CharSet.Unicode)]
+    private static extern int EnumFontFamiliesEx(IntPtr hdc, ref LOGFONT lpLogfont, EnumFontFamExProc lpProc, IntPtr lParam, uint dwFlags);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetDC(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct LOGFONT
+    {
+        public int lfHeight;
+        public int lfWidth;
+        public int lfEscapement;
+        public int lfOrientation;
+        public int lfWeight;
+        public byte lfItalic;
+        public byte lfUnderline;
+        public byte lfStrikeOut;
+        public byte lfCharSet;
+        public byte lfOutPrecision;
+        public byte lfClipPrecision;
+        public byte lfQuality;
+        public byte lfPitchAndFamily;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string lfFaceName;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct ENUMLOGFONTEX
+    {
+        public LOGFONT elfLogFont;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
+        public string elfFullName;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string elfStyle;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string elfScript;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NEWTEXTMETRICEX
+    {
+        public NEWTEXTMETRIC ntmTm;
+        public FONTSIGNATURE ntmFontSig;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NEWTEXTMETRIC
+    {
+        public int tmHeight;
+        public int tmAscent;
+        public int tmDescent;
+        public int tmInternalLeading;
+        public int tmExternalLeading;
+        public int tmAveCharWidth;
+        public int tmMaxCharWidth;
+        public int tmWeight;
+        public int tmOverhang;
+        public int tmDigitizedAspectX;
+        public int tmDigitizedAspectY;
+        public char tmFirstChar;
+        public char tmLastChar;
+        public char tmDefaultChar;
+        public char tmBreakChar;
+        public byte tmItalic;
+        public byte tmUnderlined;
+        public byte tmStruckOut;
+        public byte tmPitchAndFamily;
+        public byte tmCharSet;
+        public uint ntmFlags;
+        public uint ntmSizeEM;
+        public uint ntmCellHeight;
+        public uint ntmAvgWidth;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct FONTSIGNATURE
+    {
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
+        public uint[] fsUsb;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
+        public uint[] fsCsb;
     }
 
     private void LoadSettings()
