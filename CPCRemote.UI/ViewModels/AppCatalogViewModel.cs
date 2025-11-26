@@ -1,7 +1,10 @@
 namespace CPCRemote.UI.ViewModels;
 
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -361,5 +364,124 @@ public sealed partial class AppCatalogViewModel : ObservableObject
     {
         IsEditDialogOpen = false;
         SelectedApp = null;
+    }
+
+    /// <summary>
+    /// Launches an application directly from the UI process.
+    /// This approach avoids Session 0 isolation issues since the UI runs in the user's interactive session.
+    /// </summary>
+    [RelayCommand]
+    public Task LaunchAppAsync(AppCatalogEntry? app)
+    {
+        if (app is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        if (!app.Enabled)
+        {
+            StatusMessage = $"'{app.Name}' is disabled.";
+            return Task.CompletedTask;
+        }
+
+        if (string.IsNullOrWhiteSpace(app.Path))
+        {
+            StatusMessage = $"'{app.Name}' has no path configured.";
+            return Task.CompletedTask;
+        }
+
+        if (!File.Exists(app.Path) && !Directory.Exists(app.Path))
+        {
+            StatusMessage = $"Path not found: {app.Path}";
+            return Task.CompletedTask;
+        }
+
+        StatusMessage = $"Launching '{app.Name}'...";
+
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = app.Path,
+                UseShellExecute = true,
+                Arguments = app.Arguments ?? string.Empty
+            };
+
+            if (!string.IsNullOrWhiteSpace(app.WorkingDirectory))
+            {
+                startInfo.WorkingDirectory = app.WorkingDirectory;
+            }
+
+            if (app.RunAsAdmin)
+            {
+                startInfo.Verb = "runas";
+            }
+
+            Process.Start(startInfo);
+            StatusMessage = $"Launched '{app.Name}'.";
+            _logger.LogInformation("Launched app {Slot}: {Name} ({Path})", app.Slot, app.Name, app.Path);
+        }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
+        {
+            // User cancelled the UAC prompt
+            StatusMessage = $"Launch cancelled by user.";
+            _logger.LogInformation("User cancelled UAC prompt for {Slot}: {Name}", app.Slot, app.Name);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Failed to launch: {ex.Message}";
+            _logger.LogError(ex, "Failed to launch app {Slot}: {Name}", app.Slot, app.Name);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Reorders apps after drag-and-drop by reassigning slot numbers.
+    /// </summary>
+    public async Task ReorderAppsAsync(IList<AppCatalogEntry> newOrder)
+    {
+        IsLoading = true;
+        StatusMessage = "Reordering apps...";
+
+        try
+        {
+            // Reassign slots based on new order
+            for (int i = 0; i < newOrder.Count && i < AvailableSlots.Length; i++)
+            {
+                var app = newOrder[i];
+                var newSlot = AvailableSlots[i];
+                
+                if (app.Slot != newSlot)
+                {
+                    app.Slot = newSlot;
+                    
+                    var response = await _pipeClient.SendRequestAsync<SaveAppResponse>(
+                        new SaveAppRequest { App = app },
+                        IpcConstants.DefaultTimeout);
+
+                    if (!response.Success)
+                    {
+                        _logger.LogWarning("Failed to save reordered app {Name}: {Error}", app.Name, response.ErrorMessage);
+                    }
+                }
+            }
+
+            StatusMessage = "Apps reordered successfully.";
+            await RefreshAppsAsync();
+        }
+        catch (OperationCanceledException)
+        {
+            // Silently ignore cancellation
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error reordering: {ex.Message}";
+            _logger.LogError(ex, "Failed to reorder apps.");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 }

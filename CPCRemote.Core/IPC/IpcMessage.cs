@@ -14,6 +14,8 @@ using System.Text.Json.Serialization;
 [JsonDerivedType(typeof(SaveAppResponse), "SaveAppResponse")]
 [JsonDerivedType(typeof(DeleteAppRequest), "DeleteAppRequest")]
 [JsonDerivedType(typeof(DeleteAppResponse), "DeleteAppResponse")]
+[JsonDerivedType(typeof(LaunchAppRequest), "LaunchAppRequest")]
+[JsonDerivedType(typeof(LaunchAppResponse), "LaunchAppResponse")]
 [JsonDerivedType(typeof(ServiceStatusRequest), "ServiceStatusRequest")]
 [JsonDerivedType(typeof(ServiceStatusResponse), "ServiceStatusResponse")]
 [JsonDerivedType(typeof(ExecuteCommandRequest), "ExecuteCommandRequest")]

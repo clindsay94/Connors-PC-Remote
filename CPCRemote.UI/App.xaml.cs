@@ -9,6 +9,8 @@ using CPCRemote.UI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 
 namespace CPCRemote.UI
 {
@@ -53,7 +55,10 @@ namespace CPCRemote.UI
                 // 5. Configure Services AFTER window activation (ApplicationData.Current now available)
                 Services = ConfigureServices();
 
-                // 6. Perform initial navigation after services are ready
+                // 6. Apply saved settings
+                ApplySavedSettings();
+
+                // 7. Perform initial navigation after services are ready
                 CurrentMainWindow?.PerformInitialNavigation();
 
                 // Cleanup on exit
@@ -100,7 +105,8 @@ namespace CPCRemote.UI
             services.AddTransient<DashboardViewModel>();
             services.AddTransient<AppCatalogViewModel>();
 
-            // Core Services
+            // Core Services - WolOptions is required by CommandHelper (not used in UI but needed for DI)
+            services.AddSingleton(new CPCRemote.Core.Models.WolOptions());
             services.AddSingleton<CPCRemote.Core.Helpers.CommandHelper>();
             services.AddSingleton<CPCRemote.Core.Interfaces.ICommandCatalog>(sp => sp.GetRequiredService<CPCRemote.Core.Helpers.CommandHelper>());
             services.AddSingleton<CPCRemote.Core.Interfaces.ICommandExecutor>(sp => sp.GetRequiredService<CPCRemote.Core.Helpers.CommandHelper>());
@@ -115,6 +121,77 @@ namespace CPCRemote.UI
                 throw new InvalidOperationException("Services accessed before OnLaunched!");
 
             return Services.GetRequiredService<T>();
+        }
+
+        /// <summary>
+        /// Applies saved settings (theme, font, etc.) on startup.
+        /// </summary>
+        private static void ApplySavedSettings()
+        {
+            try
+            {
+                var settings = GetService<SettingsService>();
+
+                // Apply theme
+                string theme = settings.Get("AppTheme", "System");
+                ApplyTheme(theme);
+
+                // Apply font family
+                string fontFamily = settings.Get("FontFamily", "Segoe UI Variable");
+                ApplyFontFamily(fontFamily);
+
+                // Apply font scale
+                int fontScale = settings.Get("FontSizeScale", 100);
+                ApplyFontScale(fontScale);
+
+                Logger?.LogInformation("Applied saved settings: Theme={Theme}, Font={Font}, Scale={Scale}%", theme, fontFamily, fontScale);
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogWarning(ex, "Failed to apply saved settings");
+            }
+        }
+
+        /// <summary>
+        /// Applies the specified theme to the application.
+        /// </summary>
+        public static void ApplyTheme(string theme)
+        {
+            if (CurrentMainWindow?.Content is FrameworkElement rootElement)
+            {
+                rootElement.RequestedTheme = theme switch
+                {
+                    "Light" => ElementTheme.Light,
+                    "Dark" => ElementTheme.Dark,
+                    _ => ElementTheme.Default
+                };
+            }
+        }
+
+        /// <summary>
+        /// Applies the specified font family globally to the application.
+        /// </summary>
+        public static void ApplyFontFamily(string fontFamilyName)
+        {
+            if (CurrentMainWindow?.Content is Control rootControl)
+            {
+                rootControl.FontFamily = new FontFamily(fontFamilyName);
+            }
+        }
+
+        /// <summary>
+        /// Applies the specified font scale (percentage) to the application.
+        /// </summary>
+        public static void ApplyFontScale(int scalePercent)
+        {
+            if (CurrentMainWindow?.Content is Control rootControl)
+            {
+                // Scale is applied by setting the root control's font size
+                // Child controls that don't explicitly set FontSize will inherit this
+                double baseFontSize = 14.0; // Default WinUI font size
+                double scaledFontSize = baseFontSize * (scalePercent / 100.0);
+                rootControl.FontSize = scaledFontSize;
+            }
         }
     }
 }

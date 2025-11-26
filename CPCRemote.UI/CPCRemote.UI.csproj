@@ -5,6 +5,8 @@
 	<SupportedOSPlatformVersion>10.0.22621.0</SupportedOSPlatformVersion>
 	<OutputType>WinExe</OutputType>
 	<UseWinUI>true</UseWinUI>
+	<!-- Disable the XAML-generated Main method so we can use our custom Program.cs -->
+	<DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
 	<!-- Disable MSIX packaging for development/debugging -->
 	<WindowsPackageType Condition="'$(Configuration)' == 'Debug'">None</WindowsPackageType>
 	<WindowsPackageType Condition="'$(Configuration)' == 'Release'">MSIX</WindowsPackageType>
@@ -21,6 +23,7 @@
 	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 	<Company>Lindsay Inc</Company>
 	<NoWarn>$(NoWarn);CA1416</NoWarn>
+	<!-- Self-contained deployment includes SDK runtime in output -->
 	<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
 	<LangVersion>preview</LangVersion>
 	<StartupObject>CPCRemote.UI.Program</StartupObject>
@@ -28,12 +31,28 @@
 
   <ItemGroup>
 	<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+	<PackageReference Include="CommunityToolkit.WinUI.Animations" Version="8.2.250402" />
+	<PackageReference Include="CommunityToolkit.WinUI.Behaviors" Version="8.2.250402" />
+	<PackageReference Include="CommunityToolkit.WinUI.Collections" Version="8.2.250402" />
+	<PackageReference Include="CommunityToolkit.WinUI.Controls.ColorPicker" Version="8.2.250402" />
+	<PackageReference Include="CommunityToolkit.WinUI.Controls.HeaderedControls" Version="8.2.250402" />
+	<PackageReference Include="CommunityToolkit.WinUI.Controls.Primitives" Version="8.2.250402" />
+	<PackageReference Include="CommunityToolkit.WinUI.Controls.RangeSelector" Version="8.2.250402" />
+	<PackageReference Include="CommunityToolkit.WinUI.Controls.Segmented" Version="8.2.250402" />
+	<PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.250402" />
+	<PackageReference Include="CommunityToolkit.WinUI.Controls.TabbedCommandBar" Version="8.2.250402" />
+	<PackageReference Include="CommunityToolkit.WinUI.Controls.TokenizingTextBox" Version="8.2.250402" />
+	<PackageReference Include="CommunityToolkit.WinUI.Converters" Version="8.2.250402" />
+	<PackageReference Include="CommunityToolkit.WinUI.DeveloperTools" Version="8.2.250402" />
+	<PackageReference Include="CommunityToolkit.WinUI.Extensions" Version="8.2.250402" />
+	<PackageReference Include="CommunityToolkit.WinUI.Helpers" Version="8.2.250402" />
+	<PackageReference Include="CommunityToolkit.WinUI.Triggers" Version="8.2.250402" />
 	<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.0" />
 	<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
 	<PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.0" />
 	<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
+	<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1-RTM" />
 	<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.251106002" />
-	<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7175" />
 	<PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.0" />
 	<ProjectReference Include="..\CPCRemote.Core\CPCRemote.Core.csproj" />
   </ItemGroup>
@@ -46,7 +65,7 @@
 
   <!-- Include Service binaries in MSIX package -->
   <ItemGroup>
-	<None Include="..\CPCRemote.Service\bin\$(Configuration)\net10.0-windows10.0.26100.0\win-x64\**\*.*" Link="ServiceBinaries\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\CPCRemote.Service\bin\$(Configuration)\net10.0-windows10.0.26100.0\win-x64\')">
+	<None Include="..\bin\$(Configuration)\CPCRemote.Service\**\*.*" Link="ServiceBinaries\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\bin\$(Configuration)\CPCRemote.Service\')">
 	  <Pack>true</Pack>
 	</None>
   </ItemGroup>

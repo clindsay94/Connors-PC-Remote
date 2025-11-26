@@ -649,11 +649,16 @@ namespace CPCRemote.UI.ViewModels
                 return null;
             }
 
-            string[] searchPaths = new[]
-            {
+            string[] searchPaths =
+            [
+                // Unified bin structure: bin\{Configuration}\CPCRemote.Service\
+                System.IO.Path.Combine(baseDir, "..", "CPCRemote.Service", ConfigFileName),
+                // ServiceBinaries folder
+                System.IO.Path.Combine(baseDir, "ServiceBinaries", ConfigFileName),
+                // Legacy structure
                 System.IO.Path.Combine(baseDir, "..", "..", "..", "..", "CPCRemote.Service", ConfigFileName),
                 System.IO.Path.Combine(baseDir, "..", "CPCRemote.Service", ConfigFileName),
-            };
+            ];
 
             foreach (string path in searchPaths)
             {
@@ -672,26 +677,39 @@ namespace CPCRemote.UI.ViewModels
             string? baseDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             if (string.IsNullOrEmpty(baseDir)) return null;
 
-            // Search paths for the service executable
-            string[] searchPaths = new[]
-            {
-                // Copied to ServiceBinaries folder (via csproj)
+            // Search paths for the service executable (in priority order)
+            string[] searchPaths =
+            [
+                // 1. Copied to ServiceBinaries folder (for packaged deployment)
                 System.IO.Path.Combine(baseDir, "ServiceBinaries", "CPCRemote.Service.exe"),
-                // Published side-by-side
+                
+                // 2. Published side-by-side (same folder)
                 System.IO.Path.Combine(baseDir, "CPCRemote.Service.exe"),
-                // Development structure (Debug/Release)
-                System.IO.Path.Combine(baseDir, "..", "..", "..", "..", "CPCRemote.Service", "bin", "Debug", "net10.0", "CPCRemote.Service.exe"),
-                System.IO.Path.Combine(baseDir, "..", "..", "..", "..", "CPCRemote.Service", "bin", "Release", "net10.0", "CPCRemote.Service.exe"),
-                // If running from bin/x64/Debug
-                System.IO.Path.Combine(baseDir, "..", "..", "..", "..", "..", "CPCRemote.Service", "bin", "Debug", "net10.0", "CPCRemote.Service.exe"),
-            };
+                
+                // 3. Unified bin structure: bin\{Configuration}\CPCRemote.Service\
+                // UI is at: bin\Debug\CPCRemote.UI\ -> Service at: bin\Debug\CPCRemote.Service\
+                System.IO.Path.Combine(baseDir, "..", "CPCRemote.Service", "CPCRemote.Service.exe"),
+                
+                // 4. Legacy structure: bin\Debug\net10.0-windows...\win-x64\
+                System.IO.Path.Combine(baseDir, "..", "..", "..", "..", "CPCRemote.Service", "bin", "Debug", "net10.0-windows10.0.26100.0", "win-x64", "CPCRemote.Service.exe"),
+                System.IO.Path.Combine(baseDir, "..", "..", "..", "..", "CPCRemote.Service", "bin", "Release", "net10.0-windows10.0.26100.0", "win-x64", "CPCRemote.Service.exe"),
+                
+                // 5. If running from solution root bin\x64\Debug\...
+                System.IO.Path.Combine(baseDir, "..", "..", "..", "bin", "Debug", "CPCRemote.Service", "CPCRemote.Service.exe"),
+            ];
 
             foreach (var path in searchPaths)
             {
                 string fullPath = System.IO.Path.GetFullPath(path);
-                if (System.IO.File.Exists(fullPath)) return fullPath;
+                _logger.LogDebug("Searching for service executable at: {Path}", fullPath);
+                if (System.IO.File.Exists(fullPath))
+                {
+                    _logger.LogInformation("Found service executable at: {Path}", fullPath);
+                    return fullPath;
+                }
             }
-            
+
+            _logger.LogWarning("Could not find CPCRemote.Service.exe in any expected location.");
             return null;
         }
 

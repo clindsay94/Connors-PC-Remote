@@ -293,6 +293,7 @@ public sealed class NamedPipeServer(
                 GetAppsRequest => HandleGetApps(),
                 SaveAppRequest req => await HandleSaveAppAsync(req, cancellationToken).ConfigureAwait(false),
                 DeleteAppRequest req => await HandleDeleteAppAsync(req, cancellationToken).ConfigureAwait(false),
+                LaunchAppRequest req => HandleLaunchApp(req),
                 ServiceStatusRequest => HandleServiceStatus(),
                 ExecuteCommandRequest req => await HandleExecuteCommandAsync(req, cancellationToken).ConfigureAwait(false),
                 _ => new ErrorResponse
@@ -364,6 +365,31 @@ public sealed class NamedPipeServer(
         {
             Success = removed,
             ErrorMessage = removed ? null : $"Slot '{request.Slot}' not found."
+        };
+    }
+
+    private LaunchAppResponse HandleLaunchApp(LaunchAppRequest request)
+    {
+        bool launched = _appCatalog.LaunchApp(request.Slot);
+        
+        if (launched)
+        {
+            return new LaunchAppResponse { Success = true };
+        }
+        
+        var app = _appCatalog.GetAppBySlot(request.Slot);
+        string errorMessage = app switch
+        {
+            null => $"Slot '{request.Slot}' not found.",
+            { Enabled: false } => $"'{app.Name}' is disabled.",
+            { Path: null or "" } => $"'{app.Name}' has no path configured.",
+            _ => $"Failed to launch '{app.Name}'."
+        };
+        
+        return new LaunchAppResponse
+        {
+            Success = false,
+            ErrorMessage = errorMessage
         };
     }
 

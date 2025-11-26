@@ -51,13 +51,20 @@
         <ListView Grid.Row="1" 
                   x:Name="AppsListView"
                   SelectionMode="Single"
-                  SelectionChanged="AppsListView_SelectionChanged">
+                  CanReorderItems="True"
+                  AllowDrop="True"
+                  CanDragItems="True"
+                  DragItemsCompleted="AppsListView_DragItemsCompleted"
+                  SelectionChanged="AppsListView_SelectionChanged"
+                  IsItemClickEnabled="True"
+                  ItemClick="AppsListView_ItemClick">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="models:AppCatalogEntry">
                     <Grid Padding="12" ColumnSpacing="16">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="60"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
@@ -98,15 +105,23 @@
                             </StackPanel>
                         </StackPanel>
 
-                        <!-- Edit Button -->
+                        <!-- Launch Button -->
                         <Button Grid.Column="2" 
+                                Content="Launch" 
+                                Style="{StaticResource AccentButtonStyle}"
+                                Click="LaunchButton_Click"
+                                Tag="{x:Bind}"
+                                VerticalAlignment="Center"/>
+
+                        <!-- Edit Button -->
+                        <Button Grid.Column="3" 
                                 Content="Edit" 
                                 Click="EditButton_Click"
                                 Tag="{x:Bind}"
                                 VerticalAlignment="Center"/>
 
                         <!-- Delete Button -->
-                        <Button Grid.Column="3" 
+                        <Button Grid.Column="4" 
                                 Content="Delete" 
                                 Click="DeleteButton_Click"
                                 Tag="{x:Bind}"
@@ -137,29 +152,5 @@
                        FontSize="12"/>
         </Border>
 
-        <!-- Edit Dialog -->
-        <ContentDialog x:Name="EditDialog"
-                       Title="Edit App"
-                       PrimaryButtonText="Save"
-                       SecondaryButtonText="Cancel"
-                       PrimaryButtonClick="EditDialog_PrimaryButtonClick">
-            <StackPanel Spacing="16" MinWidth="400">
-                <ComboBox x:Name="SlotComboBox" Header="Slot" HorizontalAlignment="Stretch"/>
-                <TextBox x:Name="NameTextBox" Header="Name" PlaceholderText="App display name"/>
-                <Grid ColumnSpacing="8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBox x:Name="PathTextBox" Grid.Column="0" Header="Executable Path" PlaceholderText="C:\path\to\app.exe"/>
-                    <Button x:Name="BrowseButton" Grid.Column="1" Content="Browse" VerticalAlignment="Bottom" Click="BrowseButton_Click"/>
-                </Grid>
-                <TextBox x:Name="ArgumentsTextBox" Header="Arguments (optional)" PlaceholderText="--flag value"/>
-                <TextBox x:Name="WorkingDirTextBox" Header="Working Directory (optional)" PlaceholderText="C:\path\to\working\dir"/>
-                <ComboBox x:Name="CategoryComboBox" Header="Category" HorizontalAlignment="Stretch"/>
-                <ToggleSwitch x:Name="RunAsAdminToggle" Header="Run as Administrator" OffContent="No" OnContent="Yes"/>
-                <ToggleSwitch x:Name="EnabledToggle" Header="Enabled" OffContent="Disabled" OnContent="Enabled" IsOn="True"/>
-            </StackPanel>
-        </ContentDialog>
     </Grid>
 </Page>

@@ -102,9 +102,11 @@ Perform a comprehensive codebase audit and enhancement covering **six workstream
 **Tasks:**
 
 - Verify or regenerate self-signed certificate:
+
   ```powershell
   New-SelfSignedCertificate -Type Custom -Subject "CN=CLindsay94" -KeyUsage DigitalSignature -FriendlyName "CPCRemote Dev Cert" -CertStoreLocation "Cert:\CurrentUser\My" -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
   ```
+
 - Export to `.pfx` and configure in `.csproj`:
   ```xml
   <PackageCertificateKeyFile>CPCRemote.UI_Key.pfx</PackageCertificateKeyFile>

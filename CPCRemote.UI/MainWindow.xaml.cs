@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Navigation;
 
 using System;
 using System.Diagnostics;
@@ -15,6 +16,24 @@ namespace CPCRemote.UI
             this.InitializeComponent();
             // Navigation moved to PerformInitialNavigation() method
             // Called from App.OnLaunched after window activation and service configuration
+            
+            // Wire up navigation failed handler
+            ContentFrame.NavigationFailed += ContentFrame_NavigationFailed;
+        }
+
+        private void ContentFrame_NavigationFailed(object sender, NavigationFailedEventArgs e)
+        {
+            Debug.WriteLine($"NAVIGATION FAILED EVENT: {e.SourcePageType?.Name} - {e.Exception}");
+            e.Handled = true;
+            
+            ContentFrame.Content = new TextBlock
+            {
+                Text = $"Failed to navigate to {e.SourcePageType?.Name}:\n\n{e.Exception?.Message}\n\n{e.Exception?.StackTrace}",
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(20)
+            };
         }
 
         /// <summary>
@@ -57,10 +76,13 @@ namespace CPCRemote.UI
             {
                 if (args.IsSettingsSelected)
                 {
+                    Debug.WriteLine("Navigating to Settings (built-in)");
                     ContentFrame.Navigate(typeof(SettingsPage));
                 }
                 else if (args.SelectedItem is NavigationViewItem selectedItem && selectedItem.Tag is string pageTag)
                 {
+                    Debug.WriteLine($"Navigating to: {pageTag}");
+                    
                     // Using fully qualified names or explicit types helps avoid "Type not found" errors
                     Type? pageType = pageTag switch
                     {
@@ -75,13 +97,28 @@ namespace CPCRemote.UI
 
                     if (pageType != null)
                     {
-                        ContentFrame.Navigate(pageType);
+                        bool success = ContentFrame.Navigate(pageType);
+                        Debug.WriteLine($"Navigation to {pageTag} success: {success}");
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"Unknown page tag: {pageTag}");
                     }
                 }
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"NAVIGATION FAILED: {ex}");
+                
+                // Show error in content area for debugging
+                ContentFrame.Content = new TextBlock
+                {
+                    Text = $"Navigation failed: {ex.Message}\n\n{ex.StackTrace}",
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(20)
+                };
             }
         }
     }

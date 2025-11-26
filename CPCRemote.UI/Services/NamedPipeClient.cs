@@ -114,81 +114,103 @@ public sealed class NamedPipeClient : IPipeClient
         using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cts.CancelAfter(timeout);
 
-        // Serialize request
-        string json = JsonSerializer.Serialize<IpcMessage>(request, JsonOptions);
-        byte[] messageBytes = Encoding.UTF8.GetBytes(json);
-
-        // Send length prefix (4 bytes, big-endian)
-        byte[] lengthBuffer =
-        [
-            (byte)(messageBytes.Length >> 24),
-            (byte)(messageBytes.Length >> 16),
-            (byte)(messageBytes.Length >> 8),
-            (byte)messageBytes.Length
-        ];
-
-        await pipe.WriteAsync(lengthBuffer, cts.Token);
-        await pipe.WriteAsync(messageBytes, cts.Token);
-        await pipe.FlushAsync(cts.Token);
-
-        // Read response length
-        byte[] responseLengthBuffer = new byte[4];
-        int bytesRead = await ReadExactlyAsync(pipe, responseLengthBuffer, cts.Token);
-
-        if (bytesRead != 4)
-        {
-            throw new IOException("Failed to read response length.");
-        }
-
-        int responseLength = (responseLengthBuffer[0] << 24) |
-                             (responseLengthBuffer[1] << 16) |
-                             (responseLengthBuffer[2] << 8) |
-                             responseLengthBuffer[3];
-
-        if (responseLength <= 0 || responseLength > IpcConstants.MaxMessageSize)
-        {
-            throw new InvalidOperationException($"Invalid response length: {responseLength}");
-        }
-
-        // Read response body
-        byte[] responseBuffer = ArrayPool<byte>.Shared.Rent(responseLength);
         try
         {
-            bytesRead = await ReadExactlyAsync(pipe, responseBuffer.AsMemory(0, responseLength), cts.Token);
+            // Serialize request
+            string json = JsonSerializer.Serialize<IpcMessage>(request, JsonOptions);
+            byte[] messageBytes = Encoding.UTF8.GetBytes(json);
 
-            if (bytesRead != responseLength)
+            // Send length prefix (4 bytes, big-endian)
+            byte[] lengthBuffer =
+            [
+                (byte)(messageBytes.Length >> 24),
+                (byte)(messageBytes.Length >> 16),
+                (byte)(messageBytes.Length >> 8),
+                (byte)messageBytes.Length
+            ];
+
+            await pipe.WriteAsync(lengthBuffer, cts.Token);
+            await pipe.WriteAsync(messageBytes, cts.Token);
+            await pipe.FlushAsync(cts.Token);
+
+            // Read response length
+            byte[] responseLengthBuffer = new byte[4];
+            int bytesRead = await ReadExactlyAsync(pipe, responseLengthBuffer, cts.Token);
+
+            if (bytesRead != 4)
             {
-                throw new IOException("Incomplete response received.");
+                throw new IOException("Failed to read response length.");
             }
 
-            string responseJson = Encoding.UTF8.GetString(responseBuffer, 0, responseLength);
-            IpcMessage? response = JsonSerializer.Deserialize<IpcMessage>(responseJson, JsonOptions);
+            int responseLength = (responseLengthBuffer[0] << 24) |
+                                 (responseLengthBuffer[1] << 16) |
+                                 (responseLengthBuffer[2] << 8) |
+                                 responseLengthBuffer[3];
 
-            if (response is null)
+            if (responseLength <= 0 || responseLength > IpcConstants.MaxMessageSize)
             {
-                throw new InvalidOperationException("Failed to deserialize response.");
+                throw new InvalidOperationException($"Invalid response length: {responseLength}");
             }
 
-            // Handle error responses
-            if (response is ErrorResponse errorResponse)
+            // Read response body
+            byte[] responseBuffer = ArrayPool<byte>.Shared.Rent(responseLength);
+            try
             {
-                throw new IpcException(
-                    errorResponse.ErrorMessage ?? "Unknown error",
-                    errorResponse.ExceptionType,
-                    errorResponse.StackTrace);
-            }
+                bytesRead = await ReadExactlyAsync(pipe, responseBuffer.AsMemory(0, responseLength), cts.Token);
 
-            if (response is not TResponse typedResponse)
+                if (bytesRead != responseLength)
+                {
+                    throw new IOException("Incomplete response received.");
+                }
+
+                string responseJson = Encoding.UTF8.GetString(responseBuffer, 0, responseLength);
+                IpcMessage? response = JsonSerializer.Deserialize<IpcMessage>(responseJson, JsonOptions);
+
+                if (response is null)
+                {
+                    throw new InvalidOperationException("Failed to deserialize response.");
+                }
+
+                // Handle error responses
+                if (response is ErrorResponse errorResponse)
+                {
+                    throw new IpcException(
+                        errorResponse.ErrorMessage ?? "Unknown error",
+                        errorResponse.ExceptionType,
+                        errorResponse.StackTrace);
+                }
+
+                if (response is not TResponse typedResponse)
+                {
+                    throw new InvalidOperationException(
+                        $"Unexpected response type. Expected {typeof(TResponse).Name}, got {response.GetType().Name}");
+                }
+
+                return typedResponse;
+            }
+            finally
             {
-                throw new InvalidOperationException(
-                    $"Unexpected response type. Expected {typeof(TResponse).Name}, got {response.GetType().Name}");
+                ArrayPool<byte>.Shared.Return(responseBuffer);
             }
-
-            return typedResponse;
         }
-        finally
+        catch (IOException)
         {
-            ArrayPool<byte>.Shared.Return(responseBuffer);
+            // Connection was lost or aborted - mark as disconnected and rethrow as OperationCanceledException
+            // to allow callers to handle gracefully
+            lock (_lock)
+            {
+                _isConnected = false;
+            }
+            throw new OperationCanceledException("Connection to service was lost.", cts.Token);
+        }
+        catch (System.Net.Sockets.SocketException)
+        {
+            // Socket was aborted - mark as disconnected
+            lock (_lock)
+            {
+                _isConnected = false;
+            }
+            throw new OperationCanceledException("Connection to service was aborted.", cts.Token);
         }
     }
 

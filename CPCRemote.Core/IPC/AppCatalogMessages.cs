@@ -61,3 +61,20 @@ public sealed record DeleteAppRequest : IpcRequest
 /// Response after deleting an application entry.
 /// </summary>
 public sealed record DeleteAppResponse : IpcResponse;
+
+/// <summary>
+/// Request to launch an application by slot.
+/// </summary>
+public sealed record LaunchAppRequest : IpcRequest
+{
+    /// <summary>
+    /// Gets or sets the slot identifier of the app to launch.
+    /// </summary>
+    [JsonPropertyName("slot")]
+    public required string Slot { get; init; }
+}
+
+/// <summary>
+/// Response after launching an application.
+/// </summary>
+public sealed record LaunchAppResponse : IpcResponse;
