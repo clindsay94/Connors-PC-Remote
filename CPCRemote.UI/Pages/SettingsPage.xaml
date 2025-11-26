@@ -141,14 +141,7 @@
                 <controls:SettingsCard.HeaderIcon>
                     <FontIcon Glyph="&#xE8D2;"/>
                 </controls:SettingsCard.HeaderIcon>
-                <ComboBox x:Name="FontFamilyComboBox" MinWidth="200" SelectionChanged="FontFamilyComboBox_SelectionChanged">
-                    <ComboBoxItem Content="Segoe UI Variable" Tag="Segoe UI Variable"/>
-                    <ComboBoxItem Content="Segoe UI" Tag="Segoe UI"/>
-                    <ComboBoxItem Content="Cascadia Code" Tag="Cascadia Code"/>
-                    <ComboBoxItem Content="Consolas" Tag="Consolas"/>
-                    <ComboBoxItem Content="Arial" Tag="Arial"/>
-                    <ComboBoxItem Content="Verdana" Tag="Verdana"/>
-                </ComboBox>
+                <ComboBox x:Name="FontFamilyComboBox" MinWidth="200" MaxDropDownHeight="400" SelectionChanged="FontFamilyComboBox_SelectionChanged"/>
             </controls:SettingsCard>
 
             <!-- Font Size Scale -->

@@ -173,9 +173,25 @@ namespace CPCRemote.UI
         /// </summary>
         public static void ApplyFontFamily(string fontFamilyName)
         {
+            if (CurrentMainWindow?.Content is Grid grid)
+            {
+                // Find the NavigationView inside the Grid
+                foreach (var child in grid.Children)
+                {
+                    if (child is NavigationView navView)
+                    {
+                        navView.FontFamily = new FontFamily(fontFamilyName);
+                        Logger?.LogDebug("Applied font family: {Font}", fontFamilyName);
+                        return;
+                    }
+                }
+            }
+            
+            // Fallback: try to set on Content directly if it's a Control
             if (CurrentMainWindow?.Content is Control rootControl)
             {
                 rootControl.FontFamily = new FontFamily(fontFamilyName);
+                Logger?.LogDebug("Applied font family (fallback): {Font}", fontFamilyName);
             }
         }
 
@@ -184,13 +200,29 @@ namespace CPCRemote.UI
         /// </summary>
         public static void ApplyFontScale(int scalePercent)
         {
+            if (CurrentMainWindow?.Content is Grid grid)
+            {
+                // Find the NavigationView inside the Grid
+                foreach (var child in grid.Children)
+                {
+                    if (child is NavigationView navView)
+                    {
+                        double baseFontSize = 14.0;
+                        double scaledFontSize = baseFontSize * (scalePercent / 100.0);
+                        navView.FontSize = scaledFontSize;
+                        Logger?.LogDebug("Applied font scale: {Scale}% ({Size}px)", scalePercent, scaledFontSize);
+                        return;
+                    }
+                }
+            }
+
+            // Fallback: try to set on Content directly if it's a Control
             if (CurrentMainWindow?.Content is Control rootControl)
             {
-                // Scale is applied by setting the root control's font size
-                // Child controls that don't explicitly set FontSize will inherit this
-                double baseFontSize = 14.0; // Default WinUI font size
+                double baseFontSize = 14.0;
                 double scaledFontSize = baseFontSize * (scalePercent / 100.0);
                 rootControl.FontSize = scaledFontSize;
+                Logger?.LogDebug("Applied font scale (fallback): {Scale}%", scalePercent);
             }
         }
     }

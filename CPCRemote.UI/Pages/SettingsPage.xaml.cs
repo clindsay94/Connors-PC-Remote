@@ -1,12 +1,15 @@
 namespace CPCRemote.UI.Pages;
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 using CPCRemote.UI.Services;
 
+using Microsoft.Graphics.Canvas.Text;
 using Microsoft.UI;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
@@ -35,10 +38,76 @@ public sealed partial class SettingsPage : Page
         this.InitializeComponent();
         _settingsService = App.GetService<SettingsService>();
 
+        PopulateFontComboBox();
         LoadSettings();
         SetVersionInfo();
 
         _isInitializing = false;
+    }
+
+    /// <summary>
+    /// Populates the font family combo box with all installed system fonts.
+    /// </summary>
+    private void PopulateFontComboBox()
+    {
+        try
+        {
+            // Get all system fonts using Win2D
+            var fontFamilies = CanvasTextFormat.GetSystemFontFamilies()
+                .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            FontFamilyComboBox.Items.Clear();
+
+            // Add common fonts at the top
+            var commonFonts = new[] { "Segoe UI Variable", "Segoe UI", "Cascadia Code", "Consolas" };
+            foreach (var font in commonFonts)
+            {
+                if (fontFamilies.Contains(font, StringComparer.OrdinalIgnoreCase))
+                {
+                    var item = new ComboBoxItem
+                    {
+                        Content = font,
+                        Tag = font,
+                        FontFamily = new FontFamily(font)
+                    };
+                    FontFamilyComboBox.Items.Add(item);
+                }
+            }
+
+            // Add separator
+            FontFamilyComboBox.Items.Add(new ComboBoxItem { Content = "─────────────", IsEnabled = false });
+
+            // Add all other fonts
+            foreach (var font in fontFamilies)
+            {
+                // Skip common fonts already added
+                if (commonFonts.Contains(font, StringComparer.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var item = new ComboBoxItem
+                {
+                    Content = font,
+                    Tag = font,
+                    FontFamily = new FontFamily(font)
+                };
+                FontFamilyComboBox.Items.Add(item);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to load system fonts: {ex.Message}");
+            
+            // Fallback to basic fonts
+            FontFamilyComboBox.Items.Clear();
+            var fallbackFonts = new[] { "Segoe UI Variable", "Segoe UI", "Cascadia Code", "Consolas", "Arial", "Verdana" };
+            foreach (var font in fallbackFonts)
+            {
+                FontFamilyComboBox.Items.Add(new ComboBoxItem { Content = font, Tag = font });
+            }
+        }
     }
 
     private void LoadSettings()
