@@ -21,7 +21,6 @@
   </PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="LibreHardwareMonitorLib" Version="0.9.4" />
 		<PackageReference Include="Microsoft.ApplicationInsights" Version="2.23.0" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.0" />

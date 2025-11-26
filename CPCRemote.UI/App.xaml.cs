@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 
+using CPCRemote.Core.IPC;
 using CPCRemote.UI;
 using CPCRemote.UI.Services;
 using CPCRemote.UI.ViewModels;
@@ -59,6 +60,13 @@ namespace CPCRemote.UI
                 m_window.Closed += (s, e) =>
                 {
                     Logger?.LogInformation("Application shutting down...");
+                    
+                    // Dispose the pipe client
+                    if (Services?.GetService<IPipeClient>() is IAsyncDisposable disposable)
+                    {
+                        _ = disposable.DisposeAsync();
+                    }
+
                     _loggerFactory?.Dispose();
                 };
             }
@@ -81,10 +89,16 @@ namespace CPCRemote.UI
                 builder.SetMinimumLevel(LogLevel.Debug);
             });
 
+            // Named Pipe IPC Client
+            services.AddSingleton<NamedPipeClient>();
+            services.AddSingleton<IPipeClient>(sp => sp.GetRequiredService<NamedPipeClient>());
+
             // ViewModels
             services.AddSingleton<SettingsService>();
             services.AddSingleton<ServiceManagementViewModel>();
             services.AddTransient<QuickActionsViewModel>();
+            services.AddTransient<DashboardViewModel>();
+            services.AddTransient<AppCatalogViewModel>();
 
             // Core Services
             services.AddSingleton<CPCRemote.Core.Helpers.CommandHelper>();

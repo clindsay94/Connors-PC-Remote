@@ -1,69 +1,112 @@
-namespace CPCRemote.UI.Pages
-{
-    using System.Runtime.Versioning;
+namespace CPCRemote.UI.Pages;
 
-    using Microsoft.UI.Xaml;
-    using Microsoft.UI.Xaml.Controls;
-    using Microsoft.Windows.Storage;
+using System;
+using System.Reflection;
+using System.Runtime.Versioning;
+
+using CPCRemote.UI.Services;
+
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+
+/// <summary>
+/// Settings page for configuring application preferences.
+/// </summary>
+[SupportedOSPlatform("windows10.0.22621.0")]
+public sealed partial class SettingsPage : Page
+{
+    private readonly SettingsService _settingsService;
+    private bool _isInitializing = true;
 
     /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame
+    /// Initializes a new instance of the <see cref="SettingsPage"/> class.
     /// </summary>
-    public
-    sealed partial class SettingsPage : Page
+    public SettingsPage()
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SettingsPage"/> class.
-        /// </summary>
-        [SupportedOSPlatform("windows10.0.17763.0")]
-        public SettingsPage()
-        {
-            this.InitializeComponent();
-            ThemeComboBox.SelectionChanged += ThemeComboBox_SelectionChanged;
-            ConfirmationsToggle.Toggled += ConfirmationsToggle_Toggled;
-        }
+        this.InitializeComponent();
+        _settingsService = App.GetService<SettingsService>();
 
-        /// <summary>
-        /// The ThemeComboBox_SelectionChanged
-        /// </summary>
-        /// <param name="_">The sender<see cref="object"/></param>
-        /// <param name="e">The e<see cref="SelectionChangedEventArgs"/></param>
-        [SupportedOSPlatform("windows10.0.17763.0")]
-        private void
-        ThemeComboBox_SelectionChanged(object _, SelectionChangedEventArgs e)
+        // Load saved settings
+        LoadSettings();
+
+        // Wire up event handlers
+        ThemeComboBox.SelectionChanged += ThemeComboBox_SelectionChanged;
+        ConfirmationsToggle.Toggled += ConfirmationsToggle_Toggled;
+        AutoConnectToggle.Toggled += AutoConnectToggle_Toggled;
+
+        // Set version info
+        var version = Assembly.GetExecutingAssembly().GetName().Version;
+        VersionText.Text = $"Version {version?.Major}.{version?.Minor}.{version?.Build}";
+
+        _isInitializing = false;
+    }
+
+    private void LoadSettings()
+    {
+        // Load theme preference
+        string savedTheme = _settingsService.Get("AppTheme", "System");
+        foreach (ComboBoxItem item in ThemeComboBox.Items)
         {
-            string? selectedTheme = (e.AddedItems[0] as string);
-            if (App.CurrentMainWindow?.Content is FrameworkElement rootElement)
+            if (item.Tag is string tag && tag == savedTheme)
             {
-                switch (selectedTheme)
-                {
-                    case "Light":
-                        rootElement.RequestedTheme = ElementTheme.Light;
-                        break;
-                    case "Dark":
-                        rootElement.RequestedTheme = ElementTheme.Dark;
-                        break;
-                    case "System":
-                        rootElement.RequestedTheme = ElementTheme.Default;
-                        break;
-                }
+                ThemeComboBox.SelectedItem = item;
+                break;
             }
         }
 
-        /// <summary>
-        /// The ConfirmationsToggle_Toggled
-        /// </summary>
-        /// <param name="sender">The sender<see cref="object"/></param>
-        /// <param name="_">The e<see cref="RoutedEventArgs"/></param>
-        [SupportedOSPlatform("windows10.0.17763.0")]
-        private void
-        ConfirmationsToggle_Toggled(object sender, RoutedEventArgs _)
+        // Apply theme immediately
+        ApplyTheme(savedTheme);
+
+        // Load other settings
+        ConfirmationsToggle.IsOn = _settingsService.Get("ShowConfirmations", true);
+        AutoConnectToggle.IsOn = _settingsService.Get("AutoConnect", true);
+    }
+
+    private void ThemeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isInitializing)
         {
-            if (sender is ToggleSwitch toggleSwitch)
-            {
-                ApplicationData.GetDefault().LocalSettings.Values["ShowConfirmations"] =
-                    toggleSwitch.IsOn;
-            }
+            return;
+        }
+
+        if (ThemeComboBox.SelectedItem is ComboBoxItem selectedItem &&
+            selectedItem.Tag is string selectedTheme)
+        {
+            _settingsService.Set("AppTheme", selectedTheme);
+            ApplyTheme(selectedTheme);
         }
     }
-}  // namespace CPCRemote.UI.Pages
+
+    private static void ApplyTheme(string theme)
+    {
+        if (App.CurrentMainWindow?.Content is FrameworkElement rootElement)
+        {
+            rootElement.RequestedTheme = theme switch
+            {
+                "Light" => ElementTheme.Light,
+                "Dark" => ElementTheme.Dark,
+                _ => ElementTheme.Default
+            };
+        }
+    }
+
+    private void ConfirmationsToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_isInitializing)
+        {
+            return;
+        }
+
+        _settingsService.Set("ShowConfirmations", ConfirmationsToggle.IsOn);
+    }
+
+    private void AutoConnectToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_isInitializing)
+        {
+            return;
+        }
+
+        _settingsService.Set("AutoConnect", AutoConnectToggle.IsOn);
+    }
+}

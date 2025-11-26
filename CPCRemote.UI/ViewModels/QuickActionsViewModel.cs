@@ -67,6 +67,10 @@ namespace CPCRemote.UI.ViewModels
                     Log($"Failed: {response.StatusCode}");
                 }
             }
+            catch (OperationCanceledException)
+            {
+                // Silently ignore cancellation
+            }
             catch (Exception ex)
             {
                 Log($"Error: {ex.Message}");

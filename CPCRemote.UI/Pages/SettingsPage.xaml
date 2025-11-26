@@ -4,22 +4,103 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
-    xmlns:controls="using:Microsoft.UI.Xaml.Controls"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
-    <Grid>
-        <StackPanel Orientation="Vertical" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20">
-            <controls:TextBlock Text="Theme" Style="{ThemeResource TitleTextBlockStyle}" />
-            <controls:ComboBox x:Name="ThemeComboBox" Margin="0,8,0,0">
-                <x:String>Light</x:String>
-                <x:String>Dark</x:String>
-                <x:String>System</x:String>
-            </controls:ComboBox>
+    <Page.Transitions>
+        <TransitionCollection>
+            <EntranceThemeTransition />
+        </TransitionCollection>
+    </Page.Transitions>
 
-            <controls:TextBlock Text="Behavior" Style="{ThemeResource TitleTextBlockStyle}" Margin="0,20,0,0" />
-            <controls:ToggleSwitch x:Name="ConfirmationsToggle" Header="Show confirmation dialogs" Margin="0,8,0,0" />
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24">
+        <StackPanel Spacing="24" MaxWidth="600">
+            <!-- Appearance Section -->
+            <TextBlock Text="Appearance" Style="{StaticResource TitleTextBlockStyle}"/>
+            
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8" Padding="16"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <StackPanel Spacing="16">
+                    <StackPanel>
+                        <TextBlock Text="Theme" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                        <TextBlock Text="Choose your preferred color theme" 
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" 
+                                   FontSize="12" Margin="0,4,0,8"/>
+                        <ComboBox x:Name="ThemeComboBox" HorizontalAlignment="Stretch">
+                            <ComboBoxItem Content="Light" Tag="Light"/>
+                            <ComboBoxItem Content="Dark" Tag="Dark"/>
+                            <ComboBoxItem Content="Use system setting" Tag="System"/>
+                        </ComboBox>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Behavior Section -->
+            <TextBlock Text="Behavior" Style="{StaticResource TitleTextBlockStyle}" Margin="0,8,0,0"/>
+            
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8" Padding="16"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <StackPanel Spacing="16">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Confirmation dialogs" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                            <TextBlock Text="Show confirmation before executing power commands" 
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" 
+                                       FontSize="12"/>
+                        </StackPanel>
+                        <ToggleSwitch x:Name="ConfirmationsToggle" Grid.Column="1" IsOn="True" VerticalAlignment="Center"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Dashboard Settings Section -->
+            <TextBlock Text="Dashboard" Style="{StaticResource TitleTextBlockStyle}" Margin="0,8,0,0"/>
+            
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8" Padding="16"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <StackPanel Spacing="16">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Auto-connect to service" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                            <TextBlock Text="Automatically connect to the service when the app starts" 
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" 
+                                       FontSize="12"/>
+                        </StackPanel>
+                        <ToggleSwitch x:Name="AutoConnectToggle" Grid.Column="1" IsOn="True" VerticalAlignment="Center"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- About Section -->
+            <TextBlock Text="About" Style="{StaticResource TitleTextBlockStyle}" Margin="0,8,0,0"/>
+            
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8" Padding="16"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="CPC Remote" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                    <TextBlock x:Name="VersionText" Text="Version 1.0.0" 
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12"/>
+                    <TextBlock Text="Control your Windows PC from SmartThings" 
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12"/>
+                    <HyperlinkButton Content="View on GitHub" NavigateUri="https://github.com/clindsay94/Connors-PC-Remote" Margin="0,8,0,0"/>
+                </StackPanel>
+            </Border>
         </StackPanel>
-    </Grid>
+    </ScrollViewer>
 </Page>

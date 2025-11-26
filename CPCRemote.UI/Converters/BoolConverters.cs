@@ -55,4 +55,37 @@ namespace CPCRemote.UI.Converters
             throw new NotImplementedException();
         }
     }
+
+    /// <summary>
+    /// Converts a boolean value to its negation, with Visibility support.
+    /// </summary>
+    public class BoolNegationConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            if (value is bool boolValue)
+            {
+                bool result = !boolValue;
+
+                if (targetType == typeof(Visibility))
+                {
+                    return result ? Visibility.Visible : Visibility.Collapsed;
+                }
+
+                return result;
+            }
+
+            return value;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            if (value is bool boolValue)
+            {
+                return !boolValue;
+            }
+
+            return value;
+        }
+    }
 }

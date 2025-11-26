@@ -1,0 +1,177 @@
+<Page
+    x:Class="CPCRemote.UI.Pages.DashboardPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Page.Transitions>
+        <TransitionCollection>
+            <EntranceThemeTransition />
+        </TransitionCollection>
+    </Page.Transitions>
+
+    <Grid Padding="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="16" Margin="0,0,0,24">
+            <TextBlock Text="Dashboard" Style="{StaticResource TitleTextBlockStyle}"/>
+            <ProgressRing x:Name="LoadingRing" IsActive="False" Width="24" Height="24" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Stats Grid -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="24">
+                <!-- Service Status Card -->
+                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        CornerRadius="8"
+                        Padding="20"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" 
+                                x:Name="ConnectionIndicator"
+                                Width="12" Height="12" 
+                                CornerRadius="6" 
+                                Background="Gray"
+                                VerticalAlignment="Center"
+                                Margin="0,0,12,0"/>
+
+                        <StackPanel Grid.Column="1">
+                            <TextBlock x:Name="ServiceStatusText" Text="Service: Disconnected" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                            <TextBlock x:Name="HttpAddressText" Text="" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12"/>
+                            <TextBlock x:Name="UptimeText" Text="" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12"/>
+                        </StackPanel>
+
+                        <Button Grid.Column="2" x:Name="RefreshButton" Content="Refresh" Click="RefreshButton_Click"/>
+                    </Grid>
+                </Border>
+
+                <!-- Hardware Stats Cards -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- CPU Load -->
+                    <Border Grid.Row="0" Grid.Column="0" 
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            CornerRadius="8" Padding="20" Margin="0,0,8,8"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="CPU Load" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,8">
+                                <TextBlock x:Name="CpuLoadText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
+                                <TextBlock Text="%" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Bottom" Margin="0,0,0,4"/>
+                            </StackPanel>
+                            <ProgressBar x:Name="CpuProgressBar" Value="0" Maximum="100" Height="8" CornerRadius="4"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Memory Load -->
+                    <Border Grid.Row="0" Grid.Column="1" 
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            CornerRadius="8" Padding="20" Margin="8,0,0,8"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="Memory" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,8">
+                                <TextBlock x:Name="MemoryLoadText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
+                                <TextBlock Text="%" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Bottom" Margin="0,0,0,4"/>
+                            </StackPanel>
+                            <ProgressBar x:Name="MemoryProgressBar" Value="0" Maximum="100" Height="8" CornerRadius="4"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- CPU Temp -->
+                    <Border Grid.Row="1" Grid.Column="0" 
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            CornerRadius="8" Padding="20" Margin="0,8,8,0"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="CPU Temperature" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                                <TextBlock x:Name="CpuTempText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
+                                <TextBlock Text="°C" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Bottom" Margin="0,0,0,4"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- GPU Temp -->
+                    <Border Grid.Row="1" Grid.Column="1" 
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            CornerRadius="8" Padding="20" Margin="8,8,0,0"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="GPU Temperature" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                                <TextBlock x:Name="GpuTempText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
+                                <TextBlock Text="°C" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Bottom" Margin="0,0,0,4"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Polling Settings -->
+                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        CornerRadius="8" Padding="20"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Auto-Refresh" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                            <TextBlock Text="Automatically update stats at regular intervals" 
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+                            <ComboBox x:Name="IntervalComboBox" Width="100" SelectionChanged="IntervalComboBox_SelectionChanged">
+                                <ComboBoxItem Content="2 sec" Tag="2"/>
+                                <ComboBoxItem Content="5 sec" Tag="5" IsSelected="True"/>
+                                <ComboBoxItem Content="10 sec" Tag="10"/>
+                                <ComboBoxItem Content="30 sec" Tag="30"/>
+                                <ComboBoxItem Content="60 sec" Tag="60"/>
+                            </ComboBox>
+                            <ToggleSwitch x:Name="PollingToggle" IsOn="True" Toggled="PollingToggle_Toggled"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="2" Margin="0,16,0,0">
+            <TextBlock x:Name="StatusText" 
+                       Text="Ready" 
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" 
+                       FontSize="12"/>
+        </Border>
+    </Grid>
+</Page>

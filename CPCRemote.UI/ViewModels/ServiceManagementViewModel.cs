@@ -603,6 +603,10 @@ namespace CPCRemote.UI.ViewModels
                     _logger.LogWarning("{Command} command failed with status {Status} for {Url}", command, response.StatusCode, url);
                 }
             }
+            catch (OperationCanceledException)
+            {
+                // Silently ignore cancellation
+            }
             catch (HttpRequestException ex)
             {
                 ShowInfoBar($"Connection failed: {ex.Message}. Ensure the service is running.", InfoBarSeverity.Error);
@@ -733,7 +737,16 @@ namespace CPCRemote.UI.ViewModels
             InfoBarMessage = message;
             InfoBarSeverity = severity;
             IsInfoBarOpen = true;
-            await Task.Delay(5000);
+            
+            try
+            {
+                await Task.Delay(5000);
+            }
+            catch (OperationCanceledException)
+            {
+                // Ignore cancellation
+            }
+            
             IsInfoBarOpen = false;
         }
 
@@ -772,6 +785,10 @@ namespace CPCRemote.UI.ViewModels
                     ShowInfoBar($"Service responded with status {response.StatusCode}: {content}", InfoBarSeverity.Warning);
                     _logger.LogWarning("Ping test failed with status {Status} for {Url}", response.StatusCode, url);
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                // Silently ignore cancellation
             }
             catch (HttpRequestException ex)
             {

@@ -2,12 +2,14 @@ using System.Runtime.Versioning;
 
 using CPCRemote.Core.Helpers;
 using CPCRemote.Core.Interfaces;
+using CPCRemote.Core.IPC;
 using CPCRemote.Service;
 using CPCRemote.Service.Options;
-using CPCRemote.Service.Services; // <--- Add this
+using CPCRemote.Service.Services;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 [assembly: SupportedOSPlatform("windows10.0.22621.0")]
 
@@ -19,11 +21,17 @@ builder.Services.AddSingleton<IValidateOptions<RsmOptions>, RsmOptionsValidator>
 builder.Services.Configure<RsmOptions>(builder.Configuration.GetSection("rsm"));
 builder.Services.AddOptions<RsmOptions>().Bind(builder.Configuration.GetSection("rsm")).ValidateDataAnnotations().ValidateOnStart();
 
-// NEW REGISTRATIONS
-builder.Services.Configure<AppOptions>(builder.Configuration.GetSection("apps"));
+// Core Services
+builder.Services.AddSingleton<AppCatalogService>();
 builder.Services.AddSingleton<HardwareMonitor>();
 
+// Named Pipe IPC Server
+builder.Services.AddSingleton<NamedPipeServer>();
+builder.Services.AddSingleton<IPipeServer>(static sp => sp.GetRequiredService<NamedPipeServer>());
+
 builder.Services.Configure<CPCRemote.Core.Models.WolOptions>(builder.Configuration.GetSection("wol"));
+builder.Services.AddSingleton(static sp => sp.GetRequiredService<IOptions<CPCRemote.Core.Models.WolOptions>>().Value);
+
 if (OperatingSystem.IsWindows())
 {
     builder.Services.AddSingleton<CommandHelper>();

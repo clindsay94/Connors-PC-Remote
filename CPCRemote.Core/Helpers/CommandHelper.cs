@@ -41,16 +41,6 @@ public sealed partial class CommandHelper(WolOptions wolOptions) : ICommandCatal
     private static readonly IReadOnlyDictionary<TrayCommandType, string> CommandTextByType =
         SeedCommands.ToDictionary(static c => c.CommandType, static c => c.Name);
 
-    [LibraryImport("user32.dll", EntryPoint = "SendMessageTimeoutW")]
-    private static partial IntPtr SendMessageTimeout(
-        IntPtr hWnd,
-        uint Msg,
-        IntPtr wParam,
-        IntPtr lParam,
-        uint fuFlags,
-        uint uTimeout,
-        out IntPtr lpdwResult);
-
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool LockWorkStation();
@@ -204,11 +194,21 @@ public sealed partial class CommandHelper(WolOptions wolOptions) : ICommandCatal
 
         try
         {
-            // Use SendMessageTimeout to prevent blocking indefinitely and avoid EEMessageException in Session 0
-            // HWND_BROADCAST = 0xffff, WM_SYSCOMMAND = 0x0112, SC_MONITORPOWER = 0xf170, PowerOff = 2
-            // SMTO_ABORTIFHUNG = 0x0002
-            const uint SMTO_ABORTIFHUNG = 0x0002;
-            SendMessageTimeout((IntPtr)0xffff, 0x0112, (IntPtr)0xf170, (IntPtr)0x0002, SMTO_ABORTIFHUNG, 1000, out _);
+            // From Session 0 services, we cannot directly interact with the user's desktop.
+            // The most reliable approach is to use a scheduled task or simply log the limitation.
+            // For now, we'll try the scrnsave.scr approach which sometimes works.
+            using var process = Process.Start(new ProcessStartInfo
+            {
+                FileName = Environment.ExpandEnvironmentVariables(@"%SystemRoot%\System32\scrnsave.scr"),
+                Arguments = "/s",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            });
+            
+            // Note: If this doesn't work reliably, consider:
+            // 1. Running a companion app in the user session that listens for commands
+            // 2. Using Task Scheduler to run the screen-off command in the user's context
+            Debug.WriteLine("TurnScreenOff: Attempted via screensaver activation");
         }
         catch (Exception ex)
         {

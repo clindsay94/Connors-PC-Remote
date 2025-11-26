@@ -2,7 +2,6 @@ namespace CPCRemote.Service
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Net;
     using System.Text.Json;
     using System.Threading;
@@ -18,20 +17,23 @@ namespace CPCRemote.Service
     using Microsoft.Extensions.Options;
 
     /// <summary>
-    /// Background service hosting a minimal HTTP listener to accept remote power commands.
+    /// Background service hosting a minimal HTTP listener to accept remote power commands
+    /// and a Named Pipe server for local IPC communication.
     /// </summary>
     public partial class Worker(
         ILogger<Worker> logger,
         IOptionsMonitor<RsmOptions> rsmOptionsMonitor,
-        IOptionsMonitor<AppOptions> appOptionsMonitor,
+        AppCatalogService appCatalog,
         HardwareMonitor hardwareMonitor,
+        NamedPipeServer pipeServer,
         ICommandCatalog commandCatalog,
         ICommandExecutor commandExecutor) : BackgroundService
     {
         private readonly ILogger<Worker> _logger = logger;
         private readonly IOptionsMonitor<RsmOptions> _rsmOptionsMonitor = rsmOptionsMonitor;
-        private readonly IOptionsMonitor<AppOptions> _appOptionsMonitor = appOptionsMonitor;
+        private readonly AppCatalogService _appCatalog = appCatalog;
         private readonly HardwareMonitor _hardwareMonitor = hardwareMonitor;
+        private readonly NamedPipeServer _pipeServer = pipeServer;
         private readonly ICommandCatalog _commandCatalog = commandCatalog;
         private readonly ICommandExecutor _commandExecutor = commandExecutor;
 
@@ -49,6 +51,10 @@ namespace CPCRemote.Service
         /// <inheritdoc />
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            // Start the Named Pipe IPC server
+            await _pipeServer.StartAsync(stoppingToken).ConfigureAwait(false);
+            _logger.LogInformation("Named Pipe IPC server started.");
+
             try
             {
                 while (!stoppingToken.IsCancellationRequested)
@@ -117,6 +123,9 @@ namespace CPCRemote.Service
                                     prefix,
                                     !string.IsNullOrEmpty(secret) ? "ENABLED" : "DISABLED");
                             }
+
+                            // Update pipe server with HTTP status
+                            _pipeServer.UpdateHttpStatus(prefix, true);
 
                             _retryAttempts = 0;
                         }
@@ -339,6 +348,17 @@ namespace CPCRemote.Service
                                 continue;
                             }
 
+                            if (string.Equals(commandStr, "apps", StringComparison.OrdinalIgnoreCase))
+                            {
+                                var apps = _appCatalog.GetAllApps();
+                                byte[] buffer = JsonSerializer.SerializeToUtf8Bytes(apps);
+                                response.ContentType = "application/json";
+                                response.ContentLength64 = buffer.Length;
+                                await response.OutputStream.WriteAsync(buffer, stoppingToken);
+                                response.Close();
+                                continue;
+                            }
+
                             if (string.Equals(commandStr, "launch", StringComparison.OrdinalIgnoreCase))
                             {
                                 int cmdIdx = -1;
@@ -431,6 +451,10 @@ namespace CPCRemote.Service
             }
             finally
             {
+                // Stop the Named Pipe IPC server
+                await _pipeServer.StopAsync().ConfigureAwait(false);
+                _logger.LogInformation("Named Pipe IPC server stopped.");
+
                 try
                 {
                     if (_listener?.IsListening == true)
@@ -452,38 +476,7 @@ namespace CPCRemote.Service
 
         private void LaunchApp(string slot)
         {
-            var apps = _appOptionsMonitor.CurrentValue;
-            string? path = slot.ToLowerInvariant() switch
-            {
-                "app1" => apps.App1,
-                "app2" => apps.App2,
-                "app3" => apps.App3,
-                "app4" => apps.App4,
-                "app5" => apps.App5,
-                "app6" => apps.App6,
-                "app7" => apps.App7,
-                "app8" => apps.App8,
-                "app9" => apps.App9,
-                "app10" => apps.App10,
-                _ => null
-            };
-
-            if (!string.IsNullOrWhiteSpace(path))
-            {
-                try
-                {
-                    Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
-                    _logger.LogInformation("Launched {Slot}: {Path}", slot, path);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to launch {Slot}", slot);
-                }
-            }
-            else
-            {
-                _logger.LogWarning("Slot {Slot} not configured", slot);
-            }
+            _appCatalog.LaunchApp(slot);
         }
     }
 }

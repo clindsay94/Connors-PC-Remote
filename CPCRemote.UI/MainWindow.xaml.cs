@@ -4,6 +4,8 @@ using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Diagnostics;
 
+using CPCRemote.UI.Pages;
+
 namespace CPCRemote.UI
 {
     public sealed partial class MainWindow : Window
@@ -23,15 +25,15 @@ namespace CPCRemote.UI
         {
             try
             {
-                // Ensure the page type exists before navigating
-                var firstPage = typeof(QuickActionsPage);
+                // Start with Dashboard as the first page
+                var firstPage = typeof(DashboardPage);
 
                 NavView.SelectedItem = NavView.MenuItems[0];
                 bool success = ContentFrame.Navigate(firstPage);
 
                 if (!success)
                 {
-                    Debug.WriteLine("WARNING: Navigation to QuickActionsPage failed (returned false).");
+                    Debug.WriteLine("WARNING: Navigation to DashboardPage failed (returned false).");
                 }
             }
             catch (Exception ex)
@@ -62,7 +64,9 @@ namespace CPCRemote.UI
                     // Using fully qualified names or explicit types helps avoid "Type not found" errors
                     Type? pageType = pageTag switch
                     {
+                        "DashboardPage" => typeof(DashboardPage),
                         "QuickActionsPage" => typeof(QuickActionsPage),
+                        "AppCatalogPage" => typeof(AppCatalogPage),
                         "ScheduledTasksPage" => typeof(ScheduledTasksPage),
                         "ServiceManagementPage" => typeof(ServiceManagementPage),
                         "SettingsPage" => typeof(SettingsPage),

@@ -2,7 +2,8 @@
     x:Class="CPCRemote.UI.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:CPCRemote.UI">
+    xmlns:local="using:CPCRemote.UI"
+    xmlns:converters="using:CPCRemote.UI.Converters">
 
     <Application.Resources>
         <ResourceDictionary>
@@ -10,6 +11,12 @@
                 <!-- This line is required for NavigationView and other WinUI 3 controls -->
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
+            
+            <!-- Global Converters -->
+            <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+            <converters:BoolNegationConverter x:Key="BoolNegationConverter"/>
+            <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
+            <converters:BoolToGlyphConverter x:Key="BoolToGlyphConverter"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
