@@ -22,6 +22,7 @@ builder.Services.Configure<RsmOptions>(builder.Configuration.GetSection("rsm"));
 builder.Services.AddOptions<RsmOptions>().Bind(builder.Configuration.GetSection("rsm")).ValidateDataAnnotations().ValidateOnStart();
 
 // Core Services
+builder.Services.AddSingleton<UserSessionLauncher>();
 builder.Services.AddSingleton<AppCatalogService>();
 builder.Services.AddSingleton<HardwareMonitor>();
 

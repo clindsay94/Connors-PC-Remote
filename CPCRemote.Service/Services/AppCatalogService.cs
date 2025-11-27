@@ -20,6 +20,7 @@ using Microsoft.Extensions.Logging;
 public sealed class AppCatalogService
 {
     private readonly ILogger<AppCatalogService> _logger;
+    private readonly UserSessionLauncher _userSessionLauncher;
     private readonly string _catalogPath;
     private readonly Lock _lock = new();
     private Dictionary<string, AppCatalogEntry> _catalog = new(StringComparer.OrdinalIgnoreCase);
@@ -31,9 +32,10 @@ public sealed class AppCatalogService
         PropertyNameCaseInsensitive = true
     };
 
-    public AppCatalogService(ILogger<AppCatalogService> logger)
+    public AppCatalogService(ILogger<AppCatalogService> logger, UserSessionLauncher userSessionLauncher)
     {
         _logger = logger;
+        _userSessionLauncher = userSessionLauncher;
         
         // Store catalog in the same directory as appsettings.json
         string baseDir = AppContext.BaseDirectory;
@@ -100,26 +102,23 @@ public sealed class AppCatalogService
 
         try
         {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = app.Path,
-                UseShellExecute = true,
-                Arguments = app.Arguments ?? string.Empty
-            };
+            // Use UserSessionLauncher to start the process in the interactive user's session
+            // This is required because the service runs in Session 0 and cannot show UI directly
+            bool success = _userSessionLauncher.LaunchInUserSession(
+                app.Path,
+                app.Arguments,
+                app.WorkingDirectory);
 
-            if (!string.IsNullOrWhiteSpace(app.WorkingDirectory))
+            if (success)
             {
-                startInfo.WorkingDirectory = app.WorkingDirectory;
+                _logger.LogInformation("Launched {Slot}: {Name} ({Path})", slot, app.Name, app.Path);
+            }
+            else
+            {
+                _logger.LogWarning("Failed to launch {Slot}: {Name} in user session", slot, app.Name);
             }
 
-            if (app.RunAsAdmin)
-            {
-                startInfo.Verb = "runas";
-            }
-
-            Process.Start(startInfo);
-            _logger.LogInformation("Launched {Slot}: {Name} ({Path})", slot, app.Name, app.Path);
-            return true;
+            return success;
         }
         catch (Exception ex)
         {
