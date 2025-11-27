@@ -107,11 +107,12 @@ public sealed class AppCatalogService
             bool success = _userSessionLauncher.LaunchInUserSession(
                 app.Path,
                 app.Arguments,
-                app.WorkingDirectory);
+                app.WorkingDirectory,
+                app.RunAsAdmin);
 
             if (success)
             {
-                _logger.LogInformation("Launched {Slot}: {Name} ({Path})", slot, app.Name, app.Path);
+                _logger.LogInformation("Launched {Slot}: {Name} ({Path}) [Admin: {Admin}]", slot, app.Name, app.Path, app.RunAsAdmin);
             }
             else
             {
