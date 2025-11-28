@@ -25,6 +25,7 @@
 	<NoWarn>$(NoWarn);CA1416</NoWarn>
 	<!-- Self-contained deployment includes SDK runtime in output -->
 	<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+	<!-- LangVersion preview required for partial property support with CommunityToolkit.Mvvm -->
 	<LangVersion>preview</LangVersion>
 	<StartupObject>CPCRemote.UI.Program</StartupObject>
   </PropertyGroup>
@@ -53,6 +54,7 @@
 	<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
 	<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1-RTM" />
 	<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.251106002" />
+	<PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
 	<PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.0" />
 	<ProjectReference Include="..\CPCRemote.Core\CPCRemote.Core.csproj" />
   </ItemGroup>

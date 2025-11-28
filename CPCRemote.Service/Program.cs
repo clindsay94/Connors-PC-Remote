@@ -1,6 +1,7 @@
 using System.Runtime.Versioning;
 
 using CPCRemote.Core.Helpers;
+using CPCRemote.Core.Constants;
 using CPCRemote.Core.Interfaces;
 using CPCRemote.Core.IPC;
 using CPCRemote.Service;
@@ -15,11 +16,14 @@ using Microsoft.Extensions.Options;
 
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.AddWindowsService(options => { options.ServiceName = "Remote Shutdown Service"; });
+builder.Services.AddWindowsService(options => { options.ServiceName = ServiceConstants.RemoteShutdownServiceName; });
 
 builder.Services.AddSingleton<IValidateOptions<RsmOptions>, RsmOptionsValidator>();
 builder.Services.Configure<RsmOptions>(builder.Configuration.GetSection("rsm"));
 builder.Services.AddOptions<RsmOptions>().Bind(builder.Configuration.GetSection("rsm")).ValidateDataAnnotations().ValidateOnStart();
+
+// Sensor configuration for customizable HWiNFO sensor matching
+builder.Services.Configure<SensorOptions>(builder.Configuration.GetSection("sensors"));
 
 // Core Services
 builder.Services.AddSingleton<UserSessionLauncher>();

@@ -14,6 +14,16 @@ namespace CPCRemote.UI.Pages
         {
             InitializeComponent();
             ViewModel = App.GetService<ServiceManagementViewModel>();
+            
+            // Item 8: Call async initialization after page is loaded
+            Loaded += ServiceManagementPage_Loaded;
+        }
+
+        private async void ServiceManagementPage_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Only initialize once
+            Loaded -= ServiceManagementPage_Loaded;
+            await ViewModel.InitializeAsync();
         }
 
         private async void BrowseButton_Click(object sender, RoutedEventArgs e)

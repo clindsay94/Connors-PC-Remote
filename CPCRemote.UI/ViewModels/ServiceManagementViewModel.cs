@@ -16,7 +16,7 @@ namespace CPCRemote.UI.ViewModels
 {
     public partial class ServiceManagementViewModel : ObservableObject
     {
-        private const string ServiceName = "CPCRemote.Service";
+        private const string ServiceName = CPCRemote.Core.Constants.ServiceConstants.RemoteShutdownServiceName;
         private const int DefaultHttpTimeout = 5;
         private const int ServiceOperationTimeout = 30;
         private const string ConfigFileName = "appsettings.json";
@@ -55,7 +55,19 @@ namespace CPCRemote.UI.ViewModels
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(PreviewUrl))]
+        [NotifyPropertyChangedFor(nameof(IsPortValid))]
+        [NotifyPropertyChangedFor(nameof(PortValidationMessage))]
         public partial double Port { get; set; }
+
+        /// <summary>
+        /// Item 12: Validates port is in valid range (1-65535)
+        /// </summary>
+        public bool IsPortValid => Port >= 1 && Port <= 65535;
+
+        /// <summary>
+        /// Item 12: Validation message for invalid port
+        /// </summary>
+        public string PortValidationMessage => IsPortValid ? string.Empty : "Port must be between 1 and 65535";
 
         [ObservableProperty]
         public partial string? Secret { get; set; }
@@ -98,8 +110,17 @@ namespace CPCRemote.UI.ViewModels
             IsSafetyLockEnabled = _settingsService.Get<bool>(nameof(IsSafetyLockEnabled), true);
             ServiceExecutablePath = FindServiceExecutable();
 
-            LoadConfigurationCommand.Execute(null);
-            RefreshStatusCommand.Execute(null);
+            // Item 8: Defer async initialization to avoid blocking constructor
+            // Commands will be loaded when view is ready via InitializeAsync()
+        }
+
+        /// <summary>
+        /// Item 8: Async initialization method to be called after construction
+        /// </summary>
+        public async Task InitializeAsync()
+        {
+            await LoadConfigurationCommand.ExecuteAsync(null);
+            await RefreshStatusCommand.ExecuteAsync(null);
         }
 
         [RelayCommand]
@@ -123,6 +144,13 @@ namespace CPCRemote.UI.ViewModels
         [RelayCommand]
         private async Task SaveConfiguration()
         {
+            // Item 12: Validate port before saving
+            if (!IsPortValid)
+            {
+                ShowInfoBar($"Invalid port: {PortValidationMessage}", InfoBarSeverity.Error);
+                return;
+            }
+
             ShowInfoBar("Saving configuration...", InfoBarSeverity.Informational);
 
             try
@@ -750,12 +778,18 @@ namespace CPCRemote.UI.ViewModels
             return string.Empty;
         }
 
-        private async void ShowInfoBar(string message, InfoBarSeverity severity)
+        private void ShowInfoBar(string message, InfoBarSeverity severity)
         {
             InfoBarMessage = message;
             InfoBarSeverity = severity;
             IsInfoBarOpen = true;
             
+            // Fire-and-forget the auto-close with proper exception handling
+            _ = AutoCloseInfoBarAsync();
+        }
+
+        private async Task AutoCloseInfoBarAsync()
+        {
             try
             {
                 await Task.Delay(5000);

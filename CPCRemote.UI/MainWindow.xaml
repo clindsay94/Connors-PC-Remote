@@ -34,11 +34,13 @@
                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE74C;"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <!-- Item 14: Hidden until scheduling feature is implemented
                 <NavigationViewItem Content="Scheduled Tasks" Tag="ScheduledTasksPage">
                     <NavigationViewItem.Icon>
                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE787;"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+                -->
                 <NavigationViewItem Content="Service Management" Tag="ServiceManagementPage">
                     <NavigationViewItem.Icon>
                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE7EF;"/>

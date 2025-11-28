@@ -23,29 +23,143 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _pollingCts;
     private bool _isDisposed;
 
-    /// <summary>
-    /// Gets or sets the CPU load percentage.
-    /// </summary>
-    [ObservableProperty]
-    public partial float? CpuLoad { get; set; }
+    #region CPU Stats
 
     /// <summary>
-    /// Gets or sets the memory usage percentage.
+    /// Gets or sets the total CPU utilization percentage.
     /// </summary>
     [ObservableProperty]
-    public partial float? MemoryLoad { get; set; }
+    public partial float? CpuUtility { get; set; }
 
     /// <summary>
-    /// Gets or sets the CPU temperature in Celsius.
+    /// Gets or sets the CPU temperature (Tctl/Tdie).
     /// </summary>
     [ObservableProperty]
     public partial float? CpuTemp { get; set; }
 
     /// <summary>
-    /// Gets or sets the GPU temperature in Celsius.
+    /// Gets or sets the CPU die average temperature.
+    /// </summary>
+    [ObservableProperty]
+    public partial float? CpuDieAvgTemp { get; set; }
+
+    /// <summary>
+    /// Gets or sets the CPU IOD hotspot temperature.
+    /// </summary>
+    [ObservableProperty]
+    public partial float? CpuIodHotspot { get; set; }
+
+    /// <summary>
+    /// Gets or sets the CPU package power in watts.
+    /// </summary>
+    [ObservableProperty]
+    public partial float? CpuPackagePower { get; set; }
+
+    /// <summary>
+    /// Gets or sets the CPU PPT (Package Power Tracking) in watts.
+    /// </summary>
+    [ObservableProperty]
+    public partial float? CpuPpt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the average core clock in MHz.
+    /// </summary>
+    [ObservableProperty]
+    public partial float? CpuCoreClock { get; set; }
+
+    /// <summary>
+    /// Gets or sets the average effective clock in MHz.
+    /// </summary>
+    [ObservableProperty]
+    public partial float? CpuEffectiveClock { get; set; }
+
+    /// <summary>
+    /// Gets or sets the per-core effective clocks.
+    /// </summary>
+    [ObservableProperty]
+    public partial float[]? CpuCoreEffectiveClocks { get; set; }
+
+    #endregion
+
+    #region Memory Stats
+
+    /// <summary>
+    /// Gets or sets the physical memory load percentage.
+    /// </summary>
+    [ObservableProperty]
+    public partial float? MemoryLoad { get; set; }
+
+    /// <summary>
+    /// Gets or sets the DIMM temperatures.
+    /// </summary>
+    [ObservableProperty]
+    public partial DimmTemp[]? DimmTemps { get; set; }
+
+    #endregion
+
+    #region GPU Stats
+
+    /// <summary>
+    /// Gets or sets the GPU temperature.
     /// </summary>
     [ObservableProperty]
     public partial float? GpuTemp { get; set; }
+
+    /// <summary>
+    /// Gets or sets the GPU memory junction temperature.
+    /// </summary>
+    [ObservableProperty]
+    public partial float? GpuMemJunctionTemp { get; set; }
+
+    /// <summary>
+    /// Gets or sets the GPU power in watts.
+    /// </summary>
+    [ObservableProperty]
+    public partial float? GpuPower { get; set; }
+
+    /// <summary>
+    /// Gets or sets the GPU clock speed in MHz.
+    /// </summary>
+    [ObservableProperty]
+    public partial float? GpuClock { get; set; }
+
+    /// <summary>
+    /// Gets or sets the GPU effective clock in MHz.
+    /// </summary>
+    [ObservableProperty]
+    public partial float? GpuEffectiveClock { get; set; }
+
+    /// <summary>
+    /// Gets or sets the GPU memory usage percentage.
+    /// </summary>
+    [ObservableProperty]
+    public partial float? GpuMemoryUsage { get; set; }
+
+    /// <summary>
+    /// Gets or sets the GPU core load percentage.
+    /// </summary>
+    [ObservableProperty]
+    public partial float? GpuCoreLoad { get; set; }
+
+    #endregion
+
+    #region Motherboard Stats
+
+    /// <summary>
+    /// Gets or sets the CPU core voltage (Vcore).
+    /// </summary>
+    [ObservableProperty]
+    public partial float? Vcore { get; set; }
+
+    /// <summary>
+    /// Gets or sets the SOC voltage (VDDCR_SOC).
+    /// </summary>
+    [ObservableProperty]
+    public partial float? Vsoc { get; set; }
+
+    #endregion
+
+    #region Service Status
 
     /// <summary>
     /// Gets or sets the service version string.
@@ -100,6 +214,8 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
     /// </summary>
     [ObservableProperty]
     public partial bool IsPollingEnabled { get; set; } = true;
+
+    #endregion
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DashboardViewModel"/> class.
@@ -230,10 +346,45 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
 
             if (statsResponse.Success)
             {
-                CpuLoad = statsResponse.Cpu;
-                MemoryLoad = statsResponse.Memory;
-                CpuTemp = statsResponse.CpuTemp;
-                GpuTemp = statsResponse.GpuTemp;
+                // CPU Stats
+                if (statsResponse.Cpu is not null)
+                {
+                    CpuUtility = statsResponse.Cpu.Utility;
+                    CpuTemp = statsResponse.Cpu.Temperature;
+                    CpuDieAvgTemp = statsResponse.Cpu.DieAvgTemp;
+                    CpuIodHotspot = statsResponse.Cpu.IodHotspot;
+                    CpuPackagePower = statsResponse.Cpu.PackagePower;
+                    CpuPpt = statsResponse.Cpu.Ppt;
+                    CpuCoreClock = statsResponse.Cpu.CoreClock;
+                    CpuEffectiveClock = statsResponse.Cpu.EffectiveClock;
+                    CpuCoreEffectiveClocks = statsResponse.Cpu.CoreEffectiveClocks;
+                }
+
+                // Memory Stats
+                if (statsResponse.Memory is not null)
+                {
+                    MemoryLoad = statsResponse.Memory.Load;
+                    DimmTemps = statsResponse.Memory.DimmTemps;
+                }
+
+                // GPU Stats
+                if (statsResponse.Gpu is not null)
+                {
+                    GpuTemp = statsResponse.Gpu.Temperature;
+                    GpuMemJunctionTemp = statsResponse.Gpu.MemJunctionTemp;
+                    GpuPower = statsResponse.Gpu.Power;
+                    GpuClock = statsResponse.Gpu.Clock;
+                    GpuEffectiveClock = statsResponse.Gpu.EffectiveClock;
+                    GpuMemoryUsage = statsResponse.Gpu.MemoryUsage;
+                    GpuCoreLoad = statsResponse.Gpu.CoreLoad;
+                }
+
+                // Motherboard Stats
+                if (statsResponse.Motherboard is not null)
+                {
+                    Vcore = statsResponse.Motherboard.Vcore;
+                    Vsoc = statsResponse.Motherboard.Vsoc;
+                }
             }
 
             // Fetch service status
@@ -286,10 +437,35 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
 
     private void ClearStats()
     {
-        CpuLoad = null;
-        MemoryLoad = null;
+        // CPU
+        CpuUtility = null;
         CpuTemp = null;
+        CpuDieAvgTemp = null;
+        CpuIodHotspot = null;
+        CpuPackagePower = null;
+        CpuPpt = null;
+        CpuCoreClock = null;
+        CpuEffectiveClock = null;
+        CpuCoreEffectiveClocks = null;
+
+        // Memory
+        MemoryLoad = null;
+        DimmTemps = null;
+
+        // GPU
         GpuTemp = null;
+        GpuMemJunctionTemp = null;
+        GpuPower = null;
+        GpuClock = null;
+        GpuEffectiveClock = null;
+        GpuMemoryUsage = null;
+        GpuCoreLoad = null;
+
+        // Motherboard
+        Vcore = null;
+        Vsoc = null;
+
+        // Service
         ServiceVersion = null;
         ServiceUptime = null;
         HttpListenerAddress = null;

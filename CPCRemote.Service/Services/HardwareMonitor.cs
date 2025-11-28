@@ -1,165 +1,110 @@
 namespace CPCRemote.Service.Services;
 
 using System;
-using System.IO.MemoryMappedFiles;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Text.Json.Serialization;
+using System.Collections.Generic;
+using System.Linq;
+using CPCRemote.Core.IPC;
+using CPCRemote.Service.Options;
+using Hwinfo.SharedMemory;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 /// <summary>
 /// Hardware monitoring service that reads from HWiNFO's shared memory interface.
 /// Requires HWiNFO64 to be running with "Shared Memory Support" enabled in settings.
-/// This approach works reliably from Session 0 services since it only reads shared memory.
+/// Uses the Hwinfo.SharedMemory.Net library for reliable shared memory access.
 /// </summary>
 public sealed class HardwareMonitor : IDisposable
 {
-    private const string HWiNFO_SHARED_MEM_FILE_NAME = "Global\\HWiNFO_SENS_SM2";
-    private const int HWiNFO_SENSORS_STRING_LEN = 128;
-    private const int HWiNFO_UNIT_STRING_LEN = 16;
-    private const uint HWiNFO_HEADER_MAGIC = 0x53695748; // "HWiS" - HWiNFO Sensors signature
-
     private readonly ILogger<HardwareMonitor> _logger;
+    private readonly IOptionsMonitor<SensorOptions> _sensorOptionsMonitor;
+    private SharedMemoryReader? _reader;
     private readonly Lock _lock = new();
     private bool _hwInfoAvailable;
     private bool _availabilityChecked;
+    private bool _readerInitFailed;
 
-    public HardwareMonitor(ILogger<HardwareMonitor> logger)
+    public HardwareMonitor(ILogger<HardwareMonitor> logger, IOptionsMonitor<SensorOptions> sensorOptionsMonitor)
     {
         _logger = logger;
-        _logger.LogInformation("HardwareMonitor initialized. Will read from HWiNFO shared memory.");
+        _sensorOptionsMonitor = sensorOptionsMonitor;
+        _logger.LogInformation("HardwareMonitor initialized. Will read from HWiNFO shared memory via library.");
     }
 
-    public record PcStats(
-        [property: JsonPropertyName("cpu")] float? Cpu,
-        [property: JsonPropertyName("memory")] float? Memory,
-        [property: JsonPropertyName("cpuTemp")] float? CpuTemp,
-        [property: JsonPropertyName("gpuTemp")] float? GpuTemp
-    );
+    /// <summary>
+    /// Gets or creates the SharedMemoryReader, handling initialization failures gracefully.
+    /// </summary>
+    private SharedMemoryReader? GetReader()
+    {
+        if (_reader is not null)
+            return _reader;
 
-    public PcStats GetStats()
+        if (_readerInitFailed)
+            return null;
+
+        try
+        {
+            _reader = new SharedMemoryReader();
+            return _reader;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to initialize HWiNFO SharedMemoryReader. HWiNFO may not be running or shared memory support is disabled.");
+            _readerInitFailed = true;
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Resets the reader initialization state to allow retry.
+    /// Called periodically to check if HWiNFO has become available.
+    /// </summary>
+    private void ResetReaderIfNeeded()
+    {
+        // Reset the failed flag periodically to allow retry
+        if (_readerInitFailed && _reader is null)
+        {
+            _readerInitFailed = false;
+        }
+    }
+
+    /// <summary>
+    /// Gets comprehensive PC statistics organized by component.
+    /// </summary>
+    public GetStatsResponse GetStats()
     {
         lock (_lock)
         {
             try
             {
-                using var mmf = MemoryMappedFile.OpenExisting(HWiNFO_SHARED_MEM_FILE_NAME, MemoryMappedFileRights.Read);
-                using var accessor = mmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
+                // Reset reader state to allow retry if HWiNFO wasn't available before
+                ResetReaderIfNeeded();
 
-                // Read the header
-                accessor.Read(0, out HWiNFOSharedMemHeader header);
-
-                if (header.dwSignature != HWiNFO_HEADER_MAGIC) // "HWiS" signature
+                var reader = GetReader();
+                if (reader is null)
                 {
-                    _logger.LogWarning("Invalid HWiNFO shared memory signature. Got 0x{Signature:X8}, expected 0x{Expected:X8}", 
-                        header.dwSignature, HWiNFO_HEADER_MAGIC);
-                    return new PcStats(null, null, null, null);
+                    if (!_availabilityChecked)
+                    {
+                        _logger.LogWarning("HWiNFO shared memory not available. Ensure HWiNFO is running with 'Shared Memory Support' enabled in Settings > General.");
+                        _availabilityChecked = true;
+                    }
+                    return new GetStatsResponse { Success = false, ErrorMessage = "HWiNFO not running" };
                 }
 
-                if (!_availabilityChecked)
+                var readings = reader.ReadLocal().ToList();
+
+                if (!_hwInfoAvailable)
                 {
                     _hwInfoAvailable = true;
                     _availabilityChecked = true;
-                    _logger.LogInformation("HWiNFO shared memory connected. Version: {Version}, Sensors: {Count}, Readings: {Readings}",
-                        header.dwVersion, header.dwNumSensorElements, header.dwNumReadingElements);
-                    
-                    // Log available sensors for debugging (only on first connection)
-                    LogAvailableSensors(accessor, header);
+                    _logger.LogInformation("HWiNFO shared memory connected. Found {Count} readings.", readings.Count);
+                    LogAvailableSensors(readings);
                 }
 
-                float? cpuLoad = null;
-                float? memoryLoad = null;
-                float? cpuTemp = null;
-                float? gpuTemp = null;
-                float? firstCpuTemp = null;  // Fallback: first CPU-related temp
-                float? firstGpuTemp = null;  // Fallback: first GPU-related temp
-
-                // Iterate through all sensor readings
-                long readingOffset = header.dwOffsetOfReadingSection;
-                int readingSize = (int)header.dwSizeOfReadingElement;
-
-                for (uint i = 0; i < header.dwNumReadingElements; i++)
-                {
-                    var reading = ReadReading(accessor, readingOffset + (i * readingSize));
-
-                    string label = reading.szLabelOrig.ToLowerInvariant();
-                    string unit = reading.szUnit.ToLowerInvariant();
-
-                    // CPU Total Load - look for total/overall CPU usage percentage
-                    if (cpuLoad is null && unit == "%" &&
-                        ((label.Contains("total") && label.Contains("cpu")) ||
-                         label.Contains("cpu usage") ||
-                         label.Contains("cpu utilization") ||
-                         label == "total cpu usage"))
-                    {
-                        cpuLoad = (float)reading.Value;
-                    }
-                    // CPU Package/Die Temperature - various naming conventions
-                    else if (cpuTemp is null && unit == "°c" &&
-                             (label.Contains("cpu package") ||
-                              label.Contains("cpu (tctl") ||
-                              label.Contains("cpu (tdie") ||
-                              label.Contains("cpu die") ||
-                              label.Contains("core max") ||
-                              label.Contains("tdie") ||
-                              label.Contains("tctl") ||
-                              (label.Contains("cpu") && label.Contains("temp") && !label.Contains("vrm"))))
-                    {
-                        cpuTemp = (float)reading.Value;
-                    }
-                    // GPU Temperature - various naming conventions
-                    else if (gpuTemp is null && unit == "°c" &&
-                             ((label.Contains("gpu") && (label.Contains("temp") || label.Contains("hot spot"))) ||
-                              label.Contains("gpu temperature") ||
-                              label.Contains("gpu core") ||
-                              label.Contains("gpu edge") ||
-                              label.Contains("gpu junction")))
-                    {
-                        gpuTemp = (float)reading.Value;
-                    }
-                    // Physical Memory Load - various naming conventions
-                    else if (memoryLoad is null && unit == "%" &&
-                             (label.Contains("physical memory load") ||
-                              label.Contains("memory usage") ||
-                              label.Contains("ram usage") ||
-                              label == "memory load" ||
-                              (label.Contains("memory") && label.Contains("used"))))
-                    {
-                        memoryLoad = (float)reading.Value;
-                    }
-
-                    // Fallback: capture first CPU/GPU temperature we see (any temp sensor related to cpu/gpu)
-                    if (unit == "°c" && reading.Value > 0 && reading.Value < 150)
-                    {
-                        if (firstCpuTemp is null && (label.Contains("cpu") || label.Contains("core") || label.Contains("tctl") || label.Contains("tdie")))
-                        {
-                            firstCpuTemp = (float)reading.Value;
-                        }
-                        if (firstGpuTemp is null && label.Contains("gpu"))
-                        {
-                            firstGpuTemp = (float)reading.Value;
-                        }
-                    }
-                }
-
-                // Use fallbacks if primary matching didn't find temps
-                cpuTemp ??= firstCpuTemp;
-                gpuTemp ??= firstGpuTemp;
-
-                // Log warning if temps still not found (helps debugging)
-                if (cpuTemp is null || gpuTemp is null)
-                {
-                    LogMissingTemps(accessor, header, cpuTemp, gpuTemp);
-                }
-
-                return new PcStats(
-                    Cpu: cpuLoad.HasValue ? (float)Math.Round(cpuLoad.Value, 1) : null,
-                    Memory: memoryLoad.HasValue ? (float)Math.Round(memoryLoad.Value, 1) : null,
-                    CpuTemp: cpuTemp.HasValue ? (float)Math.Round(cpuTemp.Value, 1) : null,
-                    GpuTemp: gpuTemp.HasValue ? (float)Math.Round(gpuTemp.Value, 1) : null
-                );
+                // Build response from readings
+                return BuildStatsResponse(readings);
             }
-            catch (System.IO.FileNotFoundException)
+            catch (InvalidOperationException ex) when (ex.Message.Contains("not running") || ex.Message.Contains("shared memory"))
             {
                 if (_hwInfoAvailable || !_availabilityChecked)
                 {
@@ -167,189 +112,503 @@ public sealed class HardwareMonitor : IDisposable
                     _hwInfoAvailable = false;
                     _availabilityChecked = true;
                 }
-                return new PcStats(null, null, null, null);
+                // Reset reader so we try again next time
+                DisposeReader();
+                return new GetStatsResponse { Success = false, ErrorMessage = "HWiNFO not running" };
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                if (_hwInfoAvailable || !_availabilityChecked)
+                {
+                    _logger.LogWarning("HWiNFO shared memory not found. Ensure HWiNFO is running with 'Shared Memory Support' enabled.");
+                    _hwInfoAvailable = false;
+                    _availabilityChecked = true;
+                }
+                DisposeReader();
+                return new GetStatsResponse { Success = false, ErrorMessage = "HWiNFO not running" };
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error reading HWiNFO shared memory.");
-                return new PcStats(null, null, null, null);
+                DisposeReader();
+                return new GetStatsResponse { Success = false, ErrorMessage = ex.Message };
             }
         }
     }
 
-    private static HWiNFOReadingElement ReadReading(MemoryMappedViewAccessor accessor, long offset)
+    private void DisposeReader()
     {
-        var reading = new HWiNFOReadingElement();
-        
-        reading.tReading = (HWiNFOSensorReadingType)accessor.ReadUInt32(offset);
-        reading.dwSensorIndex = accessor.ReadUInt32(offset + 4);
-        reading.dwReadingID = accessor.ReadUInt32(offset + 8);
-
-        // Read label string
-        byte[] labelBytes = new byte[HWiNFO_SENSORS_STRING_LEN];
-        accessor.ReadArray(offset + 12, labelBytes, 0, HWiNFO_SENSORS_STRING_LEN);
-        reading.szLabelOrig = Encoding.ASCII.GetString(labelBytes).TrimEnd('\0');
-
-        // Read user label string  
-        byte[] userLabelBytes = new byte[HWiNFO_SENSORS_STRING_LEN];
-        accessor.ReadArray(offset + 12 + HWiNFO_SENSORS_STRING_LEN, userLabelBytes, 0, HWiNFO_SENSORS_STRING_LEN);
-        reading.szLabelUser = Encoding.ASCII.GetString(userLabelBytes).TrimEnd('\0');
-
-        // Read unit string
-        byte[] unitBytes = new byte[HWiNFO_UNIT_STRING_LEN];
-        accessor.ReadArray(offset + 12 + (2 * HWiNFO_SENSORS_STRING_LEN), unitBytes, 0, HWiNFO_UNIT_STRING_LEN);
-        reading.szUnit = Encoding.ASCII.GetString(unitBytes).TrimEnd('\0');
-
-        // Read values (after the strings)
-        long valueOffset = offset + 12 + (2 * HWiNFO_SENSORS_STRING_LEN) + HWiNFO_UNIT_STRING_LEN;
-        reading.Value = accessor.ReadDouble(valueOffset);
-        reading.ValueMin = accessor.ReadDouble(valueOffset + 8);
-        reading.ValueMax = accessor.ReadDouble(valueOffset + 16);
-        reading.ValueAvg = accessor.ReadDouble(valueOffset + 24);
-
-        return reading;
+        _reader?.Dispose();
+        _reader = null;
+        _readerInitFailed = false;
     }
+
+    private GetStatsResponse BuildStatsResponse(List<SensorReading> readings)
+    {
+        var cpu = BuildCpuStats(readings);
+        var memory = BuildMemoryStats(readings);
+        var gpu = BuildGpuStats(readings);
+        var motherboard = BuildMotherboardStats(readings);
+
+        return new GetStatsResponse
+        {
+            Success = true,
+            Cpu = cpu,
+            Memory = memory,
+            Gpu = gpu,
+            Motherboard = motherboard
+        };
+    }
+
+    private CpuStats BuildCpuStats(List<SensorReading> readings)
+    {
+        float? utility = null;
+        float? temperature = null;
+        float? dieAvgTemp = null;
+        float? hotspot = null;
+        float? packagePower = null;
+        float? ppt = null;
+        float? coreClock = null;
+        float? effectiveClock = null;
+        var coreEffectiveClocks = new float?[8]; // Core 0-7
+        var coreBaseClocks = new List<float>(); // For calculating average Core Clocks
+
+        foreach (var r in readings)
+        {
+            string label = r.LabelUser ?? r.LabelOrig ?? string.Empty;
+            string labelLower = label.ToLowerInvariant();
+            string origLabel = r.LabelOrig ?? string.Empty;
+            string origLabelLower = origLabel.ToLowerInvariant();
+            string unit = r.Unit ?? string.Empty;
+            string unitLower = unit.ToLowerInvariant();
+            double value = r.Value;
+            bool isTemp = r.Type == SensorType.SensorTypeTemp;
+
+            // Total CPU Utility (exact match from screenshot)
+            if (utility is null && unitLower == "%" && 
+                (labelLower == "total cpu utility" || labelLower.Contains("total cpu utility")))
+            {
+                utility = Round(value);
+            }
+
+            // CPU Control (exact match from screenshot - renamed sensor)
+            // Also check original label "CPU (Tctl/Tdie)" which is what HWiNFO uses by default
+            if (temperature is null && isTemp && value > 0 && value < 150)
+            {
+                if (label == "CPU Control" || labelLower == "cpu control")
+                {
+                    temperature = Round(value);
+                }
+                // Fallback: match by original label (Tctl/Tdie)
+                else if (origLabelLower == "cpu (tctl/tdie)" || origLabelLower.Contains("tctl/tdie"))
+                {
+                    temperature ??= Round(value);
+                }
+            }
+
+            // CPU Die (exact match from screenshot - renamed sensor)
+            // Also check original label "CPU Die (average)"
+            if (dieAvgTemp is null && isTemp && value > 0 && value < 150)
+            {
+                if (label == "CPU Die" || labelLower == "cpu die")
+                {
+                    dieAvgTemp = Round(value);
+                }
+                // Fallback: match by original label
+                else if (origLabelLower == "cpu die (average)" || origLabelLower.Contains("die (average)"))
+                {
+                    dieAvgTemp ??= Round(value);
+                }
+            }
+
+            // CPU Hotspot (exact match from screenshot - renamed sensor)
+            // Also check original label "IOD Hotspot"
+            if (hotspot is null && isTemp && value > 0 && value < 150)
+            {
+                if (label == "CPU Hotspot" || labelLower == "cpu hotspot")
+                {
+                    hotspot = Round(value);
+                }
+                // Fallback: match by original label (IOD Hotspot)
+                else if (origLabelLower.Contains("iod hotspot") || origLabelLower.Contains("hotspot"))
+                {
+                    hotspot ??= Round(value);
+                }
+            }
+
+            // CPU Package Power (exact match from screenshot)
+            if (packagePower is null && unitLower == "w" &&
+                (label == "CPU Package Power" || labelLower == "cpu package power"))
+            {
+                packagePower = Round(value);
+            }
+
+            // CPU PPT (exact match from screenshot)
+            if (ppt is null && unitLower == "w" &&
+                (label == "CPU PPT" || labelLower == "cpu ppt"))
+            {
+                ppt = Round(value);
+            }
+
+            // Core Clocks - HWiNFO doesn't have an aggregate sensor, so we look for:
+            // 1. User-renamed "Core Clocks" sensor (if they created one)
+            // 2. Individual "Core X Clock (perf #Y)" sensors to calculate average
+            if (unitLower == "mhz")
+            {
+                // Direct match for user-renamed sensor
+                if (coreClock is null && (label == "Core Clocks" || labelLower == "core clocks"))
+                {
+                    coreClock = Round(value);
+                }
+                // Collect individual core clocks: "Core 0 Clock (perf #3)", etc.
+                else if (origLabelLower.StartsWith("core ") && origLabelLower.Contains(" clock (perf"))
+                {
+                    coreBaseClocks.Add((float)value);
+                }
+            }
+
+            // Avg Effective Clock (exact match from screenshot)
+            if (effectiveClock is null && unitLower == "mhz")
+            {
+                if (label == "Avg Effective Clock" || labelLower == "avg effective clock")
+                {
+                    effectiveClock = Round(value);
+                }
+                // Fallback to Average Effective Clock: if Avg Effective Clock not found
+                else if (labelLower.StartsWith("average effective clock") || origLabelLower.StartsWith("average effective clock"))
+                {
+                    effectiveClock ??= Round(value);
+                }
+            }
+
+            // Per-core effective clocks (Core 0-7 Effective Clock from screenshot)
+            for (int core = 0; core < 8; core++)
+            {
+                if (coreEffectiveClocks[core] is null && unitLower == "mhz")
+                {
+                    // Match exact pattern from screenshot: "Core 0 Effective Clock", etc.
+                    string exactPattern = $"core {core} effective clock";
+                    string t0Pattern = $"core {core} t0 effective clock";
+                    if (labelLower == exactPattern || labelLower.Contains(t0Pattern) ||
+                        origLabelLower == exactPattern || origLabelLower.Contains(t0Pattern))
+                    {
+                        coreEffectiveClocks[core] = Round(value);
+                    }
+                }
+            }
+        }
+
+        // Calculate average Core Clocks from individual core clocks if not found directly
+        if (coreClock is null && coreBaseClocks.Count > 0)
+        {
+            coreClock = Round(coreBaseClocks.Average());
+        }
+
+        // Check if we have any per-core data
+        var effectiveArray = coreEffectiveClocks.Any(c => c.HasValue) 
+            ? coreEffectiveClocks.Select(c => c ?? 0f).ToArray() 
+            : null;
+
+        return new CpuStats
+        {
+            Utility = utility,
+            Temperature = temperature,
+            DieAvgTemp = dieAvgTemp,
+            IodHotspot = hotspot,
+            PackagePower = packagePower,
+            Ppt = ppt,
+            CoreClock = coreClock,
+            EffectiveClock = effectiveClock,
+            CoreEffectiveClocks = effectiveArray
+        };
+    }
+
+    private MemoryStats BuildMemoryStats(List<SensorReading> readings)
+    {
+        float? load = null;
+        var dimmTemps = new List<DimmTemp>();
+
+        foreach (var r in readings)
+        {
+            string label = r.LabelUser ?? r.LabelOrig ?? string.Empty;
+            string labelLower = label.ToLowerInvariant();
+            string origLabel = r.LabelOrig ?? string.Empty;
+            string origLabelLower = origLabel.ToLowerInvariant();
+            string unitLower = (r.Unit ?? string.Empty).ToLowerInvariant();
+            double value = r.Value;
+            bool isTemp = r.Type == SensorType.SensorTypeTemp;
+
+            // Memory Load
+            if (load is null && unitLower == "%" &&
+                (labelLower.Contains("physical memory load") || labelLower.Contains("memory usage")))
+            {
+                load = Round(value);
+            }
+
+            // DIMM Temperatures - Match exact names from screenshot: "DIMM 1 Temp" and "DIMM 2 Temp"
+            // Also fallback to "SPD Hub Temperature" via original label if custom names not found
+            if (isTemp && value > 0 && value < 100)
+            {
+                // Try exact match for user-renamed sensors first
+                if (label == "DIMM 1 Temp" || labelLower == "dimm 1 temp")
+                {
+                    dimmTemps.Add(new DimmTemp { Slot = 1, Temp = Round(value) });
+                }
+                else if (label == "DIMM 2 Temp" || labelLower == "dimm 2 temp")
+                {
+                    dimmTemps.Add(new DimmTemp { Slot = 2, Temp = Round(value) });
+                }
+                // Fallback: check original label for SPD Hub Temperature
+                else if ((origLabelLower == "spd hub temperature" || origLabelLower.Contains("spd hub")) && dimmTemps.Count < 2)
+                {
+                    // Assign slot numbers sequentially (1, 2) for dual channel
+                    int nextSlot = dimmTemps.Count == 0 ? 1 : 2;
+                    dimmTemps.Add(new DimmTemp { Slot = nextSlot, Temp = Round(value) });
+                }
+            }
+        }
+
+        return new MemoryStats
+        {
+            Load = load,
+            DimmTemps = dimmTemps.Count > 0 ? dimmTemps.OrderBy(d => d.Slot).ToArray() : null
+        };
+    }
+
+    private GpuStats BuildGpuStats(List<SensorReading> readings)
+    {
+        float? temperature = null;
+        float? memTemp = null;
+        float? power = null;
+        float? clock = null;
+        float? effectiveClock = null;
+        float? memoryUsage = null;
+        float? coreLoad = null;
+
+        foreach (var r in readings)
+        {
+            string label = r.LabelUser ?? r.LabelOrig ?? string.Empty;
+            string labelLower = label.ToLowerInvariant();
+            string origLabel = r.LabelOrig ?? string.Empty;
+            string origLabelLower = origLabel.ToLowerInvariant();
+            string unitLower = (r.Unit ?? string.Empty).ToLowerInvariant();
+            double value = r.Value;
+            bool isTemp = r.Type == SensorType.SensorTypeTemp;
+
+            // GPU Temp (exact match from screenshot - renamed sensor)
+            // Also check original label "GPU Temperature"
+            if (temperature is null && isTemp && value > 0 && value < 150)
+            {
+                if (label == "GPU Temp" || labelLower == "gpu temp")
+                {
+                    temperature = Round(value);
+                }
+                // Fallback: match by original label
+                else if (origLabelLower == "gpu temperature" || origLabelLower.Contains("gpu temp"))
+                {
+                    temperature ??= Round(value);
+                }
+            }
+
+            // GPU Mem Temp (exact match from screenshot - renamed sensor)
+            // Also check original label "GPU Memory Junction Temperature"
+            if (memTemp is null && isTemp && value > 0 && value < 150)
+            {
+                if (label == "GPU Mem Temp" || labelLower == "gpu mem temp")
+                {
+                    memTemp = Round(value);
+                }
+                // Fallback: match by original label
+                else if (origLabelLower.Contains("memory junction") || origLabelLower.Contains("gpu memory junction"))
+                {
+                    memTemp ??= Round(value);
+                }
+            }
+
+            // GPU Power (exact match from screenshot)
+            if (power is null && unitLower == "w" &&
+                (label == "GPU Power" || labelLower == "gpu power"))
+            {
+                power = Round(value);
+            }
+
+            // GPU Clock (exact match from screenshot - renamed sensor)
+            if (clock is null && unitLower == "mhz")
+            {
+                if (label == "GPU Clock" || labelLower == "gpu clock")
+                {
+                    clock = Round(value);
+                }
+            }
+
+            // GPU Effective Clock (exact match from screenshot - renamed sensor)
+            if (effectiveClock is null && unitLower == "mhz")
+            {
+                if (label == "GPU Effective Clock" || labelLower == "gpu effective clock")
+                {
+                    effectiveClock = Round(value);
+                }
+            }
+
+            // GPU Memory Usage (exact match from screenshot)
+            if (memoryUsage is null && unitLower == "%" &&
+                (label == "GPU Memory Usage" || labelLower == "gpu memory usage" || labelLower == "gpu memory allocated"))
+            {
+                memoryUsage = Round(value);
+            }
+
+            // GPU Core Load (exact match from screenshot)
+            if (coreLoad is null && unitLower == "%" &&
+                (label == "GPU Core Load" || labelLower == "gpu core load" || labelLower.Contains("gpu utilization")))
+            {
+                coreLoad = Round(value);
+            }
+        }
+
+        return new GpuStats
+        {
+            Temperature = temperature,
+            MemJunctionTemp = memTemp,
+            Power = power,
+            Clock = clock,
+            EffectiveClock = effectiveClock,
+            MemoryUsage = memoryUsage,
+            CoreLoad = coreLoad
+        };
+    }
+
+    private MotherboardStats BuildMotherboardStats(List<SensorReading> readings)
+    {
+        float? vcore = null;
+        float? vsoc = null;
+
+        foreach (var r in readings)
+        {
+            string label = r.LabelUser ?? r.LabelOrig ?? string.Empty;
+            string labelLower = label.ToLowerInvariant();
+            string origLabelLower = (r.LabelOrig ?? string.Empty).ToLowerInvariant();
+            string unitLower = (r.Unit ?? string.Empty).ToLowerInvariant();
+            double value = r.Value;
+
+            // Vcore MB (exact match from screenshot - renamed sensor)
+            if (vcore is null && unitLower == "v")
+            {
+                if (label == "Vcore MB" || labelLower == "vcore mb")
+                {
+                    vcore = (float)Math.Round(value, 3);
+                }
+                // Fallback to Vcore if Vcore MB not found
+                else if (origLabelLower == "vcore" || origLabelLower.Contains("cpu core voltage"))
+                {
+                    vcore ??= (float)Math.Round(value, 3);
+                }
+            }
+
+            // VDDCR_SOC MB (exact match from screenshot - renamed sensor)
+            if (vsoc is null && unitLower == "v")
+            {
+                if (label == "VDDCR_SOC MB" || labelLower == "vddcr_soc mb")
+                {
+                    vsoc = (float)Math.Round(value, 3);
+                }
+                // Fallback to VDDCR_SOC if VDDCR_SOC MB not found
+                else if (origLabelLower.Contains("vddcr_soc") || origLabelLower == "vsoc")
+                {
+                    vsoc ??= (float)Math.Round(value, 3);
+                }
+            }
+        }
+
+        return new MotherboardStats
+        {
+            Vcore = vcore,
+            Vsoc = vsoc
+        };
+    }
+
+    private static float Round(double value) => (float)Math.Round(value, 1);
 
     public void Dispose()
     {
-        // Nothing to dispose - we open/close the memory mapped file on each read
+        _reader?.Dispose();
         GC.SuppressFinalize(this);
     }
 
     /// <summary>
     /// Logs available sensors that match our search criteria for debugging.
     /// </summary>
-    private void LogAvailableSensors(MemoryMappedViewAccessor accessor, HWiNFOSharedMemHeader header)
+    private void LogAvailableSensors(List<SensorReading> readings)
     {
         try
         {
-            long readingOffset = header.dwOffsetOfReadingSection;
-            int readingSize = (int)header.dwSizeOfReadingElement;
-
-            var cpuSensors = new List<string>();
             var tempSensors = new List<string>();
-            var memorySensors = new List<string>();
+            var cpuSensors = new List<string>();
+            var gpuSensors = new List<string>();
+            var clockSensors = new List<string>();
 
-            for (uint i = 0; i < header.dwNumReadingElements; i++)
+            foreach (var r in readings)
             {
-                var reading = ReadReading(accessor, readingOffset + (i * readingSize));
-                string label = reading.szLabelOrig.ToLowerInvariant();
-                string unit = reading.szUnit.ToLowerInvariant();
+                string label = r.LabelUser ?? r.LabelOrig ?? string.Empty;
+                string labelLower = label.ToLowerInvariant();
+                string origLabel = r.LabelOrig ?? string.Empty;
+                string origLabelLower = origLabel.ToLowerInvariant();
+                string unit = r.Unit ?? string.Empty;
+                string unitLower = unit.ToLowerInvariant();
+                double value = r.Value;
+                bool isTemp = r.Type == SensorType.SensorTypeTemp;
 
-                // Collect CPU usage sensors
-                if (unit == "%" && label.Contains("cpu"))
+                // Show renamed sensors
+                string displayLabel = !string.IsNullOrWhiteSpace(r.LabelUser) && r.LabelUser != r.LabelOrig
+                    ? $"{r.LabelUser} (was: {r.LabelOrig})"
+                    : label;
+
+                if (labelLower.Contains("cpu") && (unitLower == "%" || unitLower == "mhz" || unitLower == "w"))
                 {
-                    cpuSensors.Add($"{reading.szLabelOrig} ({reading.Value:F1}{reading.szUnit})");
+                    cpuSensors.Add($"{displayLabel} ({value:F1}{unit})");
                 }
-                // Collect temperature sensors
-                else if (unit == "°c" && (label.Contains("cpu") || label.Contains("gpu")))
+                
+                // Log ALL clock sensors (MHz) for debugging Core Clocks issue
+                if (unitLower == "mhz" && (labelLower.Contains("clock") || origLabelLower.Contains("clock")))
                 {
-                    tempSensors.Add($"{reading.szLabelOrig} ({reading.Value:F1}{reading.szUnit})");
+                    clockSensors.Add($"User='{r.LabelUser}' Orig='{r.LabelOrig}' = {value:F1} {unit}");
                 }
-                // Collect memory sensors
-                else if (unit == "%" && label.Contains("memory"))
+                
+                // Log ALL temperature type readings
+                if (isTemp && value > 0 && value < 150)
                 {
-                    memorySensors.Add($"{reading.szLabelOrig} ({reading.Value:F1}{reading.szUnit})");
+                    tempSensors.Add($"[Type=Temp] {displayLabel} = {value:F1} {unit}");
+                }
+                
+                if (labelLower.Contains("gpu"))
+                {
+                    gpuSensors.Add($"{displayLabel} ({value:F1}{unit})");
                 }
             }
 
-            if (cpuSensors.Count > 0)
-                _logger.LogDebug("Available CPU usage sensors: {Sensors}", string.Join(", ", cpuSensors.Take(5)));
-            if (tempSensors.Count > 0)
-                _logger.LogDebug("Available temp sensors: {Sensors}", string.Join(", ", tempSensors.Take(10)));
-            if (memorySensors.Count > 0)
-                _logger.LogDebug("Available memory sensors: {Sensors}", string.Join(", ", memorySensors.Take(3)));
+            _logger.LogInformation("CPU sensors found: {Count}", cpuSensors.Count);
+            _logger.LogInformation("Temperature sensors found: {Count}", tempSensors.Count);
+            _logger.LogInformation("GPU sensors found: {Count}", gpuSensors.Count);
+            _logger.LogInformation("Clock sensors (MHz) found: {Count}", clockSensors.Count);
+            
+            // Log clock sensors for debugging
+            foreach (var clk in clockSensors.Take(15))
+            {
+                _logger.LogInformation("  Clock sensor: {Sensor}", clk);
+            }
+            
+            // Log ALL temperature sensors for debugging
+            foreach (var temp in tempSensors.Take(20))
+            {
+                _logger.LogInformation("  Temp sensor: {Sensor}", temp);
+            }
+            if (tempSensors.Count > 20)
+            {
+                _logger.LogInformation("  ... and {Count} more temperature sensors", tempSensors.Count - 20);
+            }
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to enumerate available sensors.");
         }
     }
-
-    /// <summary>
-    /// Logs available temperature sensors when temps couldn't be matched (throttled to once per minute).
-    /// </summary>
-    private DateTime _lastMissingTempLog = DateTime.MinValue;
-    private void LogMissingTemps(MemoryMappedViewAccessor accessor, HWiNFOSharedMemHeader header, float? cpuTemp, float? gpuTemp)
-    {
-        // Throttle to once per minute to avoid log spam
-        if ((DateTime.UtcNow - _lastMissingTempLog).TotalMinutes < 1)
-            return;
-
-        _lastMissingTempLog = DateTime.UtcNow;
-
-        try
-        {
-            long readingOffset = header.dwOffsetOfReadingSection;
-            int readingSize = (int)header.dwSizeOfReadingElement;
-            var allTempSensors = new List<string>();
-
-            for (uint i = 0; i < header.dwNumReadingElements; i++)
-            {
-                var reading = ReadReading(accessor, readingOffset + (i * readingSize));
-                string unit = reading.szUnit.ToLowerInvariant();
-
-                // Log ALL temperature sensors
-                if (unit == "°c" && reading.Value > 0 && reading.Value < 150)
-                {
-                    allTempSensors.Add($"'{reading.szLabelOrig}'");
-                }
-            }
-
-            if (cpuTemp is null)
-                _logger.LogWarning("CPU temperature not found. Available temp sensors: {Sensors}", string.Join(", ", allTempSensors.Take(20)));
-            if (gpuTemp is null)
-                _logger.LogWarning("GPU temperature not found. Available temp sensors: {Sensors}", string.Join(", ", allTempSensors.Take(20)));
-        }
-        catch
-        {
-            // Ignore errors in diagnostic logging
-        }
-    }
-
-    #region HWiNFO Shared Memory Structures
-
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    private struct HWiNFOSharedMemHeader
-    {
-        public uint dwSignature;        // "HWiI" = 0x49574848
-        public uint dwVersion;          // Version of shared memory
-        public uint dwRevision;         // Revision
-        public long poll_time;          // Polling time in ms
-        public uint dwOffsetOfSensorSection;
-        public uint dwSizeOfSensorElement;
-        public uint dwNumSensorElements;
-        public uint dwOffsetOfReadingSection;
-        public uint dwSizeOfReadingElement;
-        public uint dwNumReadingElements;
-    }
-
-    private enum HWiNFOSensorReadingType : uint
-    {
-        None = 0,
-        Temp = 1,
-        Volt = 2,
-        Fan = 3,
-        Current = 4,
-        Power = 5,
-        Clock = 6,
-        Usage = 7,
-        Other = 8
-    }
-
-    private struct HWiNFOReadingElement
-    {
-        public HWiNFOSensorReadingType tReading;
-        public uint dwSensorIndex;
-        public uint dwReadingID;
-        public string szLabelOrig;
-        public string szLabelUser;
-        public string szUnit;
-        public double Value;
-        public double ValueMin;
-        public double ValueMax;
-        public double ValueAvg;
-    }
-
-    #endregion
 }

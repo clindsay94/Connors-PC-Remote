@@ -3,6 +3,13 @@
     <LangVersion>14</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- Warnings as errors for critical null-safety issues only -->
+    <WarningsAsErrors>CS8602;CS8603;CS8604</WarningsAsErrors>
+    <!-- Suppress CA2007 (ConfigureAwait) as this is a Windows-only application -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
     
     <!-- Unified output directory for all projects -->
     <BaseOutputPath>$(MSBuildThisFileDirectory)bin\</BaseOutputPath>

@@ -20,6 +20,10 @@ using System.Text.Json.Serialization;
 [JsonDerivedType(typeof(ServiceStatusResponse), "ServiceStatusResponse")]
 [JsonDerivedType(typeof(ExecuteCommandRequest), "ExecuteCommandRequest")]
 [JsonDerivedType(typeof(ExecuteCommandResponse), "ExecuteCommandResponse")]
+[JsonDerivedType(typeof(GetSensorConfigRequest), "GetSensorConfigRequest")]
+[JsonDerivedType(typeof(GetSensorConfigResponse), "GetSensorConfigResponse")]
+[JsonDerivedType(typeof(SaveSensorConfigRequest), "SaveSensorConfigRequest")]
+[JsonDerivedType(typeof(SaveSensorConfigResponse), "SaveSensorConfigResponse")]
 [JsonDerivedType(typeof(ErrorResponse), "ErrorResponse")]
 public abstract record IpcMessage
 {

@@ -8,8 +8,10 @@ using System.Text.Json;
 using CPCRemote.Core.Enums;
 using CPCRemote.Core.Interfaces;
 using CPCRemote.Core.IPC;
+using CPCRemote.Service.Options;
 
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 /// <summary>
 /// Named Pipe server for handling IPC communication with the UI application.
@@ -18,12 +20,14 @@ public sealed class NamedPipeServer(
     ILogger<NamedPipeServer> logger,
     HardwareMonitor hardwareMonitor,
     AppCatalogService appCatalog,
-    ICommandExecutor commandExecutor) : IPipeServer
+    ICommandExecutor commandExecutor,
+    IOptionsMonitor<SensorOptions> sensorOptionsMonitor) : IPipeServer
 {
     private readonly ILogger<NamedPipeServer> _logger = logger;
     private readonly HardwareMonitor _hardwareMonitor = hardwareMonitor;
     private readonly AppCatalogService _appCatalog = appCatalog;
     private readonly ICommandExecutor _commandExecutor = commandExecutor;
+    private readonly IOptionsMonitor<SensorOptions> _sensorOptionsMonitor = sensorOptionsMonitor;
 
     private readonly DateTime _startTimeUtc = DateTime.UtcNow;
     private readonly Lock _lock = new();
@@ -296,6 +300,8 @@ public sealed class NamedPipeServer(
                 LaunchAppRequest req => HandleLaunchApp(req),
                 ServiceStatusRequest => HandleServiceStatus(),
                 ExecuteCommandRequest req => await HandleExecuteCommandAsync(req, cancellationToken).ConfigureAwait(false),
+                GetSensorConfigRequest => HandleGetSensorConfig(),
+                SaveSensorConfigRequest req => await HandleSaveSensorConfigAsync(req, cancellationToken).ConfigureAwait(false),
                 _ => new ErrorResponse
                 {
                     CorrelationId = message.CorrelationId,
@@ -323,16 +329,7 @@ public sealed class NamedPipeServer(
 
     private GetStatsResponse HandleGetStats()
     {
-        var stats = _hardwareMonitor.GetStats();
-
-        return new GetStatsResponse
-        {
-            Success = true,
-            Cpu = stats.Cpu,
-            Memory = stats.Memory,
-            CpuTemp = stats.CpuTemp,
-            GpuTemp = stats.GpuTemp
-        };
+        return _hardwareMonitor.GetStats();
     }
 
     private GetAppsResponse HandleGetApps()
@@ -426,5 +423,174 @@ public sealed class NamedPipeServer(
         {
             Success = true
         };
+    }
+
+    private GetSensorConfigResponse HandleGetSensorConfig()
+    {
+        var options = _sensorOptionsMonitor.CurrentValue;
+
+        var config = new SensorConfigDto
+        {
+            CpuLoad = new SensorMappingDto
+            {
+                Patterns = options.CpuLoad.Patterns,
+                Unit = options.CpuLoad.Unit,
+                RequirePositive = options.CpuLoad.RequirePositive
+            },
+            MemoryLoad = new SensorMappingDto
+            {
+                Patterns = options.MemoryLoad.Patterns,
+                Unit = options.MemoryLoad.Unit,
+                RequirePositive = options.MemoryLoad.RequirePositive
+            },
+            CpuTemp = new SensorMappingDto
+            {
+                Patterns = options.CpuTemp.Patterns,
+                Unit = options.CpuTemp.Unit,
+                RequirePositive = options.CpuTemp.RequirePositive
+            },
+            GpuTemp = new SensorMappingDto
+            {
+                Patterns = options.GpuTemp.Patterns,
+                Unit = options.GpuTemp.Unit,
+                RequirePositive = options.GpuTemp.RequirePositive
+            },
+            CustomSensors = options.CustomSensors.Select(cs => new CustomSensorDto
+            {
+                Name = cs.Name,
+                Label = cs.Label,
+                Unit = cs.Unit,
+                RequirePositive = cs.RequirePositive
+            }).ToList()
+        };
+
+        return new GetSensorConfigResponse
+        {
+            Success = true,
+            Config = config
+        };
+    }
+
+    private async Task<SaveSensorConfigResponse> HandleSaveSensorConfigAsync(SaveSensorConfigRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Read existing appsettings.json
+            string appSettingsPath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
+
+            if (!File.Exists(appSettingsPath))
+            {
+                return new SaveSensorConfigResponse
+                {
+                    Success = false,
+                    ErrorMessage = "appsettings.json not found"
+                };
+            }
+
+            string json = await File.ReadAllTextAsync(appSettingsPath, cancellationToken).ConfigureAwait(false);
+
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            // Create new JSON with updated sensors section
+            using var stream = new MemoryStream();
+            using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
+            {
+                writer.WriteStartObject();
+
+                foreach (var prop in root.EnumerateObject())
+                {
+                    if (prop.Name == "sensors")
+                    {
+                        // Write updated sensors section
+                        writer.WritePropertyName("sensors");
+                        WriteSensorConfig(writer, request.Config);
+                    }
+                    else
+                    {
+                        prop.WriteTo(writer);
+                    }
+                }
+
+                writer.WriteEndObject();
+            }
+
+            // Write back to file
+            string updatedJson = Encoding.UTF8.GetString(stream.ToArray());
+            await File.WriteAllTextAsync(appSettingsPath, updatedJson, cancellationToken).ConfigureAwait(false);
+
+            _logger.LogInformation("Sensor configuration saved to appsettings.json");
+
+            return new SaveSensorConfigResponse { Success = true };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save sensor configuration");
+
+            return new SaveSensorConfigResponse
+            {
+                Success = false,
+                ErrorMessage = ex.Message
+            };
+        }
+    }
+
+    private static void WriteSensorConfig(Utf8JsonWriter writer, SensorConfigDto config)
+    {
+        writer.WriteStartObject();
+
+        // Write cpuLoad
+        writer.WritePropertyName("cpuLoad");
+        WriteSensorMapping(writer, config.CpuLoad);
+
+        // Write memoryLoad
+        writer.WritePropertyName("memoryLoad");
+        WriteSensorMapping(writer, config.MemoryLoad);
+
+        // Write cpuTemp
+        writer.WritePropertyName("cpuTemp");
+        WriteSensorMapping(writer, config.CpuTemp);
+
+        // Write gpuTemp
+        writer.WritePropertyName("gpuTemp");
+        WriteSensorMapping(writer, config.GpuTemp);
+
+        // Write customSensors
+        writer.WritePropertyName("customSensors");
+        writer.WriteStartArray();
+        foreach (var sensor in config.CustomSensors)
+        {
+            writer.WriteStartObject();
+            writer.WriteString("name", sensor.Name);
+            writer.WriteString("label", sensor.Label);
+            writer.WriteString("unit", sensor.Unit);
+            writer.WriteBoolean("requirePositive", sensor.RequirePositive);
+            writer.WriteEndObject();
+        }
+        writer.WriteEndArray();
+
+        writer.WriteEndObject();
+    }
+
+    private static void WriteSensorMapping(Utf8JsonWriter writer, SensorMappingDto mapping)
+    {
+        writer.WriteStartObject();
+
+        writer.WritePropertyName("patterns");
+        writer.WriteStartArray();
+        foreach (var pattern in mapping.Patterns)
+        {
+            writer.WriteStringValue(pattern);
+        }
+        writer.WriteEndArray();
+
+        writer.WriteString("unit", mapping.Unit);
+
+        if (mapping.RequirePositive)
+        {
+            writer.WriteBoolean("requirePositive", mapping.RequirePositive);
+        }
+
+        writer.WriteEndObject();
     }
 }

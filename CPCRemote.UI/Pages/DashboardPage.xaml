@@ -21,18 +21,37 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="16" Margin="0,0,0,24">
-            <TextBlock Text="Dashboard" Style="{StaticResource TitleTextBlockStyle}"/>
-            <ProgressRing x:Name="LoadingRing" IsActive="False" Width="24" Height="24" VerticalAlignment="Center"/>
-        </StackPanel>
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="16">
+                <TextBlock Text="Hardware Monitor" Style="{StaticResource TitleTextBlockStyle}"/>
+                <ProgressRing x:Name="LoadingRing" IsActive="False" Width="24" Height="24" VerticalAlignment="Center"/>
+            </StackPanel>
+            
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12">
+                <ComboBox x:Name="IntervalComboBox" Width="90" SelectionChanged="IntervalComboBox_SelectionChanged" VerticalAlignment="Center">
+                    <ComboBoxItem Content="2s" Tag="2"/>
+                    <ComboBoxItem Content="5s" Tag="5" IsSelected="True"/>
+                    <ComboBoxItem Content="10s" Tag="10"/>
+                    <ComboBoxItem Content="30s" Tag="30"/>
+                </ComboBox>
+                <ToggleSwitch x:Name="PollingToggle" IsOn="True" Toggled="PollingToggle_Toggled" OffContent="Paused" OnContent="Live"/>
+                <Button x:Name="RefreshButton" Content="&#xE72C;" FontFamily="{StaticResource SymbolThemeFontFamily}" Click="RefreshButton_Click" ToolTipService.ToolTip="Refresh Now"/>
+            </StackPanel>
+        </Grid>
 
-        <!-- Stats Grid -->
+        <!-- Main Content -->
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel Spacing="24">
-                <!-- Service Status Card -->
+            <StackPanel Spacing="16">
+                
+                <!-- Service Status Bar -->
                 <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                        CornerRadius="8"
-                        Padding="20"
+                        CornerRadius="8" Padding="16"
                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                         BorderThickness="1">
                     <Grid>
@@ -42,132 +61,327 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <Border Grid.Column="0" 
-                                x:Name="ConnectionIndicator"
-                                Width="12" Height="12" 
-                                CornerRadius="6" 
-                                Background="Gray"
-                                VerticalAlignment="Center"
-                                Margin="0,0,12,0"/>
+                        <Border Grid.Column="0" x:Name="ConnectionIndicator"
+                                Width="10" Height="10" CornerRadius="5" Background="Gray"
+                                VerticalAlignment="Center" Margin="0,0,12,0"/>
 
-                        <StackPanel Grid.Column="1">
-                            <TextBlock x:Name="ServiceStatusText" Text="Service: Disconnected" Style="{StaticResource SubtitleTextBlockStyle}"/>
-                            <TextBlock x:Name="HttpAddressText" Text="" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12"/>
-                            <TextBlock x:Name="UptimeText" Text="" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="24">
+                            <TextBlock x:Name="ServiceStatusText" Text="Service: Disconnected" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="UptimeText" Text="" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" FontSize="12"/>
                         </StackPanel>
 
-                        <Button Grid.Column="2" x:Name="RefreshButton" Content="Refresh" Click="RefreshButton_Click"/>
+                        <TextBlock Grid.Column="2" x:Name="HttpAddressText" Text="" 
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" 
+                                   VerticalAlignment="Center" FontSize="12"/>
                     </Grid>
                 </Border>
 
-                <!-- Hardware Stats Cards -->
+                <!-- CPU Section -->
+                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        CornerRadius="8" Padding="20"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="CPU - AMD Ryzen 7 9800X3D" Style="{StaticResource SubtitleTextBlockStyle}" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                        
+                        <!-- CPU Row 1: Utility + Temps -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Total CPU Utility -->
+                            <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                <TextBlock Text="Total CPU Utility" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock x:Name="CpuUtilityText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
+                                    <TextBlock Text="%" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
+                                </StackPanel>
+                                <ProgressBar x:Name="CpuProgressBar" Value="0" Maximum="100" Height="4" CornerRadius="2" Margin="0,4,8,0"/>
+                            </StackPanel>
+
+                            <!-- CPU Control -->
+                            <StackPanel Grid.Column="1" Margin="8,0">
+                                <TextBlock Text="CPU Control" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock x:Name="CpuTempText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
+                                    <TextBlock Text="°C" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- CPU Die -->
+                            <StackPanel Grid.Column="2" Margin="8,0">
+                                <TextBlock Text="CPU Die" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock x:Name="CpuDieAvgText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
+                                    <TextBlock Text="°C" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- CPU Hotspot -->
+                            <StackPanel Grid.Column="3" Margin="8,0,0,0">
+                                <TextBlock Text="CPU Hotspot" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock x:Name="CpuIodHotspotText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
+                                    <TextBlock Text="°C" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- CPU Row 2: Clocks + Power -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Avg Effective Clock -->
+                            <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                <TextBlock Text="Avg Effective Clock" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock x:Name="CpuEffectiveClockText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
+                                    <TextBlock Text="MHz" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- CPU Package Power -->
+                            <StackPanel Grid.Column="1" Margin="8,0">
+                                <TextBlock Text="CPU Package Power" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock x:Name="CpuPackagePowerText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
+                                    <TextBlock Text="W" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- CPU PPT -->
+                            <StackPanel Grid.Column="2" Margin="8,0,0,0">
+                                <TextBlock Text="CPU PPT" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock x:Name="CpuPptText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
+                                    <TextBlock Text="W" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Per-Core Clocks -->
+                        <StackPanel>
+                            <TextBlock Text="Per-Core Effective Clocks" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,8"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0"><TextBlock Text="C0" FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/><TextBlock x:Name="Core0Text" Text="--"/></StackPanel>
+                                <StackPanel Grid.Column="1"><TextBlock Text="C1" FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/><TextBlock x:Name="Core1Text" Text="--"/></StackPanel>
+                                <StackPanel Grid.Column="2"><TextBlock Text="C2" FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/><TextBlock x:Name="Core2Text" Text="--"/></StackPanel>
+                                <StackPanel Grid.Column="3"><TextBlock Text="C3" FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/><TextBlock x:Name="Core3Text" Text="--"/></StackPanel>
+                                <StackPanel Grid.Column="4"><TextBlock Text="C4" FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/><TextBlock x:Name="Core4Text" Text="--"/></StackPanel>
+                                <StackPanel Grid.Column="5"><TextBlock Text="C5" FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/><TextBlock x:Name="Core5Text" Text="--"/></StackPanel>
+                                <StackPanel Grid.Column="6"><TextBlock Text="C6" FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/><TextBlock x:Name="Core6Text" Text="--"/></StackPanel>
+                                <StackPanel Grid.Column="7"><TextBlock Text="C7" FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/><TextBlock x:Name="Core7Text" Text="--"/></StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Memory + Motherboard Row -->
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
 
-                    <!-- CPU Load -->
-                    <Border Grid.Row="0" Grid.Column="0" 
+                    <!-- Memory Section -->
+                    <Border Grid.Column="0" 
                             Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                            CornerRadius="8" Padding="20" Margin="0,0,8,8"
+                            CornerRadius="8" Padding="20" Margin="0,0,8,0"
                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                             BorderThickness="1">
-                        <StackPanel>
-                            <TextBlock Text="CPU Load" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,8">
-                                <TextBlock x:Name="CpuLoadText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
-                                <TextBlock Text="%" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Bottom" Margin="0,0,0,4"/>
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="Memory - DDR5" Style="{StaticResource SubtitleTextBlockStyle}" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                            
+                            <!-- Memory Load -->
+                            <StackPanel>
+                                <TextBlock Text="Memory Load" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock x:Name="MemoryLoadText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
+                                    <TextBlock Text="%" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
+                                </StackPanel>
+                                <ProgressBar x:Name="MemoryProgressBar" Value="0" Maximum="100" Height="4" CornerRadius="2" Margin="0,4,0,0"/>
                             </StackPanel>
-                            <ProgressBar x:Name="CpuProgressBar" Value="0" Maximum="100" Height="8" CornerRadius="4"/>
-                        </StackPanel>
-                    </Border>
 
-                    <!-- Memory Load -->
-                    <Border Grid.Row="0" Grid.Column="1" 
-                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                            CornerRadius="8" Padding="20" Margin="8,0,0,8"
-                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                            BorderThickness="1">
-                        <StackPanel>
-                            <TextBlock Text="Memory" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,8">
-                                <TextBlock x:Name="MemoryLoadText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
-                                <TextBlock Text="%" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Bottom" Margin="0,0,0,4"/>
-                            </StackPanel>
-                            <ProgressBar x:Name="MemoryProgressBar" Value="0" Maximum="100" Height="8" CornerRadius="4"/>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- CPU Temp -->
-                    <Border Grid.Row="1" Grid.Column="0" 
-                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                            CornerRadius="8" Padding="20" Margin="0,8,8,0"
-                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                            BorderThickness="1">
-                        <StackPanel>
-                            <TextBlock Text="CPU Temperature" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
-                                <TextBlock x:Name="CpuTempText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
-                                <TextBlock Text="°C" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Bottom" Margin="0,0,0,4"/>
+                            <!-- DIMM Temps -->
+                            <StackPanel>
+                                <TextBlock Text="DIMM Temperatures" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,4"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="DIMM 1 Temp" FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="2">
+                                            <TextBlock x:Name="Dimm1TempText" Text="--" FontWeight="SemiBold"/>
+                                            <TextBlock Text="°C"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="DIMM 2 Temp" FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="2">
+                                            <TextBlock x:Name="Dimm2TempText" Text="--" FontWeight="SemiBold"/>
+                                            <TextBlock Text="°C"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
                             </StackPanel>
                         </StackPanel>
                     </Border>
 
-                    <!-- GPU Temp -->
-                    <Border Grid.Row="1" Grid.Column="1" 
+                    <!-- Motherboard Section -->
+                    <Border Grid.Column="1" 
                             Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                            CornerRadius="8" Padding="20" Margin="8,8,0,0"
+                            CornerRadius="8" Padding="20" Margin="8,0,0,0"
                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                             BorderThickness="1">
-                        <StackPanel>
-                            <TextBlock Text="GPU Temperature" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
-                                <TextBlock x:Name="GpuTempText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
-                                <TextBlock Text="°C" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Bottom" Margin="0,0,0,4"/>
-                            </StackPanel>
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="Motherboard - X870E" Style="{StaticResource SubtitleTextBlockStyle}" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                            
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Vcore MB -->
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Vcore MB" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock x:Name="VcoreText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
+                                        <TextBlock Text="V" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- VDDCR_SOC MB -->
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="VDDCR_SOC MB" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock x:Name="VsocText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
+                                        <TextBlock Text="V" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
                         </StackPanel>
                     </Border>
                 </Grid>
 
-                <!-- Polling Settings -->
+                <!-- GPU Section -->
                 <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                         CornerRadius="8" Padding="20"
                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                         BorderThickness="1">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="GPU - NVIDIA GeForce RTX 5080" Style="{StaticResource SubtitleTextBlockStyle}" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                        
+                        <!-- GPU Row 1 -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Text="Auto-Refresh" Style="{StaticResource SubtitleTextBlockStyle}"/>
-                            <TextBlock Text="Automatically update stats at regular intervals" 
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12"/>
-                        </StackPanel>
+                            <!-- GPU Core Load -->
+                            <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                <TextBlock Text="GPU Core Load" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock x:Name="GpuCoreLoadText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
+                                    <TextBlock Text="%" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
+                                </StackPanel>
+                                <ProgressBar x:Name="GpuLoadProgressBar" Value="0" Maximum="100" Height="4" CornerRadius="2" Margin="0,4,8,0"/>
+                            </StackPanel>
 
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
-                            <ComboBox x:Name="IntervalComboBox" Width="100" SelectionChanged="IntervalComboBox_SelectionChanged">
-                                <ComboBoxItem Content="2 sec" Tag="2"/>
-                                <ComboBoxItem Content="5 sec" Tag="5" IsSelected="True"/>
-                                <ComboBoxItem Content="10 sec" Tag="10"/>
-                                <ComboBoxItem Content="30 sec" Tag="30"/>
-                                <ComboBoxItem Content="60 sec" Tag="60"/>
-                            </ComboBox>
-                            <ToggleSwitch x:Name="PollingToggle" IsOn="True" Toggled="PollingToggle_Toggled"/>
-                        </StackPanel>
-                    </Grid>
+                            <!-- GPU Temp -->
+                            <StackPanel Grid.Column="1" Margin="8,0">
+                                <TextBlock Text="GPU Temp" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock x:Name="GpuTempText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
+                                    <TextBlock Text="°C" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- GPU Mem Temp -->
+                            <StackPanel Grid.Column="2" Margin="8,0,0,0">
+                                <TextBlock Text="GPU Mem Temp" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock x:Name="GpuMemTempText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
+                                    <TextBlock Text="°C" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- GPU Row 2 -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- GPU Power -->
+                            <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                <TextBlock Text="GPU Power" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock x:Name="GpuPowerText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
+                                    <TextBlock Text="W" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- GPU Clock -->
+                            <StackPanel Grid.Column="1" Margin="8,0">
+                                <TextBlock Text="GPU Clock" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock x:Name="GpuClockText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
+                                    <TextBlock Text="MHz" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- GPU Effective Clock -->
+                            <StackPanel Grid.Column="2" Margin="8,0">
+                                <TextBlock Text="GPU Effective Clock" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock x:Name="GpuEffectiveClockText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
+                                    <TextBlock Text="MHz" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- GPU Memory Usage -->
+                            <StackPanel Grid.Column="3" Margin="8,0,0,0">
+                                <TextBlock Text="GPU Memory Usage" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock x:Name="GpuMemoryUsageText" Text="--" Style="{StaticResource TitleLargeTextBlockStyle}"/>
+                                    <TextBlock Text="%" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
+                                </StackPanel>
+                                <ProgressBar x:Name="GpuMemoryProgressBar" Value="0" Maximum="100" Height="4" CornerRadius="2" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
                 </Border>
+
             </StackPanel>
         </ScrollViewer>
 
         <!-- Status Bar -->
-        <Border Grid.Row="2" Margin="0,16,0,0">
+        <Border Grid.Row="2" Margin="0,12,0,0">
             <TextBlock x:Name="StatusText" 
                        Text="Ready" 
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" 

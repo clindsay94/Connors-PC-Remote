@@ -4,6 +4,7 @@ namespace CPCRemote.Service
     using System.Collections.Generic;
     using System.Net;
     using System.Text.Json;
+    using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -38,6 +39,16 @@ namespace CPCRemote.Service
         private readonly ICommandExecutor _commandExecutor = commandExecutor;
 
         private static readonly char[] SlashSeparator = ['/'];
+
+        /// <summary>
+        /// JSON serializer options that omit null values from the output.
+        /// This prevents SmartThings Edge driver from receiving {value={}} for null temps.
+        /// </summary>
+        private static readonly JsonSerializerOptions StatsJsonOptions = new()
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+
         private HttpListener? _listener;
         private string _currentPrefix = string.Empty;
 
@@ -69,6 +80,8 @@ namespace CPCRemote.Service
                     string ipAddress = current.IpAddress ?? "localhost";
                     int port = current.Port;
                     string secret = current.Secret ?? string.Empty;
+                    bool useHttps = current.UseHttps;
+                    string scheme = useHttps ? "https" : "http";
 
                     if (port < 1 || port > 65535)
                     {
@@ -97,7 +110,8 @@ namespace CPCRemote.Service
                         continue;
                     }
 
-                    string prefix = $"http://{ipAddress}:{port}/";
+                    // Item 4: Support HTTPS when configured
+                    string prefix = $"{scheme}://{ipAddress}:{port}/";
                     if (_currentPrefix != prefix || !_listener.IsListening)
                     {
                         try
@@ -340,7 +354,7 @@ namespace CPCRemote.Service
                             if (string.Equals(commandStr, "stats", StringComparison.OrdinalIgnoreCase))
                             {
                                 var stats = _hardwareMonitor.GetStats();
-                                byte[] buffer = JsonSerializer.SerializeToUtf8Bytes(stats);
+                                byte[] buffer = JsonSerializer.SerializeToUtf8Bytes(stats, StatsJsonOptions);
                                 response.ContentType = "application/json";
                                 response.ContentLength64 = buffer.Length;
                                 await response.OutputStream.WriteAsync(buffer, stoppingToken);

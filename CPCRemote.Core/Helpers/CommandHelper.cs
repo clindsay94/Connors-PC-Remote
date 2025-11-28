@@ -241,6 +241,13 @@ public sealed partial class CommandHelper(WolOptions wolOptions) : ICommandCatal
              throw new InvalidOperationException("MAC address is not configured for Wake-on-LAN.");
         }
 
+        // Validate port range (use default 9 if invalid)
+        int port = _wolOptions.Port;
+        if (port < 1 || port > 65535)
+        {
+            port = 9; // Standard WoL port
+        }
+
         // Parse MAC address
         string mac = _wolOptions.MacAddress.Replace(":", "").Replace("-", "");
         if (mac.Length != 12)
@@ -270,7 +277,7 @@ public sealed partial class CommandHelper(WolOptions wolOptions) : ICommandCatal
         client.EnableBroadcast = true;
         
         IPAddress broadcastIp = IPAddress.Parse(_wolOptions.BroadcastAddress);
-        IPEndPoint endPoint = new(broadcastIp, _wolOptions.Port);
+        IPEndPoint endPoint = new(broadcastIp, port);
 
         await client.SendAsync(packet, packet.Length, endPoint).ConfigureAwait(false);
     }

@@ -14,13 +14,18 @@ namespace CPCRemote.UI.Services
     {
         private const string ServiceConfigFileName = "service-settings.json";
         private const string AppSettingsFileName = "app-settings.json";
+        private const string SecretKey = "ServiceSecret";
+        
         private readonly ApplicationDataContainer? _localSettings;
         private readonly bool _isPackaged;
         private readonly string _localAppDataPath;
+        private readonly SecureStorageService _secureStorage;
 
         public SettingsService()
         {
             _isPackaged = IsPackaged();
+            _secureStorage = new SecureStorageService(_isPackaged);
+            
             if (_isPackaged)
             {
                 try
@@ -116,33 +121,57 @@ namespace CPCRemote.UI.Services
 
         public async Task<ServiceConfiguration?> LoadServiceConfigurationAsync()
         {
+            ServiceConfiguration? config = null;
+            
             if (_isPackaged)
             {
                 var item = await ApplicationData.Current.LocalFolder.TryGetItemAsync(ServiceConfigFileName);
-                if (item is not StorageFile file)
+                if (item is StorageFile file)
                 {
-                    return null;
+                    var json = await FileIO.ReadTextAsync(file);
+                    config = JsonSerializer.Deserialize<ServiceConfiguration>(json);
                 }
-
-                var json = await FileIO.ReadTextAsync(file);
-                return JsonSerializer.Deserialize<ServiceConfiguration>(json);
             }
             else
             {
                 var path = Path.Combine(_localAppDataPath, ServiceConfigFileName);
-                if (!File.Exists(path))
+                if (File.Exists(path))
                 {
-                    return null;
+                    var json = await File.ReadAllTextAsync(path);
+                    config = JsonSerializer.Deserialize<ServiceConfiguration>(json);
                 }
-
-                var json = await File.ReadAllTextAsync(path);
-                return JsonSerializer.Deserialize<ServiceConfiguration>(json);
             }
+
+            // Item 11: Load secret from secure storage
+            if (config != null)
+            {
+                config.Rsm.Secret = _secureStorage.RetrieveSecret(SecretKey);
+            }
+
+            return config;
         }
 
         public async Task SaveServiceConfigurationAsync(ServiceConfiguration config)
         {
-            var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
+            // Item 11: Store secret in secure storage, not in JSON
+            var secretToStore = config.Rsm.Secret;
+            if (!string.IsNullOrEmpty(secretToStore))
+            {
+                _secureStorage.StoreSecret(SecretKey, secretToStore);
+            }
+            
+            // Create a copy without the secret for JSON storage
+            var configToSave = new ServiceConfiguration
+            {
+                Rsm = new RsmOptions
+                {
+                    IpAddress = config.Rsm.IpAddress,
+                    Port = config.Rsm.Port,
+                    Secret = null // Don't store secret in plain text
+                }
+            };
+            
+            var json = JsonSerializer.Serialize(configToSave, new JsonSerializerOptions { WriteIndented = true });
 
             if (_isPackaged)
             {

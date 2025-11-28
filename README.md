@@ -45,17 +45,20 @@ The project consists of four main components:
 ### Option 2: Manual Installation
 
 1. Build the solution in Visual Studio:
+
    ```
    dotnet build CPCRemote.sln --configuration Release
    ```
 
 2. Install the Windows Service:
+
    ```powershell
    # Run as Administrator
    sc.exe create CPCRemote.Service binPath="C:\Path\To\CPCRemote.Service.exe" start=auto
    ```
 
 3. Reserve the URL (if binding to non-localhost addresses):
+
    ```powershell
    # Run as Administrator
    netsh http add urlacl url=http://+:5005/ user=EVERYONE
@@ -69,14 +72,14 @@ The project consists of four main components:
 ## Configuration
 
 Configuration is stored in `appsettings.json` located in the service installation directory.
-Note that the ip address of the pc must match the configuration of the app sending the request. 
+Note that the ip address of the pc must match the configuration of the app sending the request.
 
 ### Example Configuration
 
 ```json
 {
   "rsm": {
-    "ipAddress": 00.0.0.0, 
+    "ipAddress": 00.0.0.0,
     "port": 5005,
     "secret": "your-secret-token-here"
   }
@@ -85,17 +88,74 @@ Note that the ip address of the pc must match the configuration of the app sendi
 
 ### Configuration Options
 
-| Option | Description | Default | Required |
-|--------|-------------|---------|----------|
-| `ipAddress` | IP address to bind to (specific IP) | | | yes |
-| `port` | Port number (1-65535) | `5005` | Yes |
-| `secret` | Authentication token (min 8 characters, empty = no auth) | `""` | No |
+| Option      | Description                                              | Default | Required |
+| ----------- | -------------------------------------------------------- | ------- | -------- | --- |
+| `ipAddress` | IP address to bind to (specific IP)                      |         |          | yes |
+| `port`      | Port number (1-65535)                                    | `5005`  | Yes      |
+| `secret`    | Authentication token (min 8 characters, empty = no auth) | `""`    | No       |
 
 **Security Recommendations:**
+
 - Always set a strong secret (16+ characters) for production use
 - Use `localhost` if only accepting local connections
 - Use `+` or specific IP for network access (requires URL reservation)
-- Consider using HTTPS for encrypted communication (future feature)
+- Consider using HTTPS for encrypted communication (see TLS/HTTPS Setup below)
+
+## TLS/HTTPS Setup (Optional)
+
+The service supports HTTPS for encrypted communication. This requires a SSL certificate and additional configuration.
+
+### 1. Generate or Obtain a Certificate
+
+**Self-signed certificate (for testing):**
+
+```powershell
+# Run as Administrator
+$cert = New-SelfSignedCertificate -DnsName "localhost" -CertStoreLocation "cert:\LocalMachine\My" -NotAfter (Get-Date).AddYears(5)
+Write-Host "Certificate Thumbprint: $($cert.Thumbprint)"
+```
+
+**Production:** Use a certificate from a trusted Certificate Authority or your organization's PKI.
+
+### 2. Bind the Certificate to the Port
+
+```powershell
+# Run as Administrator
+# Replace <thumbprint> with your certificate thumbprint (no spaces)
+# Replace <appid> with any GUID, e.g., {12345678-1234-1234-1234-123456789012}
+netsh http add sslcert ipport=0.0.0.0:5005 certhash=<thumbprint> appid={12345678-1234-1234-1234-123456789012}
+```
+
+### 3. Reserve the HTTPS URL
+
+```powershell
+# Run as Administrator
+netsh http add urlacl url=https://+:5005/ user=EVERYONE
+```
+
+### 4. Update Configuration
+
+```json
+{
+	"rsm": {
+		"ipAddress": "0.0.0.0",
+		"port": 5005,
+		"secret": "your-strong-secret",
+		"useHttps": true,
+		"certificateThumbprint": "<your-certificate-thumbprint>"
+	}
+}
+```
+
+### 5. Trust the Certificate (Self-signed only)
+
+On client machines, add the self-signed certificate to the Trusted Root store or configure the client to bypass certificate validation (not recommended for production).
+
+### Troubleshooting HTTPS
+
+- **"Access denied"**: Ensure URL reservation includes `https://` and certificate is bound
+- **"Certificate not found"**: Verify thumbprint and certificate is in LocalMachine\My store
+- **Connection refused**: Check firewall rules allow the HTTPS port
 
 ## Usage
 
@@ -120,27 +180,26 @@ curl -H "Authorization: Bearer your-secret-token" http://localhost:5005/restart
 
 ### Available Commands
 
-| Command | Description |
-|---------|-------------|
-| `ping` | Health check (returns 200 OK) |
-| `shutdown` | Graceful shutdown |
-| `restart` | Restart the computer |
-| `lock` | Lock the workstation |
-| `turnscreenoff` | Turn off the display |
+| Command         | Description                      |
+| --------------- | -------------------------------- |
+| `ping`          | Health check (returns 200 OK)    |
+| `shutdown`      | Graceful shutdown                |
+| `restart`       | Restart the computer             |
+| `lock`          | Lock the workstation             |
+| `turnscreenoff` | Turn off the display             |
 | `forceshutdown` | Force shutdown (10 second delay) |
-| `uefireboot` | Reboot to UEFI firmware settings |
+| `uefireboot`    | Reboot to UEFI firmware settings |
 
 ### Response Codes
 
-| Code | Meaning |
-|------|---------|
-| 200 | Success |
-| 400 | Invalid command |
-| 401 | Unauthorized (invalid or missing secret) |
-| 500 | Internal server error |
+| Code | Meaning                                  |
+| ---- | ---------------------------------------- |
+| 200  | Success                                  |
+| 400  | Invalid command                          |
+| 401  | Unauthorized (invalid or missing secret) |
+| 500  | Internal server error                    |
 
-**not every companion app will have any responses displayed. 
-
+\*\*not every companion app will have any responses displayed.
 
 ## Building from Source
 
@@ -178,6 +237,7 @@ msbuild CPCRemote.UI/CPCRemote.UI.csproj /p:Configuration=Release /p:Platform=x6
 **Problem**: Access denied error when starting service
 
 **Solution**: Reserve the URL (requires Administrator):
+
 ```powershell
 netsh http add urlacl url=http://+:5005/ user=EVERYONE
 ```
@@ -187,6 +247,7 @@ netsh http add urlacl url=http://+:5005/ user=EVERYONE
 **Problem**: Connection refused or timeout
 
 **Checks**:
+
 1. Verify service is running: `sc.exe query CPCRemote.Service`
 2. Check firewall allows connections on the configured port
 3. Verify correct IP address and port in configuration
@@ -197,6 +258,7 @@ netsh http add urlacl url=http://+:5005/ user=EVERYONE
 **Problem**: Receiving 401 Unauthorized
 
 **Solution**:
+
 1. Verify secret matches in `appsettings.json`
 2. Ensure you're sending the `Authorization: Bearer {token}` header
 3. Check for trailing spaces in the secret
@@ -219,6 +281,7 @@ netsh http add urlacl url=http://+:5005/ user=EVERYONE
 6. **Regular Updates**: Keep the application and Windows updated
 
 **Current Limitations:**
+
 - HTTP only (no built-in HTTPS support)
 - No rate limiting (add via reverse proxy if needed)
 - No request logging to file (only Windows Event Log)
@@ -271,17 +334,20 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### Version 1.0.1 (Current)
 
 #### Security Enhancements
+
 - ✅ Implemented header-based authentication (Bearer tokens)
 - ✅ Removed hardcoded default credentials
 - ✅ Added configuration validation with detailed error messages
 - ✅ Improved error handling with contextual information
 
 #### Reliability Improvements
+
 - ✅ Added exponential backoff retry logic (max 10 attempts)
 - ✅ Enhanced command execution error handling
 - ✅ Fixed test project dependencies (NUnit, Moq)
 
 #### Known Issues
+
 - HTTPS support not yet implemented (planned for v1.1.0)
 - UI XAML file has minor corruption (service functionality unaffected)
 
@@ -295,12 +361,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Roadmap
 
 ### Planned for v1.1.0
+
 - [ ] HTTPS support with certificate configuration
 - [ ] UI XAML fixes and enhancements
 - [ ] Administrator elevation prompts in UI
 - [ ] Logging to file in addition to Event Log
 
 ### Planned for v1.2.0
+
 - [ ] Rate limiting for security
 - [ ] Command scheduling
 - [ ] Web-based management interface
@@ -309,6 +377,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 For issues, questions, or suggestions:
+
 - Open an issue on GitHub
 - Check existing issues for solutions
 - Review the troubleshooting section above
