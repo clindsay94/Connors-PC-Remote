@@ -50,6 +50,7 @@
 	<PackageReference Include="CommunityToolkit.WinUI.Triggers" Version="8.2.250402" />
 	<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.0" />
 	<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+	<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
 	<PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.0" />
 	<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
 	<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1-RTM" />
@@ -79,6 +80,16 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Strings\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Strings\LogMessages.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>LogMessages.resx</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -279,6 +290,14 @@
     <EmbeddedResource Update="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Strings\Resources.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Strings\LogMessages.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>LogMessages.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
 </Project>

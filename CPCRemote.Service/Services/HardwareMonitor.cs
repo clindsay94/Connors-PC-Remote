@@ -26,6 +26,9 @@ public sealed class HardwareMonitor : IDisposable
 
     public HardwareMonitor(ILogger<HardwareMonitor> logger, IOptionsMonitor<SensorOptions> sensorOptionsMonitor)
     {
+        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(sensorOptionsMonitor);
+
         _logger = logger;
         _sensorOptionsMonitor = sensorOptionsMonitor;
         _logger.LogInformation("HardwareMonitor initialized. Will read from HWiNFO shared memory via library.");

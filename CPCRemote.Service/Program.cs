@@ -23,7 +23,10 @@ builder.Services.Configure<RsmOptions>(builder.Configuration.GetSection("rsm"));
 builder.Services.AddOptions<RsmOptions>().Bind(builder.Configuration.GetSection("rsm")).ValidateDataAnnotations().ValidateOnStart();
 
 // Sensor configuration for customizable HWiNFO sensor matching
+// Validates on startup to fail fast if configuration is invalid
+builder.Services.AddSingleton<IValidateOptions<SensorOptions>, SensorOptionsValidator>();
 builder.Services.Configure<SensorOptions>(builder.Configuration.GetSection("sensors"));
+builder.Services.AddOptions<SensorOptions>().Bind(builder.Configuration.GetSection("sensors")).ValidateOnStart();
 
 // Core Services
 builder.Services.AddSingleton<UserSessionLauncher>();

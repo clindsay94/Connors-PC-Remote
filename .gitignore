@@ -437,3 +437,11 @@ plan/fix-pcstats-and-applauncher-1.md
 CPCRemote.Core/AGENT_INSTRUCTIONS.md
 plan/fix-pcstats-and-applauncher-1.md
 CPCRemote.Core/AGENT_INSTRUCTIONS.md
+DOTNET-BEST-PRACTICES-AUDIT.md
+.github/agents/winforms.expert.agent.md
+.github/prompts/aspnet-minimal-api-openapi.prompt.md
+.github/prompts/csharp-xunit.prompt.md
+.github/prompts/dotnet-best-practices.prompt.prompt.md
+.github/prompts/dotnet-upgrade.prompt.md
+best practices remediation plan.md
+.github/prompts/dotnet-upgrade.prompt.md

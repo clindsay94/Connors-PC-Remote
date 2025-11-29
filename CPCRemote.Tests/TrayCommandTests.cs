@@ -38,15 +38,23 @@ public class TrayCommandTests
     [TestCase(TrayCommandType.WakeOnLan, "Wake on LAN")]
     public void GetText_KnownCommandType_ReturnsDisplayName(TrayCommandType commandType, string expectedText)
     {
+        // Act
         string? actual = _commandCatalog.GetText(commandType);
+
+        // Assert
         Assert.That(actual, Is.EqualTo(expectedText));
     }
 
     [Test]
     public void GetText_UnknownCommandType_ReturnsNull()
     {
+        // Arrange
         TrayCommandType invalidType = (TrayCommandType)999;
+
+        // Act
         string? actual = _commandCatalog.GetText(invalidType);
+
+        // Assert
         Assert.That(actual, Is.Null);
     }
 
@@ -61,7 +69,10 @@ public class TrayCommandTests
     [TestCase("WakeOnLan", TrayCommandType.WakeOnLan)] // Verify slug fallback
     public void GetCommandType_KnownName_ReturnsCommand(string commandName, TrayCommandType expected)
     {
+        // Act
         TrayCommandType? actual = _commandCatalog.GetCommandType(commandName);
+
+        // Assert
         Assert.That(actual, Is.EqualTo(expected));
     }
 
@@ -71,15 +82,20 @@ public class TrayCommandTests
     [TestCase("")]
     public void GetCommandType_UnknownName_ReturnsNull(string commandName)
     {
+        // Act
         TrayCommandType? actual = _commandCatalog.GetCommandType(commandName);
+
+        // Assert
         Assert.That(actual, Is.Null);
     }
 
     [Test]
     public void Commands_WhenRequested_ReturnsImmutableCatalog()
     {
+        // Act
         IReadOnlyList<TrayCommand> commands = _commandCatalog.Commands;
 
+        // Assert
         Assert.That(commands, Is.Not.Null);
         Assert.That(commands.Count, Is.EqualTo(7));
 

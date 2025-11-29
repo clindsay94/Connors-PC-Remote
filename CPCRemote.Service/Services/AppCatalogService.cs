@@ -34,6 +34,9 @@ public sealed class AppCatalogService
 
     public AppCatalogService(ILogger<AppCatalogService> logger, UserSessionLauncher userSessionLauncher)
     {
+        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(userSessionLauncher);
+
         _logger = logger;
         _userSessionLauncher = userSessionLauncher;
         

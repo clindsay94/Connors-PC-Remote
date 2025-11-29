@@ -75,6 +75,40 @@ public sealed partial class CommandHelper(WolOptions wolOptions) : ICommandCatal
         return null;
     }
 
+    /// <summary>
+    /// Validates whether the provided string is a valid MAC address format.
+    /// Accepts formats: AA:BB:CC:DD:EE:FF, AA-BB-CC-DD-EE-FF, or AABBCCDDEEFF.
+    /// </summary>
+    /// <param name="macAddress">The MAC address string to validate.</param>
+    /// <returns>True if the MAC address is valid, false otherwise.</returns>
+    public static bool IsValidMacAddress(string? macAddress)
+    {
+        if (string.IsNullOrWhiteSpace(macAddress))
+        {
+            return false;
+        }
+
+        // Remove common separators and normalize
+        string normalized = macAddress.Replace(":", "").Replace("-", "");
+
+        // Must be exactly 12 hex characters
+        if (normalized.Length != 12)
+        {
+            return false;
+        }
+
+        // Validate each character is a valid hex digit
+        foreach (char c in normalized)
+        {
+            if (!Uri.IsHexDigit(c))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /// <inheritdoc />
     public bool TryGetCommandByName(string commandName, out TrayCommand? command)
     {
@@ -241,6 +275,11 @@ public sealed partial class CommandHelper(WolOptions wolOptions) : ICommandCatal
              throw new InvalidOperationException("MAC address is not configured for Wake-on-LAN.");
         }
 
+        if (!IsValidMacAddress(_wolOptions.MacAddress))
+        {
+            throw new InvalidOperationException($"Invalid MAC address format: '{_wolOptions.MacAddress}'. Expected format: AA:BB:CC:DD:EE:FF, AA-BB-CC-DD-EE-FF, or AABBCCDDEEFF.");
+        }
+
         // Validate port range (use default 9 if invalid)
         int port = _wolOptions.Port;
         if (port < 1 || port > 65535)
@@ -248,13 +287,8 @@ public sealed partial class CommandHelper(WolOptions wolOptions) : ICommandCatal
             port = 9; // Standard WoL port
         }
 
-        // Parse MAC address
+        // Parse MAC address (already validated)
         string mac = _wolOptions.MacAddress.Replace(":", "").Replace("-", "");
-        if (mac.Length != 12)
-        {
-             throw new InvalidOperationException("Invalid MAC address format.");
-        }
-
         byte[] macBytes = new byte[6];
         for (int i = 0; i < 6; i++)
         {

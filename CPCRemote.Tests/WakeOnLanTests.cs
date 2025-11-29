@@ -37,18 +37,34 @@ public class WakeOnLanTests
     [TestCase("00-11-22-33-44-55", true, TestName = "ValidMac_Dashes_ReturnsTrue")]
     [TestCase("AA:BB:CC:DD:EE:FF", true, TestName = "ValidMac_Uppercase_ReturnsTrue")]
     [TestCase("aa:bb:cc:dd:ee:ff", true, TestName = "ValidMac_Lowercase_ReturnsTrue")]
+    [TestCase("AABBCCDDEEFF", true, TestName = "ValidMac_NoSeparators_ReturnsTrue")]
     [TestCase("", false, TestName = "InvalidMac_Empty_ReturnsFalse")]
-    [TestCase("00:00:00:00:00:00", false, TestName = "InvalidMac_AllZeros_ReturnsFalse")]
+    [TestCase(null, false, TestName = "InvalidMac_Null_ReturnsFalse")]
     [TestCase("invalid", false, TestName = "InvalidMac_NotMac_ReturnsFalse")]
     [TestCase("00:11:22:33:44", false, TestName = "InvalidMac_TooShort_ReturnsFalse")]
     [TestCase("00:11:22:33:44:55:66", false, TestName = "InvalidMac_TooLong_ReturnsFalse")]
-    public void IsValidMac_VariousMacs_ReturnsExpected(string mac, bool expectedValid)
+    [TestCase("GG:HH:II:JJ:KK:LL", false, TestName = "InvalidMac_NonHexChars_ReturnsFalse")]
+    [TestCase("   ", false, TestName = "InvalidMac_Whitespace_ReturnsFalse")]
+    public void IsValidMacAddress_VariousMacs_ReturnsExpected(string? mac, bool expectedValid)
     {
         // Arrange & Act
-        bool isValid = IsValidMacAddress(mac);
+        bool isValid = CommandHelper.IsValidMacAddress(mac);
 
         // Assert
         Assert.That(isValid, Is.EqualTo(expectedValid));
+    }
+
+    [Test]
+    public void IsValidMacAddress_AllZerosMac_ReturnsTrue()
+    {
+        // Arrange - All zeros is technically a valid MAC format (though not useful for WoL)
+        string mac = "00:00:00:00:00:00";
+
+        // Act
+        bool isValid = CommandHelper.IsValidMacAddress(mac);
+
+        // Assert - Format is valid (content validation is separate concern)
+        Assert.That(isValid, Is.True);
     }
 
     [Test]
@@ -69,21 +85,5 @@ public class WakeOnLanTests
 
         // Assert
         Assert.That(options.BroadcastAddress, Is.EqualTo("255.255.255.255"));
-    }
-
-    /// <summary>
-    /// Helper method mirroring Lua validation logic.
-    /// </summary>
-    private static bool IsValidMacAddress(string mac)
-    {
-        if (string.IsNullOrEmpty(mac) || mac == "00:00:00:00:00:00")
-        {
-            return false;
-        }
-
-        // Accept XX:XX:XX:XX:XX:XX or XX-XX-XX-XX-XX-XX format
-        return System.Text.RegularExpressions.Regex.IsMatch(
-            mac,
-            @"^[0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}[:-][0-9A-Fa-f]{2}$");
     }
 }

@@ -48,14 +48,17 @@ public class HostHelperTests
     [TestCase("force-shutdown", 4)]
     public async Task ProcessRequestAsync_NoSecret_RunsCorrectCommand(string commandText, int expectedCommandValue)
     {
+        // Arrange
         TrayCommandType expectedCommand = (TrayCommandType)expectedCommandValue;
 
         _mockCommandCatalog
             .Setup(x => x.GetCommandType(commandText))
             .Returns((TrayCommandType?)expectedCommand);
 
+        // Act
         await _hostHelper.ProcessRequestAsync($"/{commandText}").ConfigureAwait(false);
 
+        // Assert
         _mockCommandExecutor.Verify(x => x.RunCommandAsync(expectedCommand, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -67,6 +70,7 @@ public class HostHelperTests
     [TestCase("restart", (int)TrayCommandType.Restart)]
     public async Task ProcessRequestAsync_WithSecret_RunsCorrectCommand_IfSecretMatches(string commandText, int expectedCommandValue)
     {
+        // Arrange
         _hostHelper.SecretCode = "abc";
         TrayCommandType expectedCommand = (TrayCommandType)expectedCommandValue;
 
@@ -74,8 +78,10 @@ public class HostHelperTests
             .Setup(x => x.GetCommandType(commandText))
             .Returns((TrayCommandType?)expectedCommand);
 
+        // Act
         await _hostHelper.ProcessRequestAsync($"/abc/{commandText}").ConfigureAwait(false);
 
+        // Assert
         _mockCommandExecutor.Verify(x => x.RunCommandAsync(expectedCommand, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -85,10 +91,13 @@ public class HostHelperTests
     [Test]
     public async Task ProcessRequestAsync_WithSecret_IgnoresIfSecretMismatch()
     {
+        // Arrange
         _hostHelper.SecretCode = "abc";
 
+        // Act
         await _hostHelper.ProcessRequestAsync("/wrong/shutdown").ConfigureAwait(false);
 
+        // Assert
         _mockCommandExecutor.Verify(x => x.RunCommandAsync(It.IsAny<TrayCommandType>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -98,8 +107,12 @@ public class HostHelperTests
     [Test]
     public async Task ProcessRequestAsync_Empty_Ignored()
     {
+        // Arrange - no setup needed, using default empty string
+
+        // Act
         await _hostHelper.ProcessRequestAsync(string.Empty).ConfigureAwait(false);
 
+        // Assert
         _mockCommandExecutor.Verify(x => x.RunCommandAsync(It.IsAny<TrayCommandType>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

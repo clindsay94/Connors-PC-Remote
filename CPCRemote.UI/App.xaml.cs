@@ -7,6 +7,7 @@ using CPCRemote.UI.Services;
 using CPCRemote.UI.ViewModels;
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -33,11 +34,28 @@ namespace CPCRemote.UI
             Logger = _loggerFactory.CreateLogger<App>();
             Logger?.LogInformation("Application Constructor Reached.");
 
-            // 2. Initialize Component (Parses App.xaml)
+            // 2. Register global unhandled exception handler
+            this.UnhandledException += OnUnhandledException;
+
+            // 3. Initialize Component (Parses App.xaml)
             this.InitializeComponent();
 
             // DO NOT configure services here. 
             // DO NOT bootstrap here (already done in Program.cs).
+        }
+
+        /// <summary>
+        /// Global handler for unhandled exceptions in the WinUI application.
+        /// Logs the exception and prevents silent failures.
+        /// </summary>
+        private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+        {
+            Logger?.LogCritical(e.Exception, "Unhandled exception occurred: {Message}", e.Message);
+            Debug.WriteLine($"UNHANDLED EXCEPTION: {e.Exception}");
+
+            // Mark as handled to prevent app crash (allow graceful shutdown)
+            // Set to false if you want the app to crash and show the default error dialog
+            e.Handled = true;
         }
 
         // This is the "Safe Zone" - The UI thread is fully ready.
@@ -94,16 +112,25 @@ namespace CPCRemote.UI
                 builder.SetMinimumLevel(LogLevel.Debug);
             });
 
-            // Named Pipe IPC Client
+            // Named Pipe IPC Client - Singleton: Single connection shared across all pages
             services.AddSingleton<NamedPipeClient>();
             services.AddSingleton<IPipeClient>(sp => sp.GetRequiredService<NamedPipeClient>());
 
-            // ViewModels
-            services.AddSingleton<SettingsService>();
-            services.AddSingleton<ServiceManagementViewModel>();
-            services.AddTransient<QuickActionsViewModel>();
-            services.AddTransient<DashboardViewModel>();
-            services.AddTransient<AppCatalogViewModel>();
+            // ViewModels - Lifetime choices:
+            // - Singleton: Shared state across navigation, survives page changes (e.g., service status)
+            // - Transient: Fresh instance each time, no shared state (e.g., dashboard refreshes on each visit)
+            services.AddSingleton<SettingsService>();           // Singleton: Caches settings, shared across pages
+            
+            // HttpClient for ServiceManagementViewModel - uses IHttpClientFactory pattern
+            // This properly manages HttpClient lifecycle, avoiding socket exhaustion
+            services.AddHttpClient<ServiceManagementViewModel>(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(5); // Match previous DefaultHttpTimeout
+            });
+            
+            services.AddTransient<QuickActionsViewModel>();      // Transient: Fresh state on each page visit
+            services.AddTransient<DashboardViewModel>();         // Transient: Refreshes stats on each navigation
+            services.AddTransient<AppCatalogViewModel>();        // Transient: Reloads catalog from service each visit
 
             // Core Services - WolOptions is required by CommandHelper (not used in UI but needed for DI)
             services.AddSingleton(new CPCRemote.Core.Models.WolOptions());

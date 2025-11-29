@@ -10,6 +10,7 @@ namespace CPCRemote.Service
 
     using CPCRemote.Core.Enums;
     using CPCRemote.Core.Interfaces;
+    using CPCRemote.Service.Constants;
     using CPCRemote.Service.Options;
     using CPCRemote.Service.Services;
 
@@ -21,22 +22,41 @@ namespace CPCRemote.Service
     /// Background service hosting a minimal HTTP listener to accept remote power commands
     /// and a Named Pipe server for local IPC communication.
     /// </summary>
-    public partial class Worker(
-        ILogger<Worker> logger,
-        IOptionsMonitor<RsmOptions> rsmOptionsMonitor,
-        AppCatalogService appCatalog,
-        HardwareMonitor hardwareMonitor,
-        NamedPipeServer pipeServer,
-        ICommandCatalog commandCatalog,
-        ICommandExecutor commandExecutor) : BackgroundService
+    public partial class Worker : BackgroundService
     {
-        private readonly ILogger<Worker> _logger = logger;
-        private readonly IOptionsMonitor<RsmOptions> _rsmOptionsMonitor = rsmOptionsMonitor;
-        private readonly AppCatalogService _appCatalog = appCatalog;
-        private readonly HardwareMonitor _hardwareMonitor = hardwareMonitor;
-        private readonly NamedPipeServer _pipeServer = pipeServer;
-        private readonly ICommandCatalog _commandCatalog = commandCatalog;
-        private readonly ICommandExecutor _commandExecutor = commandExecutor;
+        private readonly ILogger<Worker> _logger;
+        private readonly IOptionsMonitor<RsmOptions> _rsmOptionsMonitor;
+        private readonly AppCatalogService _appCatalog;
+        private readonly HardwareMonitor _hardwareMonitor;
+        private readonly NamedPipeServer _pipeServer;
+        private readonly ICommandCatalog _commandCatalog;
+        private readonly ICommandExecutor _commandExecutor;
+
+        public Worker(
+            ILogger<Worker> logger,
+            IOptionsMonitor<RsmOptions> rsmOptionsMonitor,
+            AppCatalogService appCatalog,
+            HardwareMonitor hardwareMonitor,
+            NamedPipeServer pipeServer,
+            ICommandCatalog commandCatalog,
+            ICommandExecutor commandExecutor)
+        {
+            ArgumentNullException.ThrowIfNull(logger);
+            ArgumentNullException.ThrowIfNull(rsmOptionsMonitor);
+            ArgumentNullException.ThrowIfNull(appCatalog);
+            ArgumentNullException.ThrowIfNull(hardwareMonitor);
+            ArgumentNullException.ThrowIfNull(pipeServer);
+            ArgumentNullException.ThrowIfNull(commandCatalog);
+            ArgumentNullException.ThrowIfNull(commandExecutor);
+
+            _logger = logger;
+            _rsmOptionsMonitor = rsmOptionsMonitor;
+            _appCatalog = appCatalog;
+            _hardwareMonitor = hardwareMonitor;
+            _pipeServer = pipeServer;
+            _commandCatalog = commandCatalog;
+            _commandExecutor = commandExecutor;
+        }
 
         private static readonly char[] SlashSeparator = ['/'];
 
@@ -52,12 +72,8 @@ namespace CPCRemote.Service
         private HttpListener? _listener;
         private string _currentPrefix = string.Empty;
 
-        private const int MaxRetryAttempts = 10;
-        private const int InitialRetryDelayMs = 1000;
-        private const int MaxRetryDelayMs = 60000;
         private int _retryAttempts;
         private readonly Dictionary<IPAddress, DateTime> _unauthorizedLogTimestamps = new();
-        private const int UnauthorizedLogThrottlingSeconds = 60;
 
         /// <inheritdoc />
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -90,20 +106,20 @@ namespace CPCRemote.Service
                             _logger.LogError("Invalid port number: {Port}. Port must be between 1 and 65535.", port);
                         }
 
-                        if (++_retryAttempts >= MaxRetryAttempts)
+                        if (++_retryAttempts >= WorkerConstants.MaxRetryAttempts)
                         {
                             if (_logger.IsEnabled(LogLevel.Critical))
                             {
-                                _logger.LogCritical("Maximum retry attempts ({MaxAttempts}) exceeded due to invalid configuration. Service will stop.", MaxRetryAttempts);
+                                _logger.LogCritical("Maximum retry attempts ({MaxAttempts}) exceeded due to invalid configuration. Service will stop.", WorkerConstants.MaxRetryAttempts);
                             }
 
-                            throw new InvalidOperationException($"Service failed to start after {MaxRetryAttempts} attempts due to invalid port configuration.");
+                            throw new InvalidOperationException($"Service failed to start after {WorkerConstants.MaxRetryAttempts} attempts due to invalid port configuration.");
                         }
 
-                        int invalidDelayMs = Math.Min(InitialRetryDelayMs * (int)Math.Pow(2, _retryAttempts - 1), MaxRetryDelayMs);
+                        int invalidDelayMs = Math.Min(WorkerConstants.InitialRetryDelayMs * (int)Math.Pow(2, _retryAttempts - 1), WorkerConstants.MaxRetryDelayMs);
                         if (_logger.IsEnabled(LogLevel.Warning))
                         {
-                            _logger.LogWarning("Retrying in {DelaySeconds} seconds (attempt {Current}/{Max})...", invalidDelayMs / 1000, _retryAttempts, MaxRetryAttempts);
+                            _logger.LogWarning("Retrying in {DelaySeconds} seconds (attempt {Current}/{Max})...", invalidDelayMs / 1000, _retryAttempts, WorkerConstants.MaxRetryAttempts);
                         }
 
                         await Task.Delay(invalidDelayMs, stoppingToken).ConfigureAwait(false);
@@ -150,20 +166,20 @@ namespace CPCRemote.Service
                                 _logger.LogError("Access denied when binding to {Prefix}. URL reservation may be required. Run: netsh http add urlacl url={Prefix} user=DOMAIN\\USER", prefix, prefix);
                             }
 
-                            if (++_retryAttempts >= MaxRetryAttempts)
+                            if (++_retryAttempts >= WorkerConstants.MaxRetryAttempts)
                             {
                                 if (_logger.IsEnabled(LogLevel.Critical))
                                 {
-                                    _logger.LogCritical("Maximum retry attempts ({MaxAttempts}) exceeded due to access denied. Service will stop.", MaxRetryAttempts);
+                                    _logger.LogCritical("Maximum retry attempts ({MaxAttempts}) exceeded due to access denied. Service will stop.", WorkerConstants.MaxRetryAttempts);
                                 }
 
-                                throw new InvalidOperationException($"Service failed to start after {MaxRetryAttempts} attempts due to access denied. URL reservation required.", ex);
+                                throw new InvalidOperationException($"Service failed to start after {WorkerConstants.MaxRetryAttempts} attempts due to access denied. URL reservation required.", ex);
                             }
 
-                            int accessDelayMs = Math.Min(InitialRetryDelayMs * (int)Math.Pow(2, _retryAttempts - 1), MaxRetryDelayMs);
+                            int accessDelayMs = Math.Min(WorkerConstants.InitialRetryDelayMs * (int)Math.Pow(2, _retryAttempts - 1), WorkerConstants.MaxRetryDelayMs);
                             if (_logger.IsEnabled(LogLevel.Warning))
                             {
-                                _logger.LogWarning("Retrying in {DelaySeconds} seconds (attempt {Current}/{Max})...", accessDelayMs / 1000, _retryAttempts, MaxRetryAttempts);
+                                _logger.LogWarning("Retrying in {DelaySeconds} seconds (attempt {Current}/{Max})...", accessDelayMs / 1000, _retryAttempts, WorkerConstants.MaxRetryAttempts);
                             }
 
                             await Task.Delay(accessDelayMs, stoppingToken).ConfigureAwait(false);
@@ -176,20 +192,20 @@ namespace CPCRemote.Service
                                 _logger.LogError(ex, "Failed to start HttpListener on prefix {Prefix}.", prefix);
                             }
 
-                            if (++_retryAttempts >= MaxRetryAttempts)
+                            if (++_retryAttempts >= WorkerConstants.MaxRetryAttempts)
                             {
                                 if (_logger.IsEnabled(LogLevel.Critical))
                                 {
-                                    _logger.LogCritical(ex, "Maximum retry attempts ({MaxAttempts}) exceeded. Service will stop.", MaxRetryAttempts);
+                                    _logger.LogCritical(ex, "Maximum retry attempts ({MaxAttempts}) exceeded. Service will stop.", WorkerConstants.MaxRetryAttempts);
                                 }
 
-                                throw new InvalidOperationException($"Service failed to start after {MaxRetryAttempts} attempts.", ex);
+                                throw new InvalidOperationException($"Service failed to start after {WorkerConstants.MaxRetryAttempts} attempts.", ex);
                             }
 
-                            int generalDelayMs = Math.Min(InitialRetryDelayMs * (int)Math.Pow(2, _retryAttempts - 1), MaxRetryDelayMs);
+                            int generalDelayMs = Math.Min(WorkerConstants.InitialRetryDelayMs * (int)Math.Pow(2, _retryAttempts - 1), WorkerConstants.MaxRetryDelayMs);
                             if (_logger.IsEnabled(LogLevel.Warning))
                             {
-                                _logger.LogWarning("Retrying in {DelaySeconds} seconds (attempt {Current}/{Max})...", generalDelayMs / 1000, _retryAttempts, MaxRetryAttempts);
+                                _logger.LogWarning("Retrying in {DelaySeconds} seconds (attempt {Current}/{Max})...", generalDelayMs / 1000, _retryAttempts, WorkerConstants.MaxRetryAttempts);
                             }
 
                             await Task.Delay(generalDelayMs, stoppingToken).ConfigureAwait(false);
@@ -322,7 +338,7 @@ namespace CPCRemote.Service
                                 if (remoteIp is not null)
                                 {
                                     if (!_unauthorizedLogTimestamps.TryGetValue(remoteIp, out DateTime lastLogTime) ||
-                                        (DateTime.UtcNow - lastLogTime).TotalSeconds > UnauthorizedLogThrottlingSeconds)
+                                        (DateTime.UtcNow - lastLogTime).TotalSeconds > WorkerConstants.UnauthorizedLogThrottlingSeconds)
                                     {
                                         if (_logger.IsEnabled(LogLevel.Warning))
                                         {

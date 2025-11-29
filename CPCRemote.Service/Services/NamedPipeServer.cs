@@ -16,18 +16,33 @@ using Microsoft.Extensions.Options;
 /// <summary>
 /// Named Pipe server for handling IPC communication with the UI application.
 /// </summary>
-public sealed class NamedPipeServer(
-    ILogger<NamedPipeServer> logger,
-    HardwareMonitor hardwareMonitor,
-    AppCatalogService appCatalog,
-    ICommandExecutor commandExecutor,
-    IOptionsMonitor<SensorOptions> sensorOptionsMonitor) : IPipeServer
+public sealed class NamedPipeServer : IPipeServer
 {
-    private readonly ILogger<NamedPipeServer> _logger = logger;
-    private readonly HardwareMonitor _hardwareMonitor = hardwareMonitor;
-    private readonly AppCatalogService _appCatalog = appCatalog;
-    private readonly ICommandExecutor _commandExecutor = commandExecutor;
-    private readonly IOptionsMonitor<SensorOptions> _sensorOptionsMonitor = sensorOptionsMonitor;
+    private readonly ILogger<NamedPipeServer> _logger;
+    private readonly HardwareMonitor _hardwareMonitor;
+    private readonly AppCatalogService _appCatalog;
+    private readonly ICommandExecutor _commandExecutor;
+    private readonly IOptionsMonitor<SensorOptions> _sensorOptionsMonitor;
+
+    public NamedPipeServer(
+        ILogger<NamedPipeServer> logger,
+        HardwareMonitor hardwareMonitor,
+        AppCatalogService appCatalog,
+        ICommandExecutor commandExecutor,
+        IOptionsMonitor<SensorOptions> sensorOptionsMonitor)
+    {
+        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(hardwareMonitor);
+        ArgumentNullException.ThrowIfNull(appCatalog);
+        ArgumentNullException.ThrowIfNull(commandExecutor);
+        ArgumentNullException.ThrowIfNull(sensorOptionsMonitor);
+
+        _logger = logger;
+        _hardwareMonitor = hardwareMonitor;
+        _appCatalog = appCatalog;
+        _commandExecutor = commandExecutor;
+        _sensorOptionsMonitor = sensorOptionsMonitor;
+    }
 
     private readonly DateTime _startTimeUtc = DateTime.UtcNow;
     private readonly Lock _lock = new();

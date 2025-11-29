@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -14,6 +13,7 @@ using CommunityToolkit.Mvvm.Input;
 using CPCRemote.Core.IPC;
 using CPCRemote.Core.Models;
 using CPCRemote.UI.Services;
+using CPCRemote.UI.Strings;
 
 using Microsoft.Extensions.Logging;
 
@@ -123,7 +123,7 @@ public sealed partial class AppCatalogViewModel : ObservableObject
     public async Task RefreshAppsAsync()
     {
         IsLoading = true;
-        StatusMessage = "Loading apps...";
+        StatusMessage = Resources.AppCatalog_LoadingApps;
 
         try
         {
@@ -133,7 +133,7 @@ public sealed partial class AppCatalogViewModel : ObservableObject
                 if (!connected)
                 {
                     IsServiceConnected = false;
-                    StatusMessage = "Cannot connect to service. Is it running?";
+                    StatusMessage = Resources.Dashboard_CannotConnect;
 
                     return;
                 }
@@ -154,12 +154,12 @@ public sealed partial class AppCatalogViewModel : ObservableObject
                     Apps.Add(app);
                 }
 
-                StatusMessage = $"Loaded {Apps.Count} apps.";
+                StatusMessage = string.Format(Resources.AppCatalog_LoadedApps, Apps.Count);
                 _logger.LogInformation("Loaded {Count} apps from service.", Apps.Count);
             }
             else
             {
-                StatusMessage = $"Failed to load apps: {response.ErrorMessage}";
+                StatusMessage = string.Format(Resources.AppCatalog_LoadFailed, response.ErrorMessage);
             }
         }
         catch (OperationCanceledException)
@@ -168,12 +168,12 @@ public sealed partial class AppCatalogViewModel : ObservableObject
         }
         catch (IpcException ex)
         {
-            StatusMessage = $"Error: {ex.Message}";
+            StatusMessage = $"{Resources.Error}: {ex.Message}";
             _logger.LogError(ex, "Failed to load app catalog.");
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Error: {ex.Message}";
+            StatusMessage = $"{Resources.Error}: {ex.Message}";
             _logger.LogError(ex, "Unexpected error loading app catalog.");
         }
         finally
@@ -254,13 +254,13 @@ public sealed partial class AppCatalogViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(EditSlot) || string.IsNullOrWhiteSpace(EditName) || string.IsNullOrWhiteSpace(EditPath))
         {
-            StatusMessage = "Slot, Name, and Path are required.";
+            StatusMessage = Resources.AppCatalog_RequiredFields;
 
             return;
         }
 
         IsLoading = true;
-        StatusMessage = "Saving app...";
+        StatusMessage = Resources.AppCatalog_SavingApp;
 
         try
         {
@@ -283,12 +283,12 @@ public sealed partial class AppCatalogViewModel : ObservableObject
             if (response.Success)
             {
                 IsEditDialogOpen = false;
-                StatusMessage = $"Saved '{EditName}' successfully.";
+                StatusMessage = string.Format(Resources.AppCatalog_SavedApp, EditName);
                 await RefreshAppsAsync();
             }
             else
             {
-                StatusMessage = $"Failed to save: {response.ErrorMessage}";
+                StatusMessage = string.Format(Resources.AppCatalog_SaveFailed, response.ErrorMessage);
             }
         }
         catch (OperationCanceledException)
@@ -297,7 +297,7 @@ public sealed partial class AppCatalogViewModel : ObservableObject
         }
         catch (IpcException ex)
         {
-            StatusMessage = $"Error: {ex.Message}";
+            StatusMessage = $"{Resources.Error}: {ex.Message}";
             _logger.LogError(ex, "Failed to save app.");
         }
         finally
@@ -320,7 +320,7 @@ public sealed partial class AppCatalogViewModel : ObservableObject
         }
 
         IsLoading = true;
-        StatusMessage = $"Deleting '{SelectedApp.Name}'...";
+        StatusMessage = string.Format(Resources.AppCatalog_DeletingApp, SelectedApp.Name);
 
         try
         {
@@ -330,13 +330,13 @@ public sealed partial class AppCatalogViewModel : ObservableObject
 
             if (response.Success)
             {
-                StatusMessage = $"Deleted '{SelectedApp.Name}' successfully.";
+                StatusMessage = string.Format(Resources.AppCatalog_DeletedApp, SelectedApp.Name);
                 SelectedApp = null;
                 await RefreshAppsAsync();
             }
             else
             {
-                StatusMessage = $"Failed to delete: {response.ErrorMessage}";
+                StatusMessage = string.Format(Resources.AppCatalog_DeleteFailed, response.ErrorMessage);
             }
         }
         catch (OperationCanceledException)
@@ -345,7 +345,7 @@ public sealed partial class AppCatalogViewModel : ObservableObject
         }
         catch (IpcException ex)
         {
-            StatusMessage = $"Error: {ex.Message}";
+            StatusMessage = $"{Resources.Error}: {ex.Message}";
             _logger.LogError(ex, "Failed to delete app.");
         }
         finally
@@ -380,23 +380,23 @@ public sealed partial class AppCatalogViewModel : ObservableObject
 
         if (!app.Enabled)
         {
-            StatusMessage = $"'{app.Name}' is disabled.";
+            StatusMessage = string.Format(Resources.AppCatalog_AppDisabled, app.Name);
             return Task.CompletedTask;
         }
 
         if (string.IsNullOrWhiteSpace(app.Path))
         {
-            StatusMessage = $"'{app.Name}' has no path configured.";
+            StatusMessage = string.Format(Resources.AppCatalog_NoPathConfigured, app.Name);
             return Task.CompletedTask;
         }
 
         if (!File.Exists(app.Path) && !Directory.Exists(app.Path))
         {
-            StatusMessage = $"Path not found: {app.Path}";
+            StatusMessage = string.Format(Resources.AppCatalog_PathNotFound, app.Path);
             return Task.CompletedTask;
         }
 
-        StatusMessage = $"Launching '{app.Name}'...";
+        StatusMessage = string.Format(Resources.AppCatalog_LaunchingApp, app.Name);
 
         try
         {
@@ -418,18 +418,18 @@ public sealed partial class AppCatalogViewModel : ObservableObject
             }
 
             Process.Start(startInfo);
-            StatusMessage = $"Launched '{app.Name}'.";
+            StatusMessage = string.Format(Resources.AppCatalog_LaunchedApp, app.Name);
             _logger.LogInformation("Launched app {Slot}: {Name} ({Path})", app.Slot, app.Name, app.Path);
         }
         catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
         {
             // User cancelled the UAC prompt
-            StatusMessage = $"Launch cancelled by user.";
+            StatusMessage = Resources.AppCatalog_LaunchCancelled;
             _logger.LogInformation("User cancelled UAC prompt for {Slot}: {Name}", app.Slot, app.Name);
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Failed to launch: {ex.Message}";
+            StatusMessage = string.Format(Resources.AppCatalog_LaunchFailed, ex.Message);
             _logger.LogError(ex, "Failed to launch app {Slot}: {Name}", app.Slot, app.Name);
         }
 
@@ -442,7 +442,7 @@ public sealed partial class AppCatalogViewModel : ObservableObject
     public async Task ReorderAppsAsync(IList<AppCatalogEntry> newOrder)
     {
         IsLoading = true;
-        StatusMessage = "Reordering apps...";
+        StatusMessage = Resources.AppCatalog_ReorderingApps;
 
         try
         {
@@ -467,7 +467,7 @@ public sealed partial class AppCatalogViewModel : ObservableObject
                 }
             }
 
-            StatusMessage = "Apps reordered successfully.";
+            StatusMessage = Resources.AppCatalog_ReorderedApps;
             await RefreshAppsAsync();
         }
         catch (OperationCanceledException)
@@ -476,7 +476,7 @@ public sealed partial class AppCatalogViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Error reordering: {ex.Message}";
+            StatusMessage = string.Format(Resources.AppCatalog_ReorderFailed, ex.Message);
             _logger.LogError(ex, "Failed to reorder apps.");
         }
         finally

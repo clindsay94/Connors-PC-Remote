@@ -1,0 +1,434 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/telerik-resx-schema (root in values.resx, with: value, comment, data)
+    resheader: name="resmimetype" value="text/microsoft-resx"
+    resheader: name="version" value="2.0"
+    ... type information etc
+    
+    Root/data: name="MyString" value="Hello World"
+    Root/data: name="MyStringKey" value="123"
+  -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="0" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  
+  <!-- ==================== Common Strings ==================== -->
+  <data name="AppName" xml:space="preserve">
+    <value>Connor's PC Remote</value>
+    <comment>Application display name</comment>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>Unknown</value>
+    <comment>Generic unknown status text</comment>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Error</value>
+    <comment>Generic error label</comment>
+  </data>
+  <data name="Success" xml:space="preserve">
+    <value>Success</value>
+    <comment>Generic success label</comment>
+  </data>
+  <data name="Loading" xml:space="preserve">
+    <value>Loading...</value>
+    <comment>Generic loading indicator text</comment>
+  </data>
+  <data name="Saving" xml:space="preserve">
+    <value>Saving...</value>
+    <comment>Generic saving indicator text</comment>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+    <comment>Cancel button text</comment>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+    <comment>Save button text</comment>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Delete</value>
+    <comment>Delete button text</comment>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>Add</value>
+    <comment>Add button text</comment>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Edit</value>
+    <comment>Edit button text</comment>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Refresh</value>
+    <comment>Refresh button text</comment>
+  </data>
+  
+  <!-- ==================== Service Management ==================== -->
+  <data name="ServiceManagement_PortValidation" xml:space="preserve">
+    <value>Port must be between 1 and 65535</value>
+    <comment>Validation message for invalid port number</comment>
+  </data>
+  <data name="ServiceManagement_SavingConfig" xml:space="preserve">
+    <value>Saving configuration...</value>
+    <comment>InfoBar message while saving configuration</comment>
+  </data>
+  <data name="ServiceManagement_ConfigSavedSuccess" xml:space="preserve">
+    <value>Configuration saved successfully. Restart the service for these settings to be applied.</value>
+    <comment>Success message after saving configuration</comment>
+  </data>
+  <data name="ServiceManagement_ConfigSavedWarning" xml:space="preserve">
+    <value>Saved to UI, but could not find Service config file. Service may not be updated.</value>
+    <comment>Warning when service config file was not found</comment>
+  </data>
+  <data name="ServiceManagement_ConfigSaveError" xml:space="preserve">
+    <value>Error saving configuration: {0}</value>
+    <comment>Error message when saving configuration fails. {0} = error message</comment>
+  </data>
+  <data name="ServiceManagement_ConfigUpdateFailed" xml:space="preserve">
+    <value>Saved to UI settings, but failed to update Service config file: {0}. Try running as Administrator.</value>
+    <comment>Error when service config update fails. {0} = error message</comment>
+  </data>
+  <data name="ServiceManagement_InvalidPort" xml:space="preserve">
+    <value>Invalid port: {0}</value>
+    <comment>Error message for invalid port. {0} = validation message</comment>
+  </data>
+  
+  <!-- Service Status -->
+  <data name="ServiceManagement_StartingService" xml:space="preserve">
+    <value>Starting service...</value>
+    <comment>InfoBar message while starting service</comment>
+  </data>
+  <data name="ServiceManagement_ServiceStarted" xml:space="preserve">
+    <value>Service started successfully.</value>
+    <comment>Success message after starting service</comment>
+  </data>
+  <data name="ServiceManagement_StartServiceFailed" xml:space="preserve">
+    <value>Failed to start service</value>
+    <comment>Error prefix when starting service fails</comment>
+  </data>
+  <data name="ServiceManagement_StoppingService" xml:space="preserve">
+    <value>Stopping service...</value>
+    <comment>InfoBar message while stopping service</comment>
+  </data>
+  <data name="ServiceManagement_ServiceStopped" xml:space="preserve">
+    <value>Service stopped successfully.</value>
+    <comment>Success message after stopping service</comment>
+  </data>
+  <data name="ServiceManagement_StopServiceFailed" xml:space="preserve">
+    <value>Failed to stop service</value>
+    <comment>Error prefix when stopping service fails</comment>
+  </data>
+  <data name="ServiceManagement_RestartingService" xml:space="preserve">
+    <value>Restarting service...</value>
+    <comment>InfoBar message while restarting service</comment>
+  </data>
+  <data name="ServiceManagement_ServiceRestarted" xml:space="preserve">
+    <value>Service restarted successfully.</value>
+    <comment>Success message after restarting service</comment>
+  </data>
+  <data name="ServiceManagement_RestartServiceFailed" xml:space="preserve">
+    <value>Failed to restart service: {0}</value>
+    <comment>Error message when restarting service fails. {0} = error message</comment>
+  </data>
+  
+  <!-- Service Installation -->
+  <data name="ServiceManagement_InstallingService" xml:space="preserve">
+    <value>Installing service...</value>
+    <comment>InfoBar message while installing service</comment>
+  </data>
+  <data name="ServiceManagement_ServiceInstalled" xml:space="preserve">
+    <value>Service installed successfully. You can now start it.</value>
+    <comment>Success message after installing service</comment>
+  </data>
+  <data name="ServiceManagement_InstallServiceFailed" xml:space="preserve">
+    <value>Failed to install service: {0}</value>
+    <comment>Error message when installing service fails. {0} = error output</comment>
+  </data>
+  <data name="ServiceManagement_InstallCancelled" xml:space="preserve">
+    <value>Service installation cancelled.</value>
+    <comment>Message when user cancels installation</comment>
+  </data>
+  <data name="ServiceManagement_InstallError" xml:space="preserve">
+    <value>Error installing service: {0}</value>
+    <comment>Error message for service installation exception. {0} = error message</comment>
+  </data>
+  <data name="ServiceManagement_InvalidExePath" xml:space="preserve">
+    <value>Please provide a valid executable path.</value>
+    <comment>Validation message for empty/invalid service executable path</comment>
+  </data>
+  
+  <!-- Service Uninstallation -->
+  <data name="ServiceManagement_UninstallingService" xml:space="preserve">
+    <value>Uninstalling service...</value>
+    <comment>InfoBar message while uninstalling service</comment>
+  </data>
+  <data name="ServiceManagement_ServiceUninstalled" xml:space="preserve">
+    <value>Service uninstalled successfully.</value>
+    <comment>Success message after uninstalling service</comment>
+  </data>
+  <data name="ServiceManagement_UninstallServiceFailed" xml:space="preserve">
+    <value>Failed to uninstall service: {0}</value>
+    <comment>Error message when uninstalling service fails. {0} = error output</comment>
+  </data>
+  <data name="ServiceManagement_UninstallCancelled" xml:space="preserve">
+    <value>Service uninstallation cancelled.</value>
+    <comment>Message when user cancels uninstallation</comment>
+  </data>
+  <data name="ServiceManagement_UninstallError" xml:space="preserve">
+    <value>Error uninstalling service: {0}</value>
+    <comment>Error message for service uninstallation exception. {0} = error message</comment>
+  </data>
+  
+  <!-- HTTP Commands -->
+  <data name="ServiceManagement_SendingCommand" xml:space="preserve">
+    <value>Sending {0} command to {1}...</value>
+    <comment>InfoBar message when sending HTTP command. {0} = command, {1} = URL</comment>
+  </data>
+  <data name="ServiceManagement_CommandSuccess" xml:space="preserve">
+    <value>Successfully sent {0} command.</value>
+    <comment>Success message after command sent. {0} = command name</comment>
+  </data>
+  <data name="ServiceManagement_CommandUnauthorized" xml:space="preserve">
+    <value>Command failed with Unauthorized. Check your secret is correct.</value>
+    <comment>Error message when command returns 401</comment>
+  </data>
+  <data name="ServiceManagement_CommandFailed" xml:space="preserve">
+    <value>Command failed with status {0}: {1}</value>
+    <comment>Error message when command fails. {0} = status code, {1} = content</comment>
+  </data>
+  <data name="ServiceManagement_ConnectionFailed" xml:space="preserve">
+    <value>Connection failed: {0}. Ensure the service is running.</value>
+    <comment>Error message when HTTP connection fails. {0} = error message</comment>
+  </data>
+  
+  <!-- Elevated Process -->
+  <data name="ServiceManagement_ElevatedProcessFailed" xml:space="preserve">
+    <value>Failed to start elevated process. User may have cancelled UAC prompt.</value>
+    <comment>Error when UAC elevation fails or is cancelled</comment>
+  </data>
+  <data name="ServiceManagement_ProcessStartFailed" xml:space="preserve">
+    <value>Failed to start process.</value>
+    <comment>Error when process fails to start</comment>
+  </data>
+  <data name="ServiceManagement_ElevatedCommandError" xml:space="preserve">
+    <value>Error running elevated command: {0}</value>
+    <comment>Error when elevated command throws. {0} = error message</comment>
+  </data>
+  
+  <!-- ==================== Dashboard ==================== -->
+  <data name="Dashboard_ConnectingToService" xml:space="preserve">
+    <value>Connecting to service...</value>
+    <comment>Status message while connecting via IPC</comment>
+  </data>
+  <data name="Dashboard_CannotConnect" xml:space="preserve">
+    <value>Cannot connect to service. Is it running?</value>
+    <comment>Error message when IPC connection fails</comment>
+  </data>
+  <data name="Dashboard_LastUpdated" xml:space="preserve">
+    <value>Last updated: {0}</value>
+    <comment>Status showing last refresh time. {0} = timestamp</comment>
+  </data>
+  <data name="Dashboard_ServiceError" xml:space="preserve">
+    <value>Service error: {0}</value>
+    <comment>Error message from IPC. {0} = error message</comment>
+  </data>
+  
+  <!-- ==================== Quick Actions ==================== -->
+  <data name="QuickActions_Sending" xml:space="preserve">
+    <value>Sending '{0}' to {1}...</value>
+    <comment>Log message when sending command. {0} = command, {1} = URL</comment>
+  </data>
+  <data name="QuickActions_Success" xml:space="preserve">
+    <value>Success: {0}</value>
+    <comment>Log message on success. {0} = status code</comment>
+  </data>
+  <data name="QuickActions_Failed" xml:space="preserve">
+    <value>Failed: {0}</value>
+    <comment>Log message on failure. {0} = status code</comment>
+  </data>
+  
+  <!-- ==================== App Catalog ==================== -->
+  <data name="AppCatalog_LoadingApps" xml:space="preserve">
+    <value>Loading apps...</value>
+    <comment>Status message while loading app catalog</comment>
+  </data>
+  <data name="AppCatalog_LoadedApps" xml:space="preserve">
+    <value>Loaded {0} apps.</value>
+    <comment>Status after loading apps. {0} = count</comment>
+  </data>
+  <data name="AppCatalog_LoadFailed" xml:space="preserve">
+    <value>Failed to load apps: {0}</value>
+    <comment>Error when loading apps fails. {0} = error message</comment>
+  </data>
+  <data name="AppCatalog_SavingApp" xml:space="preserve">
+    <value>Saving app...</value>
+    <comment>Status while saving an app</comment>
+  </data>
+  <data name="AppCatalog_SavedApp" xml:space="preserve">
+    <value>Saved '{0}' successfully.</value>
+    <comment>Success message after saving app. {0} = app name</comment>
+  </data>
+  <data name="AppCatalog_SaveFailed" xml:space="preserve">
+    <value>Failed to save: {0}</value>
+    <comment>Error when saving app fails. {0} = error message</comment>
+  </data>
+  <data name="AppCatalog_RequiredFields" xml:space="preserve">
+    <value>Slot, Name, and Path are required.</value>
+    <comment>Validation message for missing required fields</comment>
+  </data>
+  <data name="AppCatalog_DeletingApp" xml:space="preserve">
+    <value>Deleting '{0}'...</value>
+    <comment>Status while deleting an app. {0} = app name</comment>
+  </data>
+  <data name="AppCatalog_DeletedApp" xml:space="preserve">
+    <value>Deleted '{0}' successfully.</value>
+    <comment>Success message after deleting app. {0} = app name</comment>
+  </data>
+  <data name="AppCatalog_DeleteFailed" xml:space="preserve">
+    <value>Failed to delete: {0}</value>
+    <comment>Error when deleting app fails. {0} = error message</comment>
+  </data>
+  <data name="AppCatalog_LaunchingApp" xml:space="preserve">
+    <value>Launching '{0}'...</value>
+    <comment>Status while launching an app. {0} = app name</comment>
+  </data>
+  <data name="AppCatalog_LaunchedApp" xml:space="preserve">
+    <value>Launched '{0}'.</value>
+    <comment>Success message after launching app. {0} = app name</comment>
+  </data>
+  <data name="AppCatalog_LaunchFailed" xml:space="preserve">
+    <value>Failed to launch: {0}</value>
+    <comment>Error when launching app fails. {0} = error message</comment>
+  </data>
+  <data name="AppCatalog_LaunchCancelled" xml:space="preserve">
+    <value>Launch cancelled by user.</value>
+    <comment>Message when user cancels UAC prompt</comment>
+  </data>
+  <data name="AppCatalog_AppDisabled" xml:space="preserve">
+    <value>'{0}' is disabled.</value>
+    <comment>Message when trying to launch disabled app. {0} = app name</comment>
+  </data>
+  <data name="AppCatalog_NoPathConfigured" xml:space="preserve">
+    <value>'{0}' has no path configured.</value>
+    <comment>Message when app has no path. {0} = app name</comment>
+  </data>
+  <data name="AppCatalog_PathNotFound" xml:space="preserve">
+    <value>Path not found: {0}</value>
+    <comment>Message when app path doesn't exist. {0} = path</comment>
+  </data>
+  <data name="AppCatalog_ReorderingApps" xml:space="preserve">
+    <value>Reordering apps...</value>
+    <comment>Status while reordering apps</comment>
+  </data>
+  <data name="AppCatalog_ReorderedApps" xml:space="preserve">
+    <value>Apps reordered successfully.</value>
+    <comment>Success message after reordering apps</comment>
+  </data>
+  <data name="AppCatalog_ReorderFailed" xml:space="preserve">
+    <value>Error reordering: {0}</value>
+    <comment>Error when reordering apps fails. {0} = error message</comment>
+  </data>
+  
+  <!-- ==================== Settings Page ==================== -->
+  <data name="Settings_ThemeLight" xml:space="preserve">
+    <value>Light</value>
+    <comment>Light theme option</comment>
+  </data>
+  <data name="Settings_ThemeDark" xml:space="preserve">
+    <value>Dark</value>
+    <comment>Dark theme option</comment>
+  </data>
+  <data name="Settings_ThemeSystem" xml:space="preserve">
+    <value>System</value>
+    <comment>System default theme option</comment>
+  </data>
+  
+  <!-- ==================== Navigation ==================== -->
+  <data name="Nav_Dashboard" xml:space="preserve">
+    <value>Dashboard</value>
+    <comment>Navigation item for Dashboard page</comment>
+  </data>
+  <data name="Nav_QuickActions" xml:space="preserve">
+    <value>Quick Actions</value>
+    <comment>Navigation item for Quick Actions page</comment>
+  </data>
+  <data name="Nav_AppCatalog" xml:space="preserve">
+    <value>App Catalog</value>
+    <comment>Navigation item for App Catalog page</comment>
+  </data>
+  <data name="Nav_ServiceManagement" xml:space="preserve">
+    <value>Service Management</value>
+    <comment>Navigation item for Service Management page</comment>
+  </data>
+  <data name="Nav_Settings" xml:space="preserve">
+    <value>Settings</value>
+    <comment>Navigation item for Settings page</comment>
+  </data>
+  
+</root>

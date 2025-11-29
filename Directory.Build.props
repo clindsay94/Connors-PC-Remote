@@ -6,9 +6,17 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest</AnalysisLevel>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <!-- Warnings as errors for critical null-safety issues only -->
+    <!-- Warnings as errors for critical null-safety issues only:
+         CS8602 - Dereference of possibly null reference
+         CS8603 - Possible null reference return
+         CS8604 - Possible null reference argument -->
     <WarningsAsErrors>CS8602;CS8603;CS8604</WarningsAsErrors>
-    <!-- Suppress CA2007 (ConfigureAwait) as this is a Windows-only application -->
+    <!-- Suppress CA2007 (ConfigureAwait) - This is a Windows-only desktop application.
+         ConfigureAwait(false) is unnecessary because:
+         1. The Service runs as a Windows Service with no UI context to capture
+         2. The UI runs on WinUI 3 which handles its own threading
+         3. There is no ASP.NET or library code that requires context-free continuations
+         See: https://devblogs.microsoft.com/dotnet/configureawait-faq/ -->
     <NoWarn>$(NoWarn);CA2007</NoWarn>
     
     <!-- Unified output directory for all projects -->

@@ -9,6 +9,7 @@ using CommunityToolkit.Mvvm.Input;
 
 using CPCRemote.Core.IPC;
 using CPCRemote.UI.Services;
+using CPCRemote.UI.Strings;
 
 using Microsoft.Extensions.Logging;
 
@@ -318,7 +319,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         }
 
         IsLoading = true;
-        StatusMessage = "Connecting to service...";
+        StatusMessage = Resources.Dashboard_ConnectingToService;
 
         try
         {
@@ -329,7 +330,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
                 if (!connected)
                 {
                     IsServiceConnected = false;
-                    StatusMessage = "Cannot connect to service. Is it running?";
+                    StatusMessage = Resources.Dashboard_CannotConnect;
                     ClearStats();
 
                     return;
@@ -407,7 +408,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
                         : $"{uptime.Seconds}s";
             }
 
-            StatusMessage = $"Last updated: {DateTime.Now:HH:mm:ss}";
+            StatusMessage = string.Format(Resources.Dashboard_LastUpdated, DateTime.Now.ToString("HH:mm:ss"));
         }
         catch (OperationCanceledException)
         {
@@ -421,12 +422,12 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         }
         catch (IpcException ex)
         {
-            StatusMessage = $"Service error: {ex.Message}";
+            StatusMessage = string.Format(Resources.Dashboard_ServiceError, ex.Message);
             _logger.LogError(ex, "IPC error while fetching stats.");
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Error: {ex.Message}";
+            StatusMessage = $"{Resources.Error}: {ex.Message}";
             _logger.LogError(ex, "Unexpected error while fetching stats.");
         }
         finally

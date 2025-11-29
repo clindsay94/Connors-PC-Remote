@@ -9,6 +9,13 @@ using NUnit.Framework;
 /// Tests for GetStatsResponse JSON serialization to ensure null values are handled correctly.
 /// Null values must be omitted from JSON to prevent SmartThings Edge driver errors.
 /// </summary>
+/// <remarks>
+/// <para>
+/// <b>Bridge Safety:</b> These tests verify the JSON contract between the C# service
+/// and the SmartThings Lua driver. The Lua driver's <c>update_stats()</c> function
+/// expects null values to be omitted, not serialized as <c>null</c>.
+/// </para>
+/// </remarks>
 [TestFixture]
 public class StatsJsonTests
 {

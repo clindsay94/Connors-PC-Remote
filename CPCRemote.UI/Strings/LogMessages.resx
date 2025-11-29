@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    LogMessages Resource File
+    
+    Contains log message templates used throughout the application.
+    These messages support structured logging placeholders like {Path}, {Count}, etc.
+    
+    Naming Convention: Category_Action_Context
+    Example: Service_Started_Successfully, Config_Save_Failed
+  -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="0" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  
+  <!-- ==================== Application Lifecycle ==================== -->
+  <data name="App_Constructor_Reached" xml:space="preserve">
+    <value>Application Constructor Reached.</value>
+    <comment>Logged when App constructor is called</comment>
+  </data>
+  <data name="App_ShuttingDown" xml:space="preserve">
+    <value>Application shutting down...</value>
+    <comment>Logged when window closes</comment>
+  </data>
+  <data name="App_UnhandledException" xml:space="preserve">
+    <value>Unhandled exception occurred: {Message}</value>
+    <comment>Logged for unhandled exceptions. {Message} = exception message</comment>
+  </data>
+  <data name="App_CriticalCrash" xml:space="preserve">
+    <value>Crash in OnLaunched</value>
+    <comment>Logged when OnLaunched throws</comment>
+  </data>
+  <data name="App_SettingsApplied" xml:space="preserve">
+    <value>Applied saved settings: Theme={Theme}, Font={Font}, Scale={Scale}%</value>
+    <comment>Logged after applying user settings</comment>
+  </data>
+  <data name="App_SettingsApplyFailed" xml:space="preserve">
+    <value>Failed to apply saved settings</value>
+    <comment>Logged when settings application fails</comment>
+  </data>
+  <data name="App_FontApplied" xml:space="preserve">
+    <value>Applied font family: {Font}</value>
+    <comment>Logged when font family is applied</comment>
+  </data>
+  <data name="App_FontScaleApplied" xml:space="preserve">
+    <value>Applied font scale: {Scale}% ({Size}px)</value>
+    <comment>Logged when font scale is applied</comment>
+  </data>
+  
+  <!-- ==================== Service Management ==================== -->
+  <data name="Service_ConfigUpdated" xml:space="preserve">
+    <value>Updated service configuration at {Path}</value>
+    <comment>Logged after updating service config file</comment>
+  </data>
+  <data name="Service_ConfigWriteFailed" xml:space="preserve">
+    <value>Failed to write to service configuration file at {Path}</value>
+    <comment>Logged when config file write fails</comment>
+  </data>
+  <data name="Service_ConfigNotFound" xml:space="preserve">
+    <value>Could not locate service configuration file to update.</value>
+    <comment>Logged when service config file is not found</comment>
+  </data>
+  <data name="Service_ConfigSaved" xml:space="preserve">
+    <value>Configuration saved successfully.</value>
+    <comment>Logged after configuration is saved</comment>
+  </data>
+  <data name="Service_ConfigSaveFailed" xml:space="preserve">
+    <value>Failed to save configuration.</value>
+    <comment>Logged when configuration save fails</comment>
+  </data>
+  <data name="Service_StatusRefreshFailed" xml:space="preserve">
+    <value>Failed to refresh service status.</value>
+    <comment>Logged when service status refresh fails</comment>
+  </data>
+  <data name="Service_StartTriggered" xml:space="preserve">
+    <value>UI triggered start command for the Windows service.</value>
+    <comment>Logged when user clicks Start button</comment>
+  </data>
+  <data name="Service_StopTriggered" xml:space="preserve">
+    <value>UI triggered stop command for the Windows service.</value>
+    <comment>Logged when user clicks Stop button</comment>
+  </data>
+  <data name="Service_RestartTriggered" xml:space="preserve">
+    <value>UI triggered restart command for the Windows service.</value>
+    <comment>Logged when user clicks Restart button</comment>
+  </data>
+  <data name="Service_RestartSuccess" xml:space="preserve">
+    <value>Service restarted successfully from the UI.</value>
+    <comment>Logged after successful restart</comment>
+  </data>
+  <data name="Service_RestartFailed" xml:space="preserve">
+    <value>Failed to restart service from the UI.</value>
+    <comment>Logged when restart fails</comment>
+  </data>
+  <data name="Service_CommandExecuted" xml:space="preserve">
+    <value>Service command '{Command}' executed successfully via UI.</value>
+    <comment>Logged after successful service command</comment>
+  </data>
+  <data name="Service_CommandFailed" xml:space="preserve">
+    <value>Service command '{Command}' failed via UI.</value>
+    <comment>Logged when service command fails</comment>
+  </data>
+  <data name="Service_InstallStarted" xml:space="preserve">
+    <value>Installing service from executable path {Path}</value>
+    <comment>Logged when service installation starts</comment>
+  </data>
+  <data name="Service_InstallSuccess" xml:space="preserve">
+    <value>Service installed successfully via UI (sc create result cached).</value>
+    <comment>Logged after successful installation</comment>
+  </data>
+  <data name="Service_InstallFailed" xml:space="preserve">
+    <value>Service installation failed: {Error}</value>
+    <comment>Logged when installation fails</comment>
+  </data>
+  <data name="Service_UninstallSuccess" xml:space="preserve">
+    <value>Service uninstalled successfully via UI.</value>
+    <comment>Logged after successful uninstallation</comment>
+  </data>
+  <data name="Service_UninstallFailed" xml:space="preserve">
+    <value>Service uninstallation failed: {Error}</value>
+    <comment>Logged when uninstallation fails</comment>
+  </data>
+  
+  <!-- ==================== Dashboard ==================== -->
+  <data name="Dashboard_PollingStarted" xml:space="preserve">
+    <value>Started stats polling with interval {Interval}s</value>
+    <comment>Logged when polling starts</comment>
+  </data>
+  <data name="Dashboard_PollingStopped" xml:space="preserve">
+    <value>Stopped stats polling.</value>
+    <comment>Logged when polling stops</comment>
+  </data>
+  <data name="Dashboard_IpcError" xml:space="preserve">
+    <value>IPC connection error while fetching stats.</value>
+    <comment>Logged for IPC connection issues</comment>
+  </data>
+  <data name="Dashboard_IpcException" xml:space="preserve">
+    <value>IPC error while fetching stats.</value>
+    <comment>Logged for IPC exceptions</comment>
+  </data>
+  <data name="Dashboard_UnexpectedError" xml:space="preserve">
+    <value>Unexpected error while fetching stats.</value>
+    <comment>Logged for unexpected errors during fetch</comment>
+  </data>
+  
+  <!-- ==================== App Catalog ==================== -->
+  <data name="AppCatalog_Loaded" xml:space="preserve">
+    <value>Loaded {Count} apps from service.</value>
+    <comment>Logged after loading app catalog</comment>
+  </data>
+  <data name="AppCatalog_LoadFailed" xml:space="preserve">
+    <value>Failed to load app catalog.</value>
+    <comment>Logged when app catalog load fails</comment>
+  </data>
+  <data name="AppCatalog_UnexpectedLoadError" xml:space="preserve">
+    <value>Unexpected error loading app catalog.</value>
+    <comment>Logged for unexpected errors during load</comment>
+  </data>
+  <data name="AppCatalog_SaveFailed" xml:space="preserve">
+    <value>Failed to save app.</value>
+    <comment>Logged when app save fails</comment>
+  </data>
+  <data name="AppCatalog_DeleteFailed" xml:space="preserve">
+    <value>Failed to delete app.</value>
+    <comment>Logged when app deletion fails</comment>
+  </data>
+  <data name="AppCatalog_AppLaunched" xml:space="preserve">
+    <value>Launched app {Slot}: {Name} ({Path})</value>
+    <comment>Logged after launching app</comment>
+  </data>
+  <data name="AppCatalog_UacCancelled" xml:space="preserve">
+    <value>User cancelled UAC prompt for {Slot}: {Name}</value>
+    <comment>Logged when user cancels UAC</comment>
+  </data>
+  <data name="AppCatalog_LaunchFailed" xml:space="preserve">
+    <value>Failed to launch app {Slot}: {Name}</value>
+    <comment>Logged when app launch fails</comment>
+  </data>
+  <data name="AppCatalog_ReorderSaveFailed" xml:space="preserve">
+    <value>Failed to save reordered app {Name}: {Error}</value>
+    <comment>Logged when reorder save fails</comment>
+  </data>
+  <data name="AppCatalog_ReorderFailed" xml:space="preserve">
+    <value>Failed to reorder apps.</value>
+    <comment>Logged when reordering fails</comment>
+  </data>
+  
+</root>
