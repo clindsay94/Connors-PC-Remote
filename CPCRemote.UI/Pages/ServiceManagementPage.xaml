@@ -5,9 +5,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:vm="using:CPCRemote.UI.ViewModels"
+    xmlns:local="using:CPCRemote.UI.Pages"
     mc:Ignorable="d"
-    x:DataType="vm:ServiceManagementViewModel"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
     <ScrollViewer>
@@ -118,9 +117,10 @@
                     
                     <TextBox x:Name="ExePathTextBox" 
                              Header="Service Executable Path" 
-                             PlaceholderText="C:\Path\to\CPCRemote.Service.exe"/>
+                             PlaceholderText="C:\Path\to\CPCRemote.Service.exe"
+                             Text="{x:Bind ViewModel.ServiceExecutablePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                     
-                    <Button>
+                    <Button Click="BrowseButton_Click">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <FontIcon Glyph="&#xE8E5;"/>
                             <TextBlock Text="Browse..." VerticalAlignment="Center"/>
@@ -129,7 +129,7 @@
 
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button Command="{x:Bind ViewModel.InstallServiceCommand}"
-                                CommandParameter="{x:Bind ExePathTextBox.Text, Mode=OneWay}"
+                                CommandParameter="{x:Bind ViewModel.ServiceExecutablePath, Mode=OneWay}"
                                 Style="{StaticResource AccentButtonStyle}">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <FontIcon Glyph="&#xE896;"/>

@@ -1,41 +1,45 @@
 using System.Runtime.Versioning;
-using System.Runtime.InteropServices;
-using Microsoft.Extensions.Options;
+
 using CPCRemote.Core.Helpers;
+using CPCRemote.Core.Constants;
 using CPCRemote.Core.Interfaces;
+using CPCRemote.Core.IPC;
 using CPCRemote.Service;
 using CPCRemote.Service.Options;
+using CPCRemote.Service.Services;
 
-// Mark this assembly as Windows-only (minimum Windows 10 build 22621).
-// This informs the analyzer that top-level initialization is Windows-only
-// and prevents CA1416 warnings for Windows-only APIs used below.
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
+
 [assembly: SupportedOSPlatform("windows10.0.22621.0")]
 
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.AddWindowsService(options =>
-{
-    options.ServiceName = "Remote Shutdown Service";
-});
+builder.Services.AddWindowsService(options => { options.ServiceName = ServiceConstants.RemoteShutdownServiceName; });
 
-// Bind "rsm" section to RsmOptions and register it with DI so Worker can consume typed options.
-// Register validator to ensure configuration is valid on startup
 builder.Services.AddSingleton<IValidateOptions<RsmOptions>, RsmOptionsValidator>();
 builder.Services.Configure<RsmOptions>(builder.Configuration.GetSection("rsm"));
-builder.Services.AddOptions<RsmOptions>()
-    .Bind(builder.Configuration.GetSection("rsm"))
-    .ValidateDataAnnotations()
-    .ValidateOnStart();
+builder.Services.AddOptions<RsmOptions>().Bind(builder.Configuration.GetSection("rsm")).ValidateDataAnnotations().ValidateOnStart();
 
-// Bind WOL options
+// Sensor configuration for customizable HWiNFO sensor matching
+// Validates on startup to fail fast if configuration is invalid
+builder.Services.AddSingleton<IValidateOptions<SensorOptions>, SensorOptionsValidator>();
+builder.Services.Configure<SensorOptions>(builder.Configuration.GetSection("sensors"));
+builder.Services.AddOptions<SensorOptions>().Bind(builder.Configuration.GetSection("sensors")).ValidateOnStart();
+
+// Core Services
+builder.Services.AddSingleton<UserSessionLauncher>();
+builder.Services.AddSingleton<AppCatalogService>();
+builder.Services.AddSingleton<HardwareMonitor>();
+
+// Named Pipe IPC Server
+builder.Services.AddSingleton<NamedPipeServer>();
+builder.Services.AddSingleton<IPipeServer>(static sp => sp.GetRequiredService<NamedPipeServer>());
+
 builder.Services.Configure<CPCRemote.Core.Models.WolOptions>(builder.Configuration.GetSection("wol"));
-var wolOptions = builder.Configuration.GetSection("wol").Get<CPCRemote.Core.Models.WolOptions>() ?? new CPCRemote.Core.Models.WolOptions();
-builder.Services.AddSingleton(wolOptions);
+builder.Services.AddSingleton(static sp => sp.GetRequiredService<IOptions<CPCRemote.Core.Models.WolOptions>>().Value);
 
-// Register shared command helper (executes power actions locally on the service
-// machine)
-// Perform a runtime platform check to avoid registering Windows-only services
-// on non-Windows platforms when running the binary outside of Windows.
 if (OperatingSystem.IsWindows())
 {
     builder.Services.AddSingleton<CommandHelper>();
@@ -45,8 +49,5 @@ if (OperatingSystem.IsWindows())
 
 builder.Services.AddHostedService<Worker>();
 
-// Build the host from the same HostApplicationBuilder and run it.
-// Note: Do not call builder.Host.UseWindowsService()  HostApplicationBuilder doesn't expose a Host property.
 IHost host = builder.Build();
-
 host.Run();

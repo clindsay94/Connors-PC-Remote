@@ -1,32 +1,32 @@
-using CPCRemote.UI.Services;
 using CPCRemote.UI.Models;
+using CPCRemote.UI.Services;
+using CPCRemote.UI.Strings;
+
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml.Controls;
+
 using System;
+using System.ComponentModel;
+using System.Linq;
 using System.Net.Http;
+using System.Runtime.CompilerServices;
 using System.ServiceProcess;
 using System.Threading.Tasks;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.Linq;
 
 namespace CPCRemote.UI.ViewModels
 {
     public partial class ServiceManagementViewModel : ObservableObject
     {
-        private const string ServiceName = "CPCRemote.Service";
-        private const int DefaultHttpTimeout = 5;
+        private const string ServiceName = CPCRemote.Core.Constants.ServiceConstants.RemoteShutdownServiceName;
         private const int ServiceOperationTimeout = 30;
         private const string ConfigFileName = "appsettings.json";
 
         private readonly ILogger<ServiceManagementViewModel> _logger;
         private readonly SettingsService _settingsService;
-        private static readonly HttpClient _httpClient = new()
-        {
-            Timeout = TimeSpan.FromSeconds(DefaultHttpTimeout)
-        };
+        private readonly HttpClient _httpClient;
 
         [ObservableProperty]
         public partial string? ServiceStatusText { get; set; }
@@ -55,7 +55,19 @@ namespace CPCRemote.UI.ViewModels
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(PreviewUrl))]
+        [NotifyPropertyChangedFor(nameof(IsPortValid))]
+        [NotifyPropertyChangedFor(nameof(PortValidationMessage))]
         public partial double Port { get; set; }
+
+        /// <summary>
+        /// Validates port is in valid range (1-65535).
+        /// </summary>
+        public bool IsPortValid => Port >= 1 && Port <= 65535;
+
+        /// <summary>
+        /// Gets the validation message for an invalid port, or empty string if valid.
+        /// </summary>
+        public string PortValidationMessage => IsPortValid ? string.Empty : Resources.ServiceManagement_PortValidation;
 
         [ObservableProperty]
         public partial string? Secret { get; set; }
@@ -89,17 +101,30 @@ namespace CPCRemote.UI.ViewModels
             }
         }
 
-        public ServiceManagementViewModel(ILogger<ServiceManagementViewModel> logger, SettingsService settingsService)
+        public ServiceManagementViewModel(
+            ILogger<ServiceManagementViewModel> logger,
+            SettingsService settingsService,
+            HttpClient httpClient)
         {
             _logger = logger;
             _settingsService = settingsService;
-            ServiceStatusText = "Unknown";
-            ServiceInstalledText = "Unknown";
+            _httpClient = httpClient;
+            ServiceStatusText = Resources.Unknown;
+            ServiceInstalledText = Resources.Unknown;
             IsSafetyLockEnabled = _settingsService.Get<bool>(nameof(IsSafetyLockEnabled), true);
             ServiceExecutablePath = FindServiceExecutable();
 
-            LoadConfigurationCommand.Execute(null);
-            RefreshStatusCommand.Execute(null);
+            // Item 8: Defer async initialization to avoid blocking constructor
+            // Commands will be loaded when view is ready via InitializeAsync()
+        }
+
+        /// <summary>
+        /// Item 8: Async initialization method to be called after construction
+        /// </summary>
+        public async Task InitializeAsync()
+        {
+            await LoadConfigurationCommand.ExecuteAsync(null);
+            await RefreshStatusCommand.ExecuteAsync(null);
         }
 
         [RelayCommand]
@@ -123,7 +148,13 @@ namespace CPCRemote.UI.ViewModels
         [RelayCommand]
         private async Task SaveConfiguration()
         {
-            ShowInfoBar("Saving configuration...", InfoBarSeverity.Informational);
+            if (!IsPortValid)
+            {
+                ShowInfoBar(string.Format(Resources.ServiceManagement_InvalidPort, PortValidationMessage), InfoBarSeverity.Error);
+                return;
+            }
+
+            ShowInfoBar(Resources.ServiceManagement_SavingConfig, InfoBarSeverity.Informational);
 
             try
             {
@@ -186,22 +217,22 @@ namespace CPCRemote.UI.ViewModels
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, "Failed to write to service configuration file at {Path}", serviceConfigPath);
-                        throw new Exception($"Saved to UI settings, but failed to update Service config file: {ex.Message}. Try running as Administrator.");
+                        throw new InvalidOperationException(string.Format(Resources.ServiceManagement_ConfigUpdateFailed, ex.Message));
                     }
                 }
                 else
                 {
                     _logger.LogWarning("Could not locate service configuration file to update.");
-                    ShowInfoBar("Saved to UI, but could not find Service config file. Service may not be updated.", InfoBarSeverity.Warning);
+                    ShowInfoBar(Resources.ServiceManagement_ConfigSavedWarning, InfoBarSeverity.Warning);
                     return;
                 }
 
-                ShowInfoBar("Configuration saved successfully. Restart the service for these settings to be applied.", InfoBarSeverity.Success);
+                ShowInfoBar(Resources.ServiceManagement_ConfigSavedSuccess, InfoBarSeverity.Success);
                 _logger.LogInformation("Configuration saved successfully.");
             }
             catch (Exception ex)
             {
-                ShowInfoBar($"Error saving configuration: {ex.Message}", InfoBarSeverity.Error);
+                ShowInfoBar(string.Format(Resources.ServiceManagement_ConfigSaveError, ex.Message), InfoBarSeverity.Error);
                 _logger.LogError(ex, "Failed to save configuration.");
             }
         }
@@ -223,7 +254,7 @@ namespace CPCRemote.UI.ViewModels
             }
             catch (Exception ex)
             {
-                ServiceInstalledText = "Error";
+                ServiceInstalledText = Resources.Error;
                 ServiceStatusText = ex.Message;
                 _logger.LogError(ex, "Failed to refresh service status.");
             }
@@ -238,7 +269,7 @@ namespace CPCRemote.UI.ViewModels
             try
             {
                 using var service = GetServiceControllerSafe();
-                if (service != null)
+                if (service is not null)
                 {
                     return (true, service.Status.ToString());
                 }
@@ -248,7 +279,7 @@ namespace CPCRemote.UI.ViewModels
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to refresh service status.");
-                return (false, "Error");
+                return (false, Resources.Error);
             }
         }
 
@@ -256,7 +287,11 @@ namespace CPCRemote.UI.ViewModels
         private async Task StartService()
         {
             _logger.LogInformation("UI triggered start command for the Windows service.");
-            await ExecuteServiceCommandAsync("start", "Starting service...", "Service started successfully.", "Failed to start service");
+            await ExecuteServiceCommandAsync(
+                "start",
+                Resources.ServiceManagement_StartingService,
+                Resources.ServiceManagement_ServiceStarted,
+                Resources.ServiceManagement_StartServiceFailed);
         }
 
         private bool CanStartService() => IsServiceInstalled && !IsServiceRunning;
@@ -265,14 +300,18 @@ namespace CPCRemote.UI.ViewModels
         private async Task StopService()
         {
             _logger.LogInformation("UI triggered stop command for the Windows service.");
-            await ExecuteServiceCommandAsync("stop", "Stopping service...", "Service stopped successfully.", "Failed to stop service");
+            await ExecuteServiceCommandAsync(
+                "stop",
+                Resources.ServiceManagement_StoppingService,
+                Resources.ServiceManagement_ServiceStopped,
+                Resources.ServiceManagement_StopServiceFailed);
         }
 
         [RelayCommand(CanExecute = nameof(CanStopOrRestartService))]
         private async Task RestartService()
         {
             _logger.LogInformation("UI triggered restart command for the Windows service.");
-            ShowInfoBar("Restarting service...", InfoBarSeverity.Informational);
+            ShowInfoBar(Resources.ServiceManagement_RestartingService, InfoBarSeverity.Informational);
 
             try
             {
@@ -280,7 +319,7 @@ namespace CPCRemote.UI.ViewModels
                 {
                     _logger.LogInformation("Service restarted successfully from the UI.");
                     using var service = GetServiceControllerSafe();
-                    if (service != null)
+                    if (service is not null)
                     {
                         if (service.Status == ServiceControllerStatus.Running)
                         {
@@ -296,12 +335,12 @@ namespace CPCRemote.UI.ViewModels
                     }
                 });
 
-                ShowInfoBar("Service restarted successfully.", InfoBarSeverity.Success);
+                ShowInfoBar(Resources.ServiceManagement_ServiceRestarted, InfoBarSeverity.Success);
                 await RefreshStatusCommand.ExecuteAsync(null);
             }
             catch (Exception ex)
             {
-                ShowInfoBar($"Failed to restart service: {ex.Message}", InfoBarSeverity.Error);
+                ShowInfoBar(string.Format(Resources.ServiceManagement_RestartServiceFailed, ex.Message), InfoBarSeverity.Error);
                 _logger.LogError(ex, "Failed to restart service from the UI.");
             }
         }
@@ -353,11 +392,11 @@ namespace CPCRemote.UI.ViewModels
         {
             if (string.IsNullOrEmpty(exePath) || !System.IO.File.Exists(exePath))
             {
-                ShowInfoBar("Please provide a valid executable path.", InfoBarSeverity.Error);
+                ShowInfoBar(Resources.ServiceManagement_InvalidExePath, InfoBarSeverity.Error);
                 return;
             }
 
-            ShowInfoBar("Installing service...", InfoBarSeverity.Informational);
+            ShowInfoBar(Resources.ServiceManagement_InstallingService, InfoBarSeverity.Informational);
             _logger.LogInformation("Installing service from executable path {Path}", exePath);
 
             _cancellationTokenSource = new CancellationTokenSource();
@@ -369,24 +408,24 @@ namespace CPCRemote.UI.ViewModels
 
                 if (result.success)
                 {
-                    ShowInfoBar("Service installed successfully. You can now start it.", InfoBarSeverity.Success);
+                    ShowInfoBar(Resources.ServiceManagement_ServiceInstalled, InfoBarSeverity.Success);
                     await RefreshStatusCommand.ExecuteAsync(null);
                     _logger.LogInformation("Service installed successfully via UI (sc create result cached).");
                 }
                 else
                 {
-                    ShowInfoBar($"Failed to install service: {result.output}", InfoBarSeverity.Error);
+                    ShowInfoBar(string.Format(Resources.ServiceManagement_InstallServiceFailed, result.output), InfoBarSeverity.Error);
                     _logger.LogWarning("Service installation failed with message: {Message}", result.output);
                 }
             }
             catch (OperationCanceledException)
             {
-                ShowInfoBar("Service installation cancelled.", InfoBarSeverity.Warning);
+                ShowInfoBar(Resources.ServiceManagement_InstallCancelled, InfoBarSeverity.Warning);
                 _logger.LogInformation("Service installation was cancelled by the user.");
             }
             catch (Exception ex)
             {
-                ShowInfoBar($"Error installing service: {ex.Message}", InfoBarSeverity.Error);
+                ShowInfoBar(string.Format(Resources.ServiceManagement_InstallError, ex.Message), InfoBarSeverity.Error);
                 _logger.LogError(ex, "Exception during service installation.");
             }
             finally
@@ -399,7 +438,7 @@ namespace CPCRemote.UI.ViewModels
         [RelayCommand]
         private async Task UninstallService()
         {
-            ShowInfoBar("Uninstalling service...", InfoBarSeverity.Informational);
+            ShowInfoBar(Resources.ServiceManagement_UninstallingService, InfoBarSeverity.Informational);
             _logger.LogInformation("User requested service uninstallation via UI.");
 
             _cancellationTokenSource = new CancellationTokenSource();
@@ -413,7 +452,7 @@ namespace CPCRemote.UI.ViewModels
                     try
                     {
                         using var service = GetServiceControllerSafe();
-                        if (service != null && service.Status == ServiceControllerStatus.Running)
+                        if (service is not null && service.Status == ServiceControllerStatus.Running)
                         {
                             service.Stop();
                             service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(ServiceOperationTimeout));
@@ -429,24 +468,24 @@ namespace CPCRemote.UI.ViewModels
 
                 if (result.success)
                 {
-                    ShowInfoBar("Service uninstalled successfully.", InfoBarSeverity.Success);
+                    ShowInfoBar(Resources.ServiceManagement_ServiceUninstalled, InfoBarSeverity.Success);
                     await RefreshStatusCommand.ExecuteAsync(null);
                     _logger.LogInformation("Service uninstalled successfully via UI.");
                 }
                 else
                 {
-                    ShowInfoBar($"Failed to uninstall service: {result.output}", InfoBarSeverity.Error);
+                    ShowInfoBar(string.Format(Resources.ServiceManagement_UninstallServiceFailed, result.output), InfoBarSeverity.Error);
                     _logger.LogWarning("Service uninstall failed: {Output}", result.output);
                 }
             }
             catch (OperationCanceledException)
             {
-                ShowInfoBar("Service uninstallation cancelled.", InfoBarSeverity.Warning);
+                ShowInfoBar(Resources.ServiceManagement_UninstallCancelled, InfoBarSeverity.Warning);
                 _logger.LogInformation("Service uninstallation was cancelled by the user.");
             }
             catch (Exception ex)
             {
-                ShowInfoBar($"Error uninstalling service: {ex.Message}", InfoBarSeverity.Error);
+                ShowInfoBar(string.Format(Resources.ServiceManagement_UninstallError, ex.Message), InfoBarSeverity.Error);
                 _logger.LogError(ex, "Exception during service uninstallation.");
             }
             finally
@@ -480,9 +519,9 @@ namespace CPCRemote.UI.ViewModels
                 {
                     progress.Report(25);
                     using var process = System.Diagnostics.Process.Start(startInfo);
-                    if (process == null)
+                    if (process is null)
                     {
-                        return (false, "Failed to start elevated process. User may have cancelled UAC prompt.");
+                        return (false, Resources.ServiceManagement_ElevatedProcessFailed);
                     }
 
                     await process.WaitForExitAsync(cancellationToken);
@@ -501,7 +540,7 @@ namespace CPCRemote.UI.ViewModels
                 }
                 catch (Exception ex)
                 {
-                    return (false, $"Error running elevated command: {ex.Message}");
+                    return (false, string.Format(Resources.ServiceManagement_ElevatedCommandError, ex.Message));
                 }
             }
             else
@@ -521,9 +560,9 @@ namespace CPCRemote.UI.ViewModels
                 {
                     progress.Report(25);
                     using var process = System.Diagnostics.Process.Start(startInfo);
-                    if (process == null)
+                    if (process is null)
                     {
-                        return (false, "Failed to start process.");
+                        return (false, Resources.ServiceManagement_ProcessStartFailed);
                     }
 
                     string output = await process.StandardOutput.ReadToEndAsync();
@@ -572,7 +611,7 @@ namespace CPCRemote.UI.ViewModels
         {
             string url = $"http://{IpAddress}:{Port}/{command}";
 
-            ShowInfoBar($"Sending {command} command to {url}...", InfoBarSeverity.Informational);
+            ShowInfoBar(string.Format(Resources.ServiceManagement_SendingCommand, command, url), InfoBarSeverity.Informational);
             _logger.LogInformation("Sending {Command} command to {Url}", command, url);
 
             try
@@ -589,28 +628,32 @@ namespace CPCRemote.UI.ViewModels
 
                 if (response.IsSuccessStatusCode)
                 {
-                    ShowInfoBar($"Successfully sent {command} command.", InfoBarSeverity.Success);
+                    ShowInfoBar(string.Format(Resources.ServiceManagement_CommandSuccess, command), InfoBarSeverity.Success);
                     _logger.LogInformation("{Command} command sent successfully to {Url}", command, url);
                 }
                 else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
-                    ShowInfoBar("Command failed with Unauthorized. Check your secret is correct.", InfoBarSeverity.Warning);
+                    ShowInfoBar(Resources.ServiceManagement_CommandUnauthorized, InfoBarSeverity.Warning);
                     _logger.LogWarning("{Command} command returned unauthorized for {Url}", command, url);
                 }
                 else
                 {
-                    ShowInfoBar($"Command failed with status {response.StatusCode}: {content}", InfoBarSeverity.Warning);
+                    ShowInfoBar(string.Format(Resources.ServiceManagement_CommandFailed, response.StatusCode, content), InfoBarSeverity.Warning);
                     _logger.LogWarning("{Command} command failed with status {Status} for {Url}", command, response.StatusCode, url);
                 }
             }
+            catch (OperationCanceledException)
+            {
+                // Silently ignore cancellation
+            }
             catch (HttpRequestException ex)
             {
-                ShowInfoBar($"Connection failed: {ex.Message}. Ensure the service is running.", InfoBarSeverity.Error);
+                ShowInfoBar(string.Format(Resources.ServiceManagement_ConnectionFailed, ex.Message), InfoBarSeverity.Error);
                 _logger.LogError(ex, "{Command} command HTTP error for {Url}", command, url);
             }
             catch (Exception ex)
             {
-                ShowInfoBar($"Error: {ex.Message}", InfoBarSeverity.Error);
+                ShowInfoBar($"{Resources.Error}: {ex.Message}", InfoBarSeverity.Error);
                 _logger.LogError(ex, "{Command} command failed for {Url}", command, url);
             }
         }
@@ -645,11 +688,16 @@ namespace CPCRemote.UI.ViewModels
                 return null;
             }
 
-            string[] searchPaths = new[]
-            {
+            string[] searchPaths =
+            [
+                // Unified bin structure: bin\{Configuration}\CPCRemote.Service\
+                System.IO.Path.Combine(baseDir, "..", "CPCRemote.Service", ConfigFileName),
+                // ServiceBinaries folder
+                System.IO.Path.Combine(baseDir, "ServiceBinaries", ConfigFileName),
+                // Legacy structure
                 System.IO.Path.Combine(baseDir, "..", "..", "..", "..", "CPCRemote.Service", ConfigFileName),
                 System.IO.Path.Combine(baseDir, "..", "CPCRemote.Service", ConfigFileName),
-            };
+            ];
 
             foreach (string path in searchPaths)
             {
@@ -668,26 +716,39 @@ namespace CPCRemote.UI.ViewModels
             string? baseDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             if (string.IsNullOrEmpty(baseDir)) return null;
 
-            // Search paths for the service executable
-            string[] searchPaths = new[]
-            {
-                // Copied to ServiceBinaries folder (via csproj)
+            // Search paths for the service executable (in priority order)
+            string[] searchPaths =
+            [
+                // 1. Copied to ServiceBinaries folder (for packaged deployment)
                 System.IO.Path.Combine(baseDir, "ServiceBinaries", "CPCRemote.Service.exe"),
-                // Published side-by-side
+                
+                // 2. Published side-by-side (same folder)
                 System.IO.Path.Combine(baseDir, "CPCRemote.Service.exe"),
-                // Development structure (Debug/Release)
-                System.IO.Path.Combine(baseDir, "..", "..", "..", "..", "CPCRemote.Service", "bin", "Debug", "net10.0", "CPCRemote.Service.exe"),
-                System.IO.Path.Combine(baseDir, "..", "..", "..", "..", "CPCRemote.Service", "bin", "Release", "net10.0", "CPCRemote.Service.exe"),
-                // If running from bin/x64/Debug
-                System.IO.Path.Combine(baseDir, "..", "..", "..", "..", "..", "CPCRemote.Service", "bin", "Debug", "net10.0", "CPCRemote.Service.exe"),
-            };
+                
+                // 3. Unified bin structure: bin\{Configuration}\CPCRemote.Service\
+                // UI is at: bin\Debug\CPCRemote.UI\ -> Service at: bin\Debug\CPCRemote.Service\
+                System.IO.Path.Combine(baseDir, "..", "CPCRemote.Service", "CPCRemote.Service.exe"),
+                
+                // 4. Legacy structure: bin\Debug\net10.0-windows...\win-x64\
+                System.IO.Path.Combine(baseDir, "..", "..", "..", "..", "CPCRemote.Service", "bin", "Debug", "net10.0-windows10.0.26100.0", "win-x64", "CPCRemote.Service.exe"),
+                System.IO.Path.Combine(baseDir, "..", "..", "..", "..", "CPCRemote.Service", "bin", "Release", "net10.0-windows10.0.26100.0", "win-x64", "CPCRemote.Service.exe"),
+                
+                // 5. If running from solution root bin\x64\Debug\...
+                System.IO.Path.Combine(baseDir, "..", "..", "..", "bin", "Debug", "CPCRemote.Service", "CPCRemote.Service.exe"),
+            ];
 
             foreach (var path in searchPaths)
             {
                 string fullPath = System.IO.Path.GetFullPath(path);
-                if (System.IO.File.Exists(fullPath)) return fullPath;
+                _logger.LogDebug("Searching for service executable at: {Path}", fullPath);
+                if (System.IO.File.Exists(fullPath))
+                {
+                    _logger.LogInformation("Found service executable at: {Path}", fullPath);
+                    return fullPath;
+                }
             }
-            
+
+            _logger.LogWarning("Could not find CPCRemote.Service.exe in any expected location.");
             return null;
         }
 
@@ -728,12 +789,27 @@ namespace CPCRemote.UI.ViewModels
             return string.Empty;
         }
 
-        private async void ShowInfoBar(string message, InfoBarSeverity severity)
+        private void ShowInfoBar(string message, InfoBarSeverity severity)
         {
             InfoBarMessage = message;
             InfoBarSeverity = severity;
             IsInfoBarOpen = true;
-            await Task.Delay(5000);
+            
+            // Fire-and-forget the auto-close with proper exception handling
+            _ = AutoCloseInfoBarAsync();
+        }
+
+        private async Task AutoCloseInfoBarAsync()
+        {
+            try
+            {
+                await Task.Delay(5000);
+            }
+            catch (OperationCanceledException)
+            {
+                // Ignore cancellation
+            }
+            
             IsInfoBarOpen = false;
         }
 
@@ -759,12 +835,12 @@ namespace CPCRemote.UI.ViewModels
 
                 if (response.IsSuccessStatusCode)
                 {
-                    ShowInfoBar("Success! Service is responding.", InfoBarSeverity.Success);
+                    ShowInfoBar($"{Resources.Success}! Service is responding.", InfoBarSeverity.Success);
                     _logger.LogInformation("Ping test succeeded against {Url}", url);
                 }
                 else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
-                    ShowInfoBar("Service responded with Unauthorized. Check your secret is correct.", InfoBarSeverity.Warning);
+                    ShowInfoBar(Resources.ServiceManagement_CommandUnauthorized, InfoBarSeverity.Warning);
                     _logger.LogWarning("Ping test returned unauthorized for {Url}", url);
                 }
                 else
@@ -773,14 +849,18 @@ namespace CPCRemote.UI.ViewModels
                     _logger.LogWarning("Ping test failed with status {Status} for {Url}", response.StatusCode, url);
                 }
             }
+            catch (OperationCanceledException)
+            {
+                // Silently ignore cancellation
+            }
             catch (HttpRequestException ex)
             {
-                ShowInfoBar($"Connection failed: {ex.Message}. Ensure the service is running.", InfoBarSeverity.Error);
+                ShowInfoBar(string.Format(Resources.ServiceManagement_ConnectionFailed, ex.Message), InfoBarSeverity.Error);
                 _logger.LogError(ex, "Ping test HTTP error for {Url}", url);
             }
             catch (Exception ex)
             {
-                ShowInfoBar($"Error: {ex.Message}", InfoBarSeverity.Error);
+                ShowInfoBar($"{Resources.Error}: {ex.Message}", InfoBarSeverity.Error);
                 _logger.LogError(ex, "Ping test failed for {Url}", url);
             }
         }

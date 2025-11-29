@@ -419,3 +419,29 @@ FodyWeavers.xsd
 
 /.copilot-tracking/details
 ARCHITECTURE_AND_DELIVERY_PLAN.md
+.github/agents/CPCRemote Bridge Architect.agent.md
+.github/instructions/CPC Bridge Workspace Instructions.instructions.md
+ENHANCEMENT_PLAN.md
+CPCRemote.UI/AGENT_INSTRUCTIONS.md
+CPCRemote.Tests/AGENT_INSTRUCTIONS.md
+CPCRemote.Service/AGENT_INSTRUCTIONS.md
+ARCHITECTURE_AND_DELIVERY_PLAN.md
+AGENT_INSTRUCTIONS.md
+ENHANCEMENT_PLAN.md
+CPCRemote.UI/AGENT_INSTRUCTIONS.md
+Copilot-Processing.md
+CodeQualityAudit.md
+Audit_Remediation_Prompt.md
+RELEASE_AUDIT_REPORT.md
+plan/fix-pcstats-and-applauncher-1.md
+CPCRemote.Core/AGENT_INSTRUCTIONS.md
+plan/fix-pcstats-and-applauncher-1.md
+CPCRemote.Core/AGENT_INSTRUCTIONS.md
+DOTNET-BEST-PRACTICES-AUDIT.md
+.github/agents/winforms.expert.agent.md
+.github/prompts/aspnet-minimal-api-openapi.prompt.md
+.github/prompts/csharp-xunit.prompt.md
+.github/prompts/dotnet-best-practices.prompt.prompt.md
+.github/prompts/dotnet-upgrade.prompt.md
+best practices remediation plan.md
+.github/prompts/dotnet-upgrade.prompt.md

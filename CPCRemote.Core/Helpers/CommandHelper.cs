@@ -41,16 +41,6 @@ public sealed partial class CommandHelper(WolOptions wolOptions) : ICommandCatal
     private static readonly IReadOnlyDictionary<TrayCommandType, string> CommandTextByType =
         SeedCommands.ToDictionary(static c => c.CommandType, static c => c.Name);
 
-    [LibraryImport("user32.dll", EntryPoint = "SendMessageTimeoutW")]
-    private static partial IntPtr SendMessageTimeout(
-        IntPtr hWnd,
-        uint Msg,
-        IntPtr wParam,
-        IntPtr lParam,
-        uint fuFlags,
-        uint uTimeout,
-        out IntPtr lpdwResult);
-
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool LockWorkStation();
@@ -83,6 +73,40 @@ public sealed partial class CommandHelper(WolOptions wolOptions) : ICommandCatal
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Validates whether the provided string is a valid MAC address format.
+    /// Accepts formats: AA:BB:CC:DD:EE:FF, AA-BB-CC-DD-EE-FF, or AABBCCDDEEFF.
+    /// </summary>
+    /// <param name="macAddress">The MAC address string to validate.</param>
+    /// <returns>True if the MAC address is valid, false otherwise.</returns>
+    public static bool IsValidMacAddress(string? macAddress)
+    {
+        if (string.IsNullOrWhiteSpace(macAddress))
+        {
+            return false;
+        }
+
+        // Remove common separators and normalize
+        string normalized = macAddress.Replace(":", "").Replace("-", "");
+
+        // Must be exactly 12 hex characters
+        if (normalized.Length != 12)
+        {
+            return false;
+        }
+
+        // Validate each character is a valid hex digit
+        foreach (char c in normalized)
+        {
+            if (!Uri.IsHexDigit(c))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <inheritdoc />
@@ -204,11 +228,21 @@ public sealed partial class CommandHelper(WolOptions wolOptions) : ICommandCatal
 
         try
         {
-            // Use SendMessageTimeout to prevent blocking indefinitely and avoid EEMessageException in Session 0
-            // HWND_BROADCAST = 0xffff, WM_SYSCOMMAND = 0x0112, SC_MONITORPOWER = 0xf170, PowerOff = 2
-            // SMTO_ABORTIFHUNG = 0x0002
-            const uint SMTO_ABORTIFHUNG = 0x0002;
-            SendMessageTimeout((IntPtr)0xffff, 0x0112, (IntPtr)0xf170, (IntPtr)0x0002, SMTO_ABORTIFHUNG, 1000, out _);
+            // From Session 0 services, we cannot directly interact with the user's desktop.
+            // The most reliable approach is to use a scheduled task or simply log the limitation.
+            // For now, we'll try the scrnsave.scr approach which sometimes works.
+            using var process = Process.Start(new ProcessStartInfo
+            {
+                FileName = Environment.ExpandEnvironmentVariables(@"%SystemRoot%\System32\scrnsave.scr"),
+                Arguments = "/s",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            });
+            
+            // Note: If this doesn't work reliably, consider:
+            // 1. Running a companion app in the user session that listens for commands
+            // 2. Using Task Scheduler to run the screen-off command in the user's context
+            Debug.WriteLine("TurnScreenOff: Attempted via screensaver activation");
         }
         catch (Exception ex)
         {
@@ -241,13 +275,20 @@ public sealed partial class CommandHelper(WolOptions wolOptions) : ICommandCatal
              throw new InvalidOperationException("MAC address is not configured for Wake-on-LAN.");
         }
 
-        // Parse MAC address
-        string mac = _wolOptions.MacAddress.Replace(":", "").Replace("-", "");
-        if (mac.Length != 12)
+        if (!IsValidMacAddress(_wolOptions.MacAddress))
         {
-             throw new InvalidOperationException("Invalid MAC address format.");
+            throw new InvalidOperationException($"Invalid MAC address format: '{_wolOptions.MacAddress}'. Expected format: AA:BB:CC:DD:EE:FF, AA-BB-CC-DD-EE-FF, or AABBCCDDEEFF.");
         }
 
+        // Validate port range (use default 9 if invalid)
+        int port = _wolOptions.Port;
+        if (port < 1 || port > 65535)
+        {
+            port = 9; // Standard WoL port
+        }
+
+        // Parse MAC address (already validated)
+        string mac = _wolOptions.MacAddress.Replace(":", "").Replace("-", "");
         byte[] macBytes = new byte[6];
         for (int i = 0; i < 6; i++)
         {
@@ -270,7 +311,7 @@ public sealed partial class CommandHelper(WolOptions wolOptions) : ICommandCatal
         client.EnableBroadcast = true;
         
         IPAddress broadcastIp = IPAddress.Parse(_wolOptions.BroadcastAddress);
-        IPEndPoint endPoint = new(broadcastIp, _wolOptions.Port);
+        IPEndPoint endPoint = new(broadcastIp, port);
 
         await client.SendAsync(packet, packet.Length, endPoint).ConfigureAwait(false);
     }

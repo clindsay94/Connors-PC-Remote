@@ -9,11 +9,11 @@
   IgnorableNamespaces="rescap iot uap uap18 uap3">
 	<Identity
 	  Name="Connors-PC-Remote"
-	  Publisher="CN=CLindsay94" 
+	  Publisher="CN=Lindsay Inc" 
 	  Version="1.0.1.0" />
 	<Properties>
 		<DisplayName>Connors PC Remote</DisplayName>
-		<PublisherDisplayName>Connor L</PublisherDisplayName>
+		<PublisherDisplayName>CLindsay94</PublisherDisplayName>
 		<Logo>Assets\StoreLogo.png</Logo>
 	</Properties>
 	<Dependencies>

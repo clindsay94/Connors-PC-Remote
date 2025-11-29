@@ -21,8 +21,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CPCRemote.Tests", "CPCRemot
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CPCRemote.Core", "CPCRemote.Core\CPCRemote.Core.csproj", "{500FB467-FD2A-CB60-24C4-380B58EB904B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CPCRemote.UI.Package", "CPCRemote.UI.Package\CPCRemote.UI.Package\CPCRemote.UI.Package.csproj", "{866F9AA1-F0A3-4201-A09C-5A2E2CA8DF38}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM64 = Debug|ARM64
@@ -83,18 +81,6 @@ Global
 		{500FB467-FD2A-CB60-24C4-380B58EB904B}.Release|x64.Build.0 = Release|x64
 		{500FB467-FD2A-CB60-24C4-380B58EB904B}.Release|x86.ActiveCfg = Release|x64
 		{500FB467-FD2A-CB60-24C4-380B58EB904B}.Release|x86.Build.0 = Release|x64
-		{866F9AA1-F0A3-4201-A09C-5A2E2CA8DF38}.Debug|ARM64.ActiveCfg = Debug|x64
-		{866F9AA1-F0A3-4201-A09C-5A2E2CA8DF38}.Debug|ARM64.Build.0 = Debug|x64
-		{866F9AA1-F0A3-4201-A09C-5A2E2CA8DF38}.Debug|x64.ActiveCfg = Debug|x64
-		{866F9AA1-F0A3-4201-A09C-5A2E2CA8DF38}.Debug|x64.Build.0 = Debug|x64
-		{866F9AA1-F0A3-4201-A09C-5A2E2CA8DF38}.Debug|x86.ActiveCfg = Debug|x64
-		{866F9AA1-F0A3-4201-A09C-5A2E2CA8DF38}.Debug|x86.Build.0 = Debug|x64
-		{866F9AA1-F0A3-4201-A09C-5A2E2CA8DF38}.Release|ARM64.ActiveCfg = Release|x64
-		{866F9AA1-F0A3-4201-A09C-5A2E2CA8DF38}.Release|ARM64.Build.0 = Release|x64
-		{866F9AA1-F0A3-4201-A09C-5A2E2CA8DF38}.Release|x64.ActiveCfg = Release|x64
-		{866F9AA1-F0A3-4201-A09C-5A2E2CA8DF38}.Release|x64.Build.0 = Release|x64
-		{866F9AA1-F0A3-4201-A09C-5A2E2CA8DF38}.Release|x86.ActiveCfg = Release|x64
-		{866F9AA1-F0A3-4201-A09C-5A2E2CA8DF38}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

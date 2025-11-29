@@ -17,15 +17,19 @@
 	<AssemblyVersion>1.0.0.0</AssemblyVersion>
 	<FileVersion>1.0.0.0</FileVersion>
 	<InformationalVersion>1.0.1</InformationalVersion>
-	<BaseOutputPath>P:\Connor\Connors-PC-Remote\bin\</BaseOutputPath>
-  </PropertyGroup>
+</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Hwinfo.SharedMemory.Net" Version="2.1.0" />
 		<PackageReference Include="Microsoft.ApplicationInsights" Version="2.23.0" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" Version="10.0.0" />
 		<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.251106002" />
+		<PackageReference Include="Microsoft.WindowsAppSDK.AI" Version="1.8.39" />
+		<PackageReference Include="Microsoft.WindowsAppSDK.Base" Version="1.8.250831001" />
+		<PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="1.8.251104000" />
+		<PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="1.8.251105000" />
 	</ItemGroup>
 
 	<ItemGroup>

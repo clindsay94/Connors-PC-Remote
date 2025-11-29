@@ -1,0 +1,156 @@
+<Page
+    x:Class="CPCRemote.UI.Pages.AppCatalogPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:CPCRemote.Core.Models"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Page.Transitions>
+        <TransitionCollection>
+            <EntranceThemeTransition />
+        </TransitionCollection>
+    </Page.Transitions>
+
+    <Grid Padding="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,24">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="16">
+                <TextBlock Text="App Catalog" Style="{StaticResource TitleTextBlockStyle}"/>
+                <ProgressRing x:Name="LoadingRing" IsActive="False" Width="24" Height="24" VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                <Button x:Name="RefreshButton" Content="Refresh" Click="RefreshButton_Click">
+                    <Button.KeyboardAccelerators>
+                        <KeyboardAccelerator Key="F5" />
+                    </Button.KeyboardAccelerators>
+                </Button>
+                <Button x:Name="AddButton" Content="Add App" Style="{StaticResource AccentButtonStyle}" Click="AddButton_Click">
+                    <Button.KeyboardAccelerators>
+                        <KeyboardAccelerator Key="N" Modifiers="Control" />
+                    </Button.KeyboardAccelerators>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- App List -->
+        <ListView Grid.Row="1" 
+                  x:Name="AppsListView"
+                  SelectionMode="Single"
+                  CanReorderItems="True"
+                  AllowDrop="True"
+                  CanDragItems="True"
+                  DragItemsCompleted="AppsListView_DragItemsCompleted"
+                  SelectionChanged="AppsListView_SelectionChanged"
+                  IsItemClickEnabled="True"
+                  ItemClick="AppsListView_ItemClick">
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="models:AppCatalogEntry">
+                    <Grid Padding="12" ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Slot Badge -->
+                        <Border Grid.Column="0"
+                                Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                CornerRadius="4"
+                                Padding="8,4"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center">
+                            <TextBlock Text="{x:Bind Slot}" 
+                                       Foreground="White" 
+                                       FontWeight="SemiBold"
+                                       FontSize="12"/>
+                        </Border>
+
+                        <!-- App Info -->
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="{x:Bind Name}" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                            <TextBlock Text="{x:Bind Path}" 
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" 
+                                       FontSize="12"
+                                       TextTrimming="CharacterEllipsis"
+                                       MaxLines="1"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{x:Bind Category}" 
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" 
+                                           FontSize="11"/>
+                                <TextBlock Text="• Admin" 
+                                           Visibility="{x:Bind RunAsAdmin}"
+                                           Foreground="{ThemeResource SystemFillColorCautionBrush}" 
+                                           FontSize="11"/>
+                                <TextBlock Text="• Disabled" 
+                                           Visibility="{x:Bind Enabled, Converter={StaticResource BoolNegationConverter}}"
+                                           Foreground="{ThemeResource TextFillColorDisabledBrush}" 
+                                           FontSize="11"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Launch Button -->
+                        <Button Grid.Column="2" 
+                                Content="Launch" 
+                                Style="{StaticResource AccentButtonStyle}"
+                                Click="LaunchButton_Click"
+                                Tag="{x:Bind}"
+                                VerticalAlignment="Center"/>
+
+                        <!-- Edit Button -->
+                        <Button Grid.Column="3" 
+                                Content="Edit" 
+                                Click="EditButton_Click"
+                                Tag="{x:Bind}"
+                                VerticalAlignment="Center"/>
+
+                        <!-- Delete Button -->
+                        <Button Grid.Column="4" 
+                                Content="Delete" 
+                                Click="DeleteButton_Click"
+                                Tag="{x:Bind}"
+                                VerticalAlignment="Center"/>
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+        <!-- Empty State -->
+        <StackPanel Grid.Row="1" 
+                    x:Name="EmptyState"
+                    Visibility="Collapsed"
+                    HorizontalAlignment="Center" 
+                    VerticalAlignment="Center"
+                    Spacing="16">
+            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE74C;" FontSize="48" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+            <TextBlock Text="No apps configured" Style="{StaticResource SubtitleTextBlockStyle}" HorizontalAlignment="Center"/>
+            <TextBlock Text="Add an app to get started" Foreground="{ThemeResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
+            <Button Content="Add First App" Style="{StaticResource AccentButtonStyle}" Click="AddButton_Click"/>
+        </StackPanel>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="2" Margin="0,16,0,0">
+            <TextBlock x:Name="StatusText" 
+                       Text="Ready" 
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" 
+                       FontSize="12"/>
+        </Border>
+
+    </Grid>
+</Page>

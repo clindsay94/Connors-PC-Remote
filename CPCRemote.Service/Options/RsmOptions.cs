@@ -28,5 +28,17 @@ namespace CPCRemote.Service.Options
         /// </summary>
         [MinLength(8, ErrorMessage = "Secret must be at least 8 characters for security.")]
         public string? Secret { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether to use HTTPS instead of HTTP.
+        /// Requires SSL certificate binding via netsh (see documentation).
+        /// </summary>
+        public bool UseHttps { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the SSL certificate thumbprint for HTTPS binding.
+        /// Required when UseHttps is true. Certificate must be installed in LocalMachine\My store.
+        /// </summary>
+        public string? CertificateThumbprint { get; set; }
     }
 }

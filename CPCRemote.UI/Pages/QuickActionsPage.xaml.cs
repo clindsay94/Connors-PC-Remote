@@ -4,8 +4,8 @@ namespace CPCRemote.UI.Pages
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
     using CPCRemote.Core.Enums;
-    using CPCRemote.Core.Helpers;
     using CPCRemote.Core.Interfaces;
+    using CPCRemote.UI.Services;
 
     /// <summary>
     /// Page for quick power management actions
@@ -15,6 +15,7 @@ namespace CPCRemote.UI.Pages
     {
         private readonly ICommandCatalog _commandCatalog;
         private readonly ICommandExecutor _commandExecutor;
+        private readonly SettingsService _settingsService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QuickActionsPage"/> class.
@@ -24,6 +25,7 @@ namespace CPCRemote.UI.Pages
             this.InitializeComponent();
             _commandCatalog = App.GetService<ICommandCatalog>();
             _commandExecutor = App.GetService<ICommandExecutor>();
+            _settingsService = App.GetService<SettingsService>();
             
             // Wire up event handlers
             ShutdownButton.Click += async (s, e) => await ExecuteCommandSafelyAsync(TrayCommandType.Shutdown);
@@ -42,19 +44,8 @@ namespace CPCRemote.UI.Pages
         {
             try
             {
-                // Check if confirmations are enabled
-                bool showConfirmations = true;
-                try
-                {
-                    if (Microsoft.Windows.Storage.ApplicationData.GetDefault().LocalSettings.Values.TryGetValue("ShowConfirmations", out object? value) && value is bool confirmValue)
-                    {
-                        showConfirmations = confirmValue;
-                    }
-                }
-                catch
-                {
-                    // Default to showing confirmations if we can't read the setting
-                }
+                // Check if confirmations are enabled using SettingsService
+                bool showConfirmations = _settingsService.Get("ShowConfirmations", true);
 
                 if (showConfirmations)
                 {
@@ -78,6 +69,10 @@ namespace CPCRemote.UI.Pages
 
                 // Execute the command
                 await Task.Run(() => _commandExecutor.RunCommand(commandType));
+            }
+            catch (OperationCanceledException)
+            {
+                // Ignore cancellation
             }
             catch (Exception ex)
             {

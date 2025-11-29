@@ -3,45 +3,85 @@ namespace CPCRemote.Service
     using System;
     using System.Collections.Generic;
     using System.Net;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
 
     using CPCRemote.Core.Enums;
     using CPCRemote.Core.Interfaces;
+    using CPCRemote.Service.Constants;
     using CPCRemote.Service.Options;
+    using CPCRemote.Service.Services;
 
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Options;
 
     /// <summary>
-    /// Background service hosting a minimal HTTP listener to accept remote power commands.
+    /// Background service hosting a minimal HTTP listener to accept remote power commands
+    /// and a Named Pipe server for local IPC communication.
     /// </summary>
-    public partial class Worker(
-        ILogger<Worker> logger,
-        IOptionsMonitor<RsmOptions> rsmOptionsMonitor,
-        ICommandCatalog commandCatalog,
-        ICommandExecutor commandExecutor) : BackgroundService
+    public partial class Worker : BackgroundService
     {
-        private readonly ILogger<Worker> _logger = logger;
-        private readonly IOptionsMonitor<RsmOptions> _rsmOptionsMonitor = rsmOptionsMonitor;
-        private readonly ICommandCatalog _commandCatalog = commandCatalog;
-        private readonly ICommandExecutor _commandExecutor = commandExecutor;
+        private readonly ILogger<Worker> _logger;
+        private readonly IOptionsMonitor<RsmOptions> _rsmOptionsMonitor;
+        private readonly AppCatalogService _appCatalog;
+        private readonly HardwareMonitor _hardwareMonitor;
+        private readonly NamedPipeServer _pipeServer;
+        private readonly ICommandCatalog _commandCatalog;
+        private readonly ICommandExecutor _commandExecutor;
+
+        public Worker(
+            ILogger<Worker> logger,
+            IOptionsMonitor<RsmOptions> rsmOptionsMonitor,
+            AppCatalogService appCatalog,
+            HardwareMonitor hardwareMonitor,
+            NamedPipeServer pipeServer,
+            ICommandCatalog commandCatalog,
+            ICommandExecutor commandExecutor)
+        {
+            ArgumentNullException.ThrowIfNull(logger);
+            ArgumentNullException.ThrowIfNull(rsmOptionsMonitor);
+            ArgumentNullException.ThrowIfNull(appCatalog);
+            ArgumentNullException.ThrowIfNull(hardwareMonitor);
+            ArgumentNullException.ThrowIfNull(pipeServer);
+            ArgumentNullException.ThrowIfNull(commandCatalog);
+            ArgumentNullException.ThrowIfNull(commandExecutor);
+
+            _logger = logger;
+            _rsmOptionsMonitor = rsmOptionsMonitor;
+            _appCatalog = appCatalog;
+            _hardwareMonitor = hardwareMonitor;
+            _pipeServer = pipeServer;
+            _commandCatalog = commandCatalog;
+            _commandExecutor = commandExecutor;
+        }
 
         private static readonly char[] SlashSeparator = ['/'];
+
+        /// <summary>
+        /// JSON serializer options that omit null values from the output.
+        /// This prevents SmartThings Edge driver from receiving {value={}} for null temps.
+        /// </summary>
+        private static readonly JsonSerializerOptions StatsJsonOptions = new()
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+
         private HttpListener? _listener;
         private string _currentPrefix = string.Empty;
 
-        private const int MaxRetryAttempts = 10;
-        private const int InitialRetryDelayMs = 1000;
-        private const int MaxRetryDelayMs = 60000;
         private int _retryAttempts;
         private readonly Dictionary<IPAddress, DateTime> _unauthorizedLogTimestamps = new();
-        private const int UnauthorizedLogThrottlingSeconds = 60;
 
         /// <inheritdoc />
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            // Start the Named Pipe IPC server
+            await _pipeServer.StartAsync(stoppingToken).ConfigureAwait(false);
+            _logger.LogInformation("Named Pipe IPC server started.");
+
             try
             {
                 while (!stoppingToken.IsCancellationRequested)
@@ -56,6 +96,8 @@ namespace CPCRemote.Service
                     string ipAddress = current.IpAddress ?? "localhost";
                     int port = current.Port;
                     string secret = current.Secret ?? string.Empty;
+                    bool useHttps = current.UseHttps;
+                    string scheme = useHttps ? "https" : "http";
 
                     if (port < 1 || port > 65535)
                     {
@@ -64,27 +106,28 @@ namespace CPCRemote.Service
                             _logger.LogError("Invalid port number: {Port}. Port must be between 1 and 65535.", port);
                         }
 
-                        if (++_retryAttempts >= MaxRetryAttempts)
+                        if (++_retryAttempts >= WorkerConstants.MaxRetryAttempts)
                         {
                             if (_logger.IsEnabled(LogLevel.Critical))
                             {
-                                _logger.LogCritical("Maximum retry attempts ({MaxAttempts}) exceeded due to invalid configuration. Service will stop.", MaxRetryAttempts);
+                                _logger.LogCritical("Maximum retry attempts ({MaxAttempts}) exceeded due to invalid configuration. Service will stop.", WorkerConstants.MaxRetryAttempts);
                             }
 
-                            throw new InvalidOperationException($"Service failed to start after {MaxRetryAttempts} attempts due to invalid port configuration.");
+                            throw new InvalidOperationException($"Service failed to start after {WorkerConstants.MaxRetryAttempts} attempts due to invalid port configuration.");
                         }
 
-                        int invalidDelayMs = Math.Min(InitialRetryDelayMs * (int)Math.Pow(2, _retryAttempts - 1), MaxRetryDelayMs);
+                        int invalidDelayMs = Math.Min(WorkerConstants.InitialRetryDelayMs * (int)Math.Pow(2, _retryAttempts - 1), WorkerConstants.MaxRetryDelayMs);
                         if (_logger.IsEnabled(LogLevel.Warning))
                         {
-                            _logger.LogWarning("Retrying in {DelaySeconds} seconds (attempt {Current}/{Max})...", invalidDelayMs / 1000, _retryAttempts, MaxRetryAttempts);
+                            _logger.LogWarning("Retrying in {DelaySeconds} seconds (attempt {Current}/{Max})...", invalidDelayMs / 1000, _retryAttempts, WorkerConstants.MaxRetryAttempts);
                         }
 
                         await Task.Delay(invalidDelayMs, stoppingToken).ConfigureAwait(false);
                         continue;
                     }
 
-                    string prefix = $"http://{ipAddress}:{port}/";
+                    // Item 4: Support HTTPS when configured
+                    string prefix = $"{scheme}://{ipAddress}:{port}/";
                     if (_currentPrefix != prefix || !_listener.IsListening)
                     {
                         try
@@ -111,6 +154,9 @@ namespace CPCRemote.Service
                                     !string.IsNullOrEmpty(secret) ? "ENABLED" : "DISABLED");
                             }
 
+                            // Update pipe server with HTTP status
+                            _pipeServer.UpdateHttpStatus(prefix, true);
+
                             _retryAttempts = 0;
                         }
                         catch (HttpListenerException ex) when (ex.ErrorCode == 5)
@@ -120,20 +166,20 @@ namespace CPCRemote.Service
                                 _logger.LogError("Access denied when binding to {Prefix}. URL reservation may be required. Run: netsh http add urlacl url={Prefix} user=DOMAIN\\USER", prefix, prefix);
                             }
 
-                            if (++_retryAttempts >= MaxRetryAttempts)
+                            if (++_retryAttempts >= WorkerConstants.MaxRetryAttempts)
                             {
                                 if (_logger.IsEnabled(LogLevel.Critical))
                                 {
-                                    _logger.LogCritical("Maximum retry attempts ({MaxAttempts}) exceeded due to access denied. Service will stop.", MaxRetryAttempts);
+                                    _logger.LogCritical("Maximum retry attempts ({MaxAttempts}) exceeded due to access denied. Service will stop.", WorkerConstants.MaxRetryAttempts);
                                 }
 
-                                throw new InvalidOperationException($"Service failed to start after {MaxRetryAttempts} attempts due to access denied. URL reservation required.", ex);
+                                throw new InvalidOperationException($"Service failed to start after {WorkerConstants.MaxRetryAttempts} attempts due to access denied. URL reservation required.", ex);
                             }
 
-                            int accessDelayMs = Math.Min(InitialRetryDelayMs * (int)Math.Pow(2, _retryAttempts - 1), MaxRetryDelayMs);
+                            int accessDelayMs = Math.Min(WorkerConstants.InitialRetryDelayMs * (int)Math.Pow(2, _retryAttempts - 1), WorkerConstants.MaxRetryDelayMs);
                             if (_logger.IsEnabled(LogLevel.Warning))
                             {
-                                _logger.LogWarning("Retrying in {DelaySeconds} seconds (attempt {Current}/{Max})...", accessDelayMs / 1000, _retryAttempts, MaxRetryAttempts);
+                                _logger.LogWarning("Retrying in {DelaySeconds} seconds (attempt {Current}/{Max})...", accessDelayMs / 1000, _retryAttempts, WorkerConstants.MaxRetryAttempts);
                             }
 
                             await Task.Delay(accessDelayMs, stoppingToken).ConfigureAwait(false);
@@ -146,20 +192,20 @@ namespace CPCRemote.Service
                                 _logger.LogError(ex, "Failed to start HttpListener on prefix {Prefix}.", prefix);
                             }
 
-                            if (++_retryAttempts >= MaxRetryAttempts)
+                            if (++_retryAttempts >= WorkerConstants.MaxRetryAttempts)
                             {
                                 if (_logger.IsEnabled(LogLevel.Critical))
                                 {
-                                    _logger.LogCritical(ex, "Maximum retry attempts ({MaxAttempts}) exceeded. Service will stop.", MaxRetryAttempts);
+                                    _logger.LogCritical(ex, "Maximum retry attempts ({MaxAttempts}) exceeded. Service will stop.", WorkerConstants.MaxRetryAttempts);
                                 }
 
-                                throw new InvalidOperationException($"Service failed to start after {MaxRetryAttempts} attempts.", ex);
+                                throw new InvalidOperationException($"Service failed to start after {WorkerConstants.MaxRetryAttempts} attempts.", ex);
                             }
 
-                            int generalDelayMs = Math.Min(InitialRetryDelayMs * (int)Math.Pow(2, _retryAttempts - 1), MaxRetryDelayMs);
+                            int generalDelayMs = Math.Min(WorkerConstants.InitialRetryDelayMs * (int)Math.Pow(2, _retryAttempts - 1), WorkerConstants.MaxRetryDelayMs);
                             if (_logger.IsEnabled(LogLevel.Warning))
                             {
-                                _logger.LogWarning("Retrying in {DelaySeconds} seconds (attempt {Current}/{Max})...", generalDelayMs / 1000, _retryAttempts, MaxRetryAttempts);
+                                _logger.LogWarning("Retrying in {DelaySeconds} seconds (attempt {Current}/{Max})...", generalDelayMs / 1000, _retryAttempts, WorkerConstants.MaxRetryAttempts);
                             }
 
                             await Task.Delay(generalDelayMs, stoppingToken).ConfigureAwait(false);
@@ -292,7 +338,7 @@ namespace CPCRemote.Service
                                 if (remoteIp is not null)
                                 {
                                     if (!_unauthorizedLogTimestamps.TryGetValue(remoteIp, out DateTime lastLogTime) ||
-                                        (DateTime.UtcNow - lastLogTime).TotalSeconds > UnauthorizedLogThrottlingSeconds)
+                                        (DateTime.UtcNow - lastLogTime).TotalSeconds > WorkerConstants.UnauthorizedLogThrottlingSeconds)
                                     {
                                         if (_logger.IsEnabled(LogLevel.Warning))
                                         {
@@ -317,6 +363,55 @@ namespace CPCRemote.Service
                                 }
 
                                 response.StatusCode = (int)HttpStatusCode.OK;
+                                response.Close();
+                                continue;
+                            }
+
+                            if (string.Equals(commandStr, "stats", StringComparison.OrdinalIgnoreCase))
+                            {
+                                var stats = _hardwareMonitor.GetStats();
+                                byte[] buffer = JsonSerializer.SerializeToUtf8Bytes(stats, StatsJsonOptions);
+                                response.ContentType = "application/json";
+                                response.ContentLength64 = buffer.Length;
+                                await response.OutputStream.WriteAsync(buffer, stoppingToken);
+                                response.Close();
+                                continue;
+                            }
+
+                            if (string.Equals(commandStr, "apps", StringComparison.OrdinalIgnoreCase))
+                            {
+                                var apps = _appCatalog.GetAllApps();
+                                byte[] buffer = JsonSerializer.SerializeToUtf8Bytes(apps);
+                                response.ContentType = "application/json";
+                                response.ContentLength64 = buffer.Length;
+                                await response.OutputStream.WriteAsync(buffer, stoppingToken);
+                                response.Close();
+                                continue;
+                            }
+
+                            if (string.Equals(commandStr, "launch", StringComparison.OrdinalIgnoreCase))
+                            {
+                                int cmdIdx = -1;
+                                for (int i = 0; i < urlParts.Length; i++)
+                                {
+                                    if (string.Equals(urlParts[i], commandStr, StringComparison.Ordinal))
+                                    {
+                                        cmdIdx = i;
+                                        break;
+                                    }
+                                }
+                                
+                                string? slot = (cmdIdx >= 0 && cmdIdx + 1 < urlParts.Length) ? urlParts[cmdIdx + 1] : null;
+
+                                if (!string.IsNullOrEmpty(slot))
+                                {
+                                    LaunchApp(slot);
+                                    response.StatusCode = (int)HttpStatusCode.OK;
+                                }
+                                else
+                                {
+                                    response.StatusCode = (int)HttpStatusCode.BadRequest;
+                                }
                                 response.Close();
                                 continue;
                             }
@@ -386,6 +481,10 @@ namespace CPCRemote.Service
             }
             finally
             {
+                // Stop the Named Pipe IPC server
+                await _pipeServer.StopAsync().ConfigureAwait(false);
+                _logger.LogInformation("Named Pipe IPC server stopped.");
+
                 try
                 {
                     if (_listener?.IsListening == true)
@@ -403,6 +502,11 @@ namespace CPCRemote.Service
                     }
                 }
             }
+        }
+
+        private void LaunchApp(string slot)
+        {
+            _appCatalog.LaunchApp(slot);
         }
     }
 }
