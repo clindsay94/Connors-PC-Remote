@@ -12,7 +12,7 @@ _Remote PC power management via HTTP_
 ![WinUI 3](https://img.shields.io/badge/WinUI-3-blue?style=flat-square)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 
-[Features](#features) • [Getting Started](#getting-started) • [Usage](#usage) • [API Reference](#api-reference) • [Development](#development) • [Troubleshooting](#troubleshooting)
+[Features](#features) • [Requirements](#requirements) • [Getting Started](#getting-started) • [Usage](#usage) • [API Reference](#api-reference) • [Development](#development) • [Troubleshooting](#troubleshooting)
 
 </div>
 
@@ -50,12 +50,35 @@ A Windows application for remotely controlling PC power functions via HTTP comma
 | **CPCRemote.UI**      | WinUI 3 management application                       |
 | **CPCRemote.Tests**   | Unit tests (NUnit + Moq)                             |
 
+## Requirements
+
+### System Requirements
+
+- **Windows 10/11** (version 22H2 or later)
+- **Administrator privileges** for service installation
+
+### Optional Dependencies
+
+| Dependency   | Required For                            | Download                                       |
+| ------------ | --------------------------------------- | ---------------------------------------------- |
+| **HWiNFO64** | Hardware monitoring (`/stats` endpoint) | [hwinfo.com](https://www.hwinfo.com/download/) |
+
+#### HWiNFO Configuration
+
+To enable hardware monitoring, HWiNFO must be running with shared memory support:
+
+1. Download and install [HWiNFO64](https://www.hwinfo.com/download/)
+2. Open HWiNFO and go to **Settings** (gear icon)
+3. Navigate to **General / User Interface**
+4. Check **Shared Memory Support** ✅
+5. Click **OK** and restart HWiNFO in **Sensors-only** mode
+
+> [!TIP]
+> Enable "Start minimized" and "Auto Start" in HWiNFO settings for automatic startup with Windows.
+
+Without HWiNFO running, the `/stats` endpoint will return empty sensor data, but all other commands will work normally.
+
 ## Getting Started
-
-### Prerequisites
-
-- Windows 10/11 (version 22H2 or later)
-- Administrator privileges for service installation
 
 ### Installation
 
