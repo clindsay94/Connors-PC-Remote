@@ -244,3 +244,16 @@ netsh http add urlacl url=http://+:5005/ user=EVERYONE
 - [Windows App SDK Documentation](https://learn.microsoft.com/windows/apps/windows-app-sdk/)
 - [.NET 10 Documentation](https://learn.microsoft.com/dotnet/core/whats-new/dotnet-10)
 - [WinUI 3 Gallery](https://github.com/microsoft/WinUI-Gallery)
+
+## SmartThings Integration
+
+A companion SmartThings Edge driver is available for controlling your PC directly from the SmartThings app. Features include:
+
+- Remote power commands (shutdown, restart, lock, etc.)
+- App launcher with slots configurable from the Windows app
+- Integration with SmartThings automations and routines
+
+**[Join the SmartThings Channel](https://bestow-regional.api.smartthings.com/invite/Y723VRdPaWMr)** to install the driver.
+
+> [!NOTE]
+> This is my first Windows application and SmartThings Edge driver. Things may not work perfectly, and there might be bugs or unexpected behavior. Feedback and patience are appreciated!
