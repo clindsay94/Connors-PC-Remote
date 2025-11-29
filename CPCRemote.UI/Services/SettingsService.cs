@@ -1,3 +1,4 @@
+using CPCRemote.Core.Helpers;
 using CPCRemote.UI.Models;
 using System;
 using System.Collections.Generic;
@@ -46,7 +47,7 @@ namespace CPCRemote.UI.Services
         /// </remarks>
         public SettingsService()
         {
-            _isPackaged = IsPackaged();
+            _isPackaged = ConfigurationPaths.IsPackagedApp();
             _secureStorage = new SecureStorageService(_isPackaged);
             
             if (_isPackaged)
@@ -61,40 +62,12 @@ namespace CPCRemote.UI.Services
                     // Fallback if ApplicationData.Current fails despite IsPackaged() returning true
                     _isPackaged = false;
                     _localSettings = null;
-                    _localAppDataPath = GetUnpackagedAppDataPath();
-                    Directory.CreateDirectory(_localAppDataPath);
+                    _localAppDataPath = ConfigurationPaths.UserDataPath;
                 }
             }
             else
             {
-                _localAppDataPath = GetUnpackagedAppDataPath();
-                Directory.CreateDirectory(_localAppDataPath);
-            }
-        }
-
-        private string GetUnpackagedAppDataPath()
-        {
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CPCRemote");
-        }
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern int GetCurrentPackageFullName(ref int packageFullNameLength, StringBuilder? packageFullName);
-
-        /// <summary>
-        /// Determines whether the application is running as a packaged (MSIX) app.
-        /// </summary>
-        /// <returns><c>true</c> if running as a packaged app; otherwise, <c>false</c>.</returns>
-        private bool IsPackaged()
-        {
-            try
-            {
-                int length = 0;
-                // APPMODEL_ERROR_NO_PACKAGE = 15700
-                return GetCurrentPackageFullName(ref length, null) != 15700;
-            }
-            catch
-            {
-                return false;
+                _localAppDataPath = ConfigurationPaths.UserDataPath;
             }
         }
 

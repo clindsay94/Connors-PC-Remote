@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
+using CPCRemote.Core.Helpers;
 using CPCRemote.Core.Models;
 
 using Microsoft.Extensions.Logging;
@@ -40,10 +41,11 @@ public sealed class AppCatalogService
         _logger = logger;
         _userSessionLauncher = userSessionLauncher;
         
-        // Store catalog in the same directory as appsettings.json
-        string baseDir = AppContext.BaseDirectory;
-        _catalogPath = Path.Combine(baseDir, "app-catalog.json");
+        // Store catalog in the writable service data directory (%PROGRAMDATA%\CPCRemote)
+        // This ensures the catalog is accessible even in MSIX deployments
+        _catalogPath = ConfigurationPaths.EnsureServiceConfigExists("app-catalog.json");
         
+        _logger.LogInformation("App catalog path: {Path}", _catalogPath);
         LoadCatalog();
     }
 
