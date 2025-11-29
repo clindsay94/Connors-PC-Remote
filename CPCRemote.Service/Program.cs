@@ -8,13 +8,26 @@ using CPCRemote.Service;
 using CPCRemote.Service.Options;
 using CPCRemote.Service.Services;
 
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 [assembly: SupportedOSPlatform("windows10.0.22621.0")]
 
+// Ensure configuration files exist in writable location (copies defaults if needed)
+string appSettingsPath = ConfigurationPaths.EnsureServiceConfigExists("appsettings.json");
+
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
+
+// Clear default configuration sources and add our writable path
+builder.Configuration.Sources.Clear();
+builder.Configuration
+    .SetBasePath(ConfigurationPaths.ServiceDataPath)
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables()
+    .AddCommandLine(args);
 
 builder.Services.AddWindowsService(options => { options.ServiceName = ServiceConstants.RemoteShutdownServiceName; });
 
