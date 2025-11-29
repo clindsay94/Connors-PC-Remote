@@ -1,393 +1,246 @@
+<!-- prettier-ignore -->
+<div align="center">
+
+<img src="./CPCRemote.UI/Assets/Square150x150Logo.png" alt="Connor's PC Remote" height="100" />
+
 # Connor's PC Remote
 
-A Windows application for remotely controlling PC power functions via HTTP commands. Built with .NET 10 and WinUI 3.
+_Remote PC power management via HTTP_
+
+![.NET 10](https://img.shields.io/badge/.NET-10-512bd4?style=flat-square&logo=dotnet)
+![Windows](https://img.shields.io/badge/Windows-10%2F11-0078d4?style=flat-square&logo=windows)
+![WinUI 3](https://img.shields.io/badge/WinUI-3-blue?style=flat-square)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
+
+[Features](#features) • [Getting Started](#getting-started) • [Usage](#usage) • [API Reference](#api-reference) • [Development](#development) • [Troubleshooting](#troubleshooting)
+
+</div>
+
+A Windows application for remotely controlling PC power functions via HTTP commands. Control shutdown, restart, lock, and more from any device on your network. Built with .NET 10 and WinUI 3.
 
 ## Features
 
-- **Remote Power Management**: Shutdown, restart, lock, and more via HTTP requests
-- **Windows Service**: Runs as a background service with automatic startup
-- **Modern GUI**: WinUI 3 interface for easy service management and configuration
-- **Secure Authentication**: Optional Bearer token authentication (header-based)
-- **Flexible Configuration**: Configure IP address, port, and security settings
-- **Command Support**:
-  - Shutdown
-  - Restart
-  - Lock workstation
-  - Turn screen off
-  - Force shutdown
-  - UEFI firmware reboot
+- **Remote Power Control** — Shutdown, restart, lock, turn off screen, and UEFI reboot via HTTP
+- **Windows Service** — Runs in background with automatic startup
+- **Modern GUI** — WinUI 3 interface for easy configuration and testing
+- **Secure Authentication** — Bearer token authentication with configurable secrets
+- **App Launcher** — Launch configured applications remotely
+- **HTTPS Support** — Optional TLS encryption with certificate binding
 
 ## Architecture
 
-The project consists of four main components:
+```
+┌─────────────────┐     HTTP/HTTPS     ┌──────────────────────┐
+│  Client Device  │ ◄─────────────────► │  CPCRemote.Service   │
+│  (Phone, etc.)  │                     │  (Windows Service)   │
+└─────────────────┘                     └──────────┬───────────┘
+                                                   │
+                                        Named Pipe │ IPC
+                                                   │
+                                        ┌──────────▼───────────┐
+                                        │    CPCRemote.UI      │
+                                        │   (WinUI 3 App)      │
+                                        └──────────────────────┘
+```
 
-- **CPCRemote.Core**: Shared library containing command execution logic and interfaces
-- **CPCRemote.Service**: Windows Service that listens for HTTP requests
-- **CPCRemote.UI**: WinUI 3 application for service management and testing
-- **CPCRemote.Tests**: Unit tests for core functionality
+| Component             | Description                                          |
+| --------------------- | ---------------------------------------------------- |
+| **CPCRemote.Core**    | Shared library with commands, models, and interfaces |
+| **CPCRemote.Service** | Windows Service with HTTP listener and IPC server    |
+| **CPCRemote.UI**      | WinUI 3 management application                       |
+| **CPCRemote.Tests**   | Unit tests (NUnit + Moq)                             |
 
-## Prerequisites
+## Getting Started
+
+### Prerequisites
 
 - Windows 10/11 (version 22H2 or later)
-- .NET 10 SDK
-- Visual Studio 2022 (for building) or .NET Runtime (for running)
-- Administrator privileges (for service installation)
+- Administrator privileges for service installation
 
-## Installation
+### Installation
 
-### Option 1: MSIX Package (Recommended)
+<details open>
+<summary><strong>Option 1: MSIX Package (Recommended)</strong></summary>
 
-1. Download the latest MSIX package from the releases page
-2. Double-click the MSIX file to install
+1. Download the latest MSIX package from [Releases](https://github.com/clindsay94/Connors-PC-Remote/releases)
+2. Double-click to install
 3. Launch "Connor's PC Remote" from the Start menu
-4. Follow the in-app setup wizard to install and configure the service
+4. Follow the setup wizard to install the service
 
-### Option 2: Manual Installation
+</details>
 
-1. Build the solution in Visual Studio:
+<details>
+<summary><strong>Option 2: Manual Installation</strong></summary>
 
-   ```
-   dotnet build CPCRemote.sln --configuration Release
-   ```
-
+1. Build from source (see [Development](#development))
 2. Install the Windows Service:
-
    ```powershell
    # Run as Administrator
    sc.exe create CPCRemote.Service binPath="C:\Path\To\CPCRemote.Service.exe" start=auto
    ```
-
-3. Reserve the URL (if binding to non-localhost addresses):
-
+3. Reserve the URL for network access:
    ```powershell
-   # Run as Administrator
    netsh http add urlacl url=http://+:5005/ user=EVERYONE
    ```
-
 4. Start the service:
    ```powershell
    sc.exe start CPCRemote.Service
    ```
 
-## Configuration
+</details>
 
-Configuration is stored in `appsettings.json` located in the service installation directory.
-Note that the ip address of the pc must match the configuration of the app sending the request.
+### Configuration
 
-### Example Configuration
-
-```json
-{
-  "rsm": {
-    "ipAddress": 00.0.0.0,
-    "port": 5005,
-    "secret": "your-secret-token-here"
-  }
-}
-```
-
-### Configuration Options
-
-| Option      | Description                                              | Default | Required |
-| ----------- | -------------------------------------------------------- | ------- | -------- | --- |
-| `ipAddress` | IP address to bind to (specific IP)                      |         |          | yes |
-| `port`      | Port number (1-65535)                                    | `5005`  | Yes      |
-| `secret`    | Authentication token (min 8 characters, empty = no auth) | `""`    | No       |
-
-**Security Recommendations:**
-
-- Always set a strong secret (16+ characters) for production use
-- Use `localhost` if only accepting local connections
-- Use `+` or specific IP for network access (requires URL reservation)
-- Consider using HTTPS for encrypted communication (see TLS/HTTPS Setup below)
-
-## TLS/HTTPS Setup (Optional)
-
-The service supports HTTPS for encrypted communication. This requires a SSL certificate and additional configuration.
-
-### 1. Generate or Obtain a Certificate
-
-**Self-signed certificate (for testing):**
-
-```powershell
-# Run as Administrator
-$cert = New-SelfSignedCertificate -DnsName "localhost" -CertStoreLocation "cert:\LocalMachine\My" -NotAfter (Get-Date).AddYears(5)
-Write-Host "Certificate Thumbprint: $($cert.Thumbprint)"
-```
-
-**Production:** Use a certificate from a trusted Certificate Authority or your organization's PKI.
-
-### 2. Bind the Certificate to the Port
-
-```powershell
-# Run as Administrator
-# Replace <thumbprint> with your certificate thumbprint (no spaces)
-# Replace <appid> with any GUID, e.g., {12345678-1234-1234-1234-123456789012}
-netsh http add sslcert ipport=0.0.0.0:5005 certhash=<thumbprint> appid={12345678-1234-1234-1234-123456789012}
-```
-
-### 3. Reserve the HTTPS URL
-
-```powershell
-# Run as Administrator
-netsh http add urlacl url=https://+:5005/ user=EVERYONE
-```
-
-### 4. Update Configuration
+Edit `appsettings.json` in the service directory:
 
 ```json
 {
 	"rsm": {
 		"ipAddress": "0.0.0.0",
 		"port": 5005,
-		"secret": "your-strong-secret",
-		"useHttps": true,
-		"certificateThumbprint": "<your-certificate-thumbprint>"
+		"secret": "your-secret-token-here",
+		"useHttps": false
 	}
 }
 ```
 
-### 5. Trust the Certificate (Self-signed only)
+| Option      | Description                                       | Default  |
+| ----------- | ------------------------------------------------- | -------- |
+| `ipAddress` | IP address to bind (`0.0.0.0` for all interfaces) | Required |
+| `port`      | Port number (1-65535)                             | `5005`   |
+| `secret`    | Authentication token (empty = no auth)            | `""`     |
+| `useHttps`  | Enable HTTPS                                      | `false`  |
 
-On client machines, add the self-signed certificate to the Trusted Root store or configure the client to bypass certificate validation (not recommended for production).
-
-### Troubleshooting HTTPS
-
-- **"Access denied"**: Ensure URL reservation includes `https://` and certificate is bound
-- **"Certificate not found"**: Verify thumbprint and certificate is in LocalMachine\My store
-- **Connection refused**: Check firewall rules allow the HTTPS port
+> [!WARNING]
+> Always set a strong secret (16+ characters) when exposing the service to your network.
 
 ## Usage
 
-### Using the GUI
+### GUI Application
 
-1. Launch the CPCRemote.UI application
-2. Navigate to "Service Management"
-3. Install and configure the service
-4. Test commands using the built-in test interface
+Launch the CPCRemote.UI application to:
 
-### HTTP API
+- Install and manage the Windows service
+- Configure settings
+- Test commands
 
-Send HTTP GET requests to control the PC:
+### HTTP Requests
 
 ```bash
-# Without authentication
-curl http://localhost:5005/shutdown
+# Health check
+curl http://localhost:5005/ping
 
-# With authentication (Bearer token)
-curl -H "Authorization: Bearer your-secret-token" http://localhost:5005/restart
+# With authentication
+curl -H "Authorization: Bearer your-secret" http://localhost:5005/shutdown
+
+# Alternative URL-based auth
+curl http://localhost:5005/your-secret/shutdown
 ```
 
-### Available Commands
+## API Reference
 
-| Command         | Description                      |
-| --------------- | -------------------------------- |
-| `ping`          | Health check (returns 200 OK)    |
-| `shutdown`      | Graceful shutdown                |
-| `restart`       | Restart the computer             |
-| `lock`          | Lock the workstation             |
-| `turnscreenoff` | Turn off the display             |
-| `forceshutdown` | Force shutdown (10 second delay) |
-| `uefireboot`    | Reboot to UEFI firmware settings |
+### Commands
+
+| Endpoint             | Description                   |
+| -------------------- | ----------------------------- |
+| `GET /ping`          | Health check (returns 200 OK) |
+| `GET /shutdown`      | Graceful shutdown             |
+| `GET /restart`       | Restart computer              |
+| `GET /lock`          | Lock workstation              |
+| `GET /turnscreenoff` | Turn off display              |
+| `GET /forceshutdown` | Force shutdown (10s delay)    |
+| `GET /uefireboot`    | Reboot to UEFI settings       |
+| `GET /apps`          | App catalog (JSON)            |
+| `GET /launch/{slot}` | Launch configured app         |
 
 ### Response Codes
 
-| Code | Meaning                                  |
-| ---- | ---------------------------------------- |
-| 200  | Success                                  |
-| 400  | Invalid command                          |
-| 401  | Unauthorized (invalid or missing secret) |
-| 500  | Internal server error                    |
+| Code  | Meaning         |
+| ----- | --------------- |
+| `200` | Success         |
+| `400` | Invalid command |
+| `401` | Unauthorized    |
+| `500` | Server error    |
 
-\*\*not every companion app will have any responses displayed.
-
-## Building from Source
+## Development
 
 ### Requirements
 
-- Visual Studio 2022 (17.8 or later) with:
+- [.NET 10 SDK](https://dotnet.microsoft.com/download)
+- Visual Studio 2022 17.8+ with:
   - .NET desktop development workload
-  - Windows App SDK 1.3 (WinUI 3)
-- .NET 10 SDK
+  - Windows App SDK
 
-### Build Steps
+### Build
 
 ```powershell
 # Clone the repository
-git clone https://github.com/yourusername/connors-pc-remote.git
-cd connors-pc-remote
+git clone https://github.com/clindsay94/Connors-PC-Remote.git
+cd Connors-PC-Remote
 
-# Restore dependencies
+# Restore and build
 dotnet restore
-
-# Build all projects
-dotnet build --configuration Release
+dotnet build
 
 # Run tests
 dotnet test
+```
 
-# Package for deployment (MSIX)
-msbuild CPCRemote.UI/CPCRemote.UI.csproj /p:Configuration=Release /p:Platform=x64 /p:AppxPackageDir="../publish/" /p:GenerateAppxPackageOnBuild=true
+### Run Locally
+
+```powershell
+# Run the service (requires admin)
+dotnet run --project CPCRemote.Service
+
+# Run the UI
+dotnet run --project CPCRemote.UI
 ```
 
 ## Troubleshooting
 
-### Service Won't Start
+<details>
+<summary><strong>Service won't start (Access Denied)</strong></summary>
 
-**Problem**: Access denied error when starting service
-
-**Solution**: Reserve the URL (requires Administrator):
+Reserve the URL for the HTTP listener:
 
 ```powershell
 netsh http add urlacl url=http://+:5005/ user=EVERYONE
 ```
 
-### Cannot Connect to Service
+</details>
 
-**Problem**: Connection refused or timeout
-
-**Checks**:
+<details>
+<summary><strong>Cannot connect to service</strong></summary>
 
 1. Verify service is running: `sc.exe query CPCRemote.Service`
-2. Check firewall allows connections on the configured port
-3. Verify correct IP address and port in configuration
-4. Check Windows Event Viewer for service errors
+2. Check firewall allows port 5005
+3. Verify IP and port in `appsettings.json`
+4. Check Windows Event Viewer for errors
 
-### Authentication Fails
+</details>
 
-**Problem**: Receiving 401 Unauthorized
-
-**Solution**:
+<details>
+<summary><strong>401 Unauthorized</strong></summary>
 
 1. Verify secret matches in `appsettings.json`
-2. Ensure you're sending the `Authorization: Bearer {token}` header
+2. Use header: `Authorization: Bearer your-secret`
 3. Check for trailing spaces in the secret
 
-### Service Installation Requires Admin
+</details>
 
-**Problem**: UI shows error when installing service
+## Security
 
-**Solution**: Run the CPCRemote.UI application as Administrator, or restart when prompted for elevation.
+> [!CAUTION]
+> This application allows remote control of your PC. Take security seriously:
 
-## Security Considerations
+- **Use strong secrets** — Minimum 8 characters, random, unique
+- **Limit network exposure** — Bind to `localhost` for local-only access
+- **Configure firewall** — Only allow connections from trusted IPs
+- **Enable HTTPS** — Use certificate binding for encrypted communication
+- **Monitor logs** — Check Windows Event Viewer for unauthorized attempts
 
-⚠️ **IMPORTANT**: This application allows remote control of your PC. Take security seriously:
+## Resources
 
-1. **Use Strong Secrets**: Minimum 16 characters, random, unique
-2. **Limit Network Exposure**: Use `localhost` for local-only access
-3. **Firewall Rules**: Only allow connections from trusted IP addresses
-4. **HTTPS**: Consider using a reverse proxy (nginx, IIS) with HTTPS
-5. **Monitor Logs**: Regularly check Windows Event Viewer for unauthorized attempts
-6. **Regular Updates**: Keep the application and Windows updated
-
-**Current Limitations:**
-
-- HTTP only (no built-in HTTPS support)
-- No rate limiting (add via reverse proxy if needed)
-- No request logging to file (only Windows Event Log)
-
-## Development
-
-### Project Structure
-
-```
-CPCRemote/
-├── CPCRemote.Core/          # Shared library
-│   ├── Enums/              # Command type definitions
-│   ├── Helpers/            # Command execution logic
-│   ├── Interfaces/         # Service interfaces
-│   └── Models/             # Data models
-├── CPCRemote.Service/       # Windows Service
-│   ├── Options/            # Configuration classes
-│   ├── Worker.cs           # Background service logic
-│   └── Program.cs          # Service host setup
-├── CPCRemote.UI/            # WinUI 3 GUI
-│   ├── Pages/              # UI pages
-│   ├── Helpers/            # UI helpers
-│   └── Assets/             # Images and resources
-└── CPCRemote.Tests/         # Unit tests
-```
-
-### Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Code Style
-
-- Follow C# naming conventions
-- Use XML documentation comments for public APIs
-- Write unit tests for new features
-- Keep methods focused and under 50 lines when possible
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Changelog
-
-### Version 1.0.1 (Current)
-
-#### Security Enhancements
-
-- ✅ Implemented header-based authentication (Bearer tokens)
-- ✅ Removed hardcoded default credentials
-- ✅ Added configuration validation with detailed error messages
-- ✅ Improved error handling with contextual information
-
-#### Reliability Improvements
-
-- ✅ Added exponential backoff retry logic (max 10 attempts)
-- ✅ Enhanced command execution error handling
-- ✅ Fixed test project dependencies (NUnit, Moq)
-
-#### Known Issues
-
-- HTTPS support not yet implemented (planned for v1.1.0)
-- UI XAML file has minor corruption (service functionality unaffected)
-
-### Version 1.0.0 (Initial Release)
-
-- Basic HTTP listener service
-- Power management commands
-- WinUI 3 management interface
-- Service installation and configuration
-
-## Roadmap
-
-### Planned for v1.1.0
-
-- [ ] HTTPS support with certificate configuration
-- [ ] UI XAML fixes and enhancements
-- [ ] Administrator elevation prompts in UI
-- [ ] Logging to file in addition to Event Log
-
-### Planned for v1.2.0
-
-- [ ] Rate limiting for security
-- [ ] Command scheduling
-- [ ] Web-based management interface
-- [ ] Mobile companion app
-
-## Support
-
-For issues, questions, or suggestions:
-
-- Open an issue on GitHub
-- Check existing issues for solutions
-- Review the troubleshooting section above
-
-## Acknowledgments
-
-- Built with [.NET 8](https://dotnet.microsoft.com/)
-- UI powered by [Windows App SDK (WinUI 3)](https://docs.microsoft.com/en-us/windows/apps/winui/)
-- Inspired by the need for simple, secure remote PC management
-
----
-
-**Made with ❤️ for the Windows community**
+- [Windows App SDK Documentation](https://learn.microsoft.com/windows/apps/windows-app-sdk/)
+- [.NET 10 Documentation](https://learn.microsoft.com/dotnet/core/whats-new/dotnet-10)
+- [WinUI 3 Gallery](https://github.com/microsoft/WinUI-Gallery)
