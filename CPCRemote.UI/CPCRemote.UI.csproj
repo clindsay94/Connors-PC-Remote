@@ -12,6 +12,10 @@
 	<WindowsPackageType Condition="'$(Configuration)' == 'Release'">MSIX</WindowsPackageType>
 	<AppxManifest Condition="'$(WindowsPackageType)' == 'MSIX'">Package.appxmanifest</AppxManifest>
 	<AppxPackageSigningEnabled Condition="'$(WindowsPackageType)' == 'MSIX'">true</AppxPackageSigningEnabled>
+	 <EnableMsixTooling>true</EnableMsixTooling>
+		  <!-- Add these lines after AppxPackageSigningEnabled -->
+	<PackageCertificateKeyFile>P:\Connor\Connors-PC-Remote\LindsayCert.pfx</PackageCertificateKeyFile>
+	<PackageCertificatePassword>9979519</PackageCertificatePassword>
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	<RootNamespace>CPCRemote.UI</RootNamespace>
 	<RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
@@ -28,6 +32,11 @@
 	<!-- LangVersion preview required for partial property support with CommunityToolkit.Mvvm -->
 	<LangVersion>preview</LangVersion>
 	<StartupObject>CPCRemote.UI.Program</StartupObject>
+	<SignAssembly>False</SignAssembly>
+	<DelaySign>False</DelaySign>
+	<AssemblyOriginatorKeyFile>P:\Connor\Connors-PC-Remote\LindsayCert.pfx</AssemblyOriginatorKeyFile>
+	<PackageCertificateThumbprint>3A1CCD70E833C4A50218C3903FD160A1F39DA2D9</PackageCertificateThumbprint>
+	<AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
   </PropertyGroup>
 
   <ItemGroup>
