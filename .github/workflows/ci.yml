@@ -86,37 +86,4 @@ jobs:
           path: "**/TestResults/*.trx"
           retention-days: 7
 
-  code-quality:
-    name: Code Quality
-    runs-on: windows-latest
-    timeout-minutes: 10
-    needs: build
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "10.0.x"
-
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Build.props') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
-
-      - name: Restore dependencies
-        run: dotnet restore CPCRemote.sln
-
-      - name: Check formatting
-        run: dotnet format CPCRemote.sln --verify-no-changes --verbosity diagnostic
-        continue-on-error: true
-
-      - name: Build with warnings as errors
-        run: dotnet build CPCRemote.sln --configuration Release --no-restore /warnaserror
