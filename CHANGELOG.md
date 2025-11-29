@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2025-11-29
+
+### Added
+
+- Introduced `ConfigurationPaths` helper to standardize configuration and data file locations for both packaged and unpackaged deployments.
+- Added comprehensive unit tests for `ConfigurationPaths` to ensure correct path resolution across all deployment scenarios.
+
+### Changed
+
+- Updated service and UI projects to use centralized configuration paths, ensuring all configuration files are stored in writable locations.
+
 ## [1.0.0] - 2025-11-29
 
 ### Added
@@ -125,5 +136,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.0.1]: https://github.com/clindsay94/Connors-PC-Remote/compare/1.0.0...1.0.1
 [1.0.0]: https://github.com/clindsay94/Connors-PC-Remote/compare/main...New-Features
 [0.1.0]: https://github.com/clindsay94/Connors-PC-Remote/releases/tag/v0.1.0
