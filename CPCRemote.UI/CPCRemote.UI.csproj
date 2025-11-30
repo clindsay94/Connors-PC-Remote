@@ -5,6 +5,8 @@
 	<SupportedOSPlatformVersion>10.0.22621.0</SupportedOSPlatformVersion>
 	<OutputType>WinExe</OutputType>
 	<UseWinUI>true</UseWinUI>
+	<!-- Embed application manifest for DPI awareness (WACK Req 26) -->
+	<ApplicationManifest>app.manifest</ApplicationManifest>
 	<!-- Disable the XAML-generated Main method so we can use our custom Program.cs -->
 	<DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
 	<!-- Disable MSIX packaging for development/debugging -->
@@ -14,7 +16,6 @@
 	<AppxPackageSigningEnabled Condition="'$(WindowsPackageType)' == 'MSIX'">true</AppxPackageSigningEnabled>
 	 <EnableMsixTooling>true</EnableMsixTooling>
 		  <!-- Add these lines after AppxPackageSigningEnabled -->
-	<PackageCertificateKeyFile>P:\Connor\Connors-PC-Remote\LindsayCert.pfx</PackageCertificateKeyFile>
 	<PackageCertificatePassword>9979519</PackageCertificatePassword>
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	<RootNamespace>CPCRemote.UI</RootNamespace>
@@ -27,8 +28,14 @@
 	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 	<Company>Lindsay Inc</Company>
 	<NoWarn>$(NoWarn);CA1416</NoWarn>
-	<!-- Self-contained deployment includes SDK runtime in output -->
-	<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+	<!-- 
+	  Self-contained deployment includes SDK runtime in output.
+	  For Store submission, set StoreSubmission=true to use framework-dependent deployment
+	  and avoid WinRT metadata GUID conflicts (WACK Req 24).
+	  Build for Store: msbuild /p:Configuration=Release /p:StoreSubmission=true
+	-->
+	<WindowsAppSDKSelfContained Condition="'$(StoreSubmission)' != 'true'">true</WindowsAppSDKSelfContained>
+	<WindowsAppSDKSelfContained Condition="'$(StoreSubmission)' == 'true'">false</WindowsAppSDKSelfContained>
 	<!-- LangVersion preview required for partial property support with CommunityToolkit.Mvvm -->
 	<LangVersion>preview</LangVersion>
 	<StartupObject>CPCRemote.UI.Program</StartupObject>
@@ -37,6 +44,13 @@
 	<AssemblyOriginatorKeyFile>P:\Connor\Connors-PC-Remote\LindsayCert.pfx</AssemblyOriginatorKeyFile>
 	<PackageCertificateThumbprint>3A1CCD70E833C4A50218C3903FD160A1F39DA2D9</PackageCertificateThumbprint>
 	<AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
+	<GenerateAppInstallerFile>False</GenerateAppInstallerFile>
+	<AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
+	<AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
+	<GenerateTestArtifacts>True</GenerateTestArtifacts>
+	<AppxBundle>Always</AppxBundle>
+	<AppxBundlePlatforms>x64</AppxBundlePlatforms>
+	<HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
   </PropertyGroup>
 
   <ItemGroup>
