@@ -660,6 +660,14 @@ namespace CPCRemote.UI.ViewModels
 
         private string? FindServiceConfigPath()
         {
+            // For MSIX deployments, always use the writable ProgramData location
+            // The ConfigurationPaths helper handles copying defaults from the app directory
+            if (CPCRemote.Core.Helpers.ConfigurationPaths.IsPackagedApp())
+            {
+                return CPCRemote.Core.Helpers.ConfigurationPaths.EnsureServiceConfigExists(ConfigFileName);
+            }
+
+            // For unpackaged deployments, try to find config next to service executable first
             try
             {
                 string exePath = GetServiceExecutablePath();

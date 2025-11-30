@@ -490,15 +490,15 @@ public sealed class NamedPipeServer : IPipeServer
     {
         try
         {
-            // Read existing appsettings.json
-            string appSettingsPath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
+            // Use ConfigurationPaths to get writable config location (handles MSIX deployments)
+            string appSettingsPath = CPCRemote.Core.Helpers.ConfigurationPaths.EnsureServiceConfigExists("appsettings.json");
 
             if (!File.Exists(appSettingsPath))
             {
                 return new SaveSensorConfigResponse
                 {
                     Success = false,
-                    ErrorMessage = "appsettings.json not found"
+                    ErrorMessage = "appsettings.json not found and could not be created"
                 };
             }
 
