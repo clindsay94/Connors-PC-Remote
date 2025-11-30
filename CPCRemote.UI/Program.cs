@@ -4,18 +4,21 @@ using Microsoft.UI.Xaml;
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 
 namespace CPCRemote.UI;
 
-public static class Program
+public static partial class Program
 {
-    [DllImport("Microsoft.ui.xaml.dll")]
-    private static extern void XamlCheckProcessRequirements();
+    // DPI Awareness constants (WACK Req 26 compliance)
+    private const int DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = -4;
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern int GetCurrentPackageFullName(ref int packageFullNameLength, StringBuilder? packageFullName);
+    [LibraryImport("Microsoft.ui.xaml.dll")]
+    private static partial void XamlCheckProcessRequirements();
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool SetProcessDpiAwarenessContext(nint value);
 
     [STAThread]
     static void Main(string[] args)
@@ -25,7 +28,11 @@ public static class Program
         
         try
         {
-            // Initialize COM wrappers FIRST - required for WinRT interop
+            // Set DPI awareness FIRST before any UI operations (WACK Req 26)
+            // This ensures the app is properly DPI-aware on high-DPI displays
+            SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+
+            // Initialize COM wrappers - required for WinRT interop
             WinRT.ComWrappersSupport.InitializeComWrappers();
 
             // Check XAML requirements

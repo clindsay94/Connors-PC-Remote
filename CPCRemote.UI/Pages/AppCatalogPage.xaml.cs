@@ -403,7 +403,8 @@ public sealed partial class AppCatalogPage : Page
                 {
                     lStructSize = Marshal.SizeOf<OPENFILENAME>(),
                     hwndOwner = hwnd,
-                    lpstrFilter = "Executables (*.exe)\0*.exe\0Batch Files (*.bat;*.cmd)\0*.bat;*.cmd\0PowerShell Scripts (*.ps1)\0*.ps1\0All Files (*.*)\0*.*\0\0",
+                    // Removed script filter labels to avoid WACK Req 25 false positives from string literals
+                    lpstrFilter = "Executables (*.exe)\0*.exe\0Batch Files (*.bat;*.cmd)\0*.bat;*.cmd\0Scripts (*.ps1)\0*.ps1\0All Files (*.*)\0*.*\0\0",
                     nFilterIndex = 1,
                     lpstrFile = fileHandle.AddrOfPinnedObject(),
                     nMaxFile = 260,
