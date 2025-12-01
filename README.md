@@ -26,11 +26,11 @@ A Windows application for remotely controlling PC power functions via HTTP comma
 - **Modern GUI** — WinUI 3 interface for easy configuration and testing
 - **Secure Authentication** — Bearer token authentication with configurable secrets
 - **App Launcher** — Launch configured applications remotely
-- **HTTPS Support** — Optional TLS encryption with certificate binding
+- ~**HTTPS Support** — Optional TLS encryption with certificate binding~ >[!NOTE] >Coming Soon
 
 ## Architecture
 
-```
+```	
 ┌─────────────────┐     HTTP/HTTPS     ┌──────────────────────┐
 │  Client Device  │ ◄─────────────────► │  CPCRemote.Service   │
 │  (Phone, etc.)  │                     │  (Windows Service)   │
@@ -91,8 +91,8 @@ Without HWiNFO running, the `/stats` endpoint will return empty sensor data, but
 3. Launch "Connor's PC Remote" from the Start menu
 4. Follow the setup wizard to install the service
 
-> [!TIP]
-> You have to manually install my self-signed certificate to the trusted root certificate authority on your PC in order for the MSIX package to install.  
+>[!IMPORTANT]
+>You have to manually install my self-signed certificate to the trusted root certificate authority on your PC in order for the MSIX package to install.  
 
 I am having a nightmare trying to figure out this certificate thing. 
 
