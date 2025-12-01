@@ -90,7 +90,7 @@ Without HWiNFO running, the `/stats` endpoint will return empty sensor data, but
 3. Launch "Connor's PC Remote" from the Start menu
 4. Follow the setup wizard to install the service
 
-[!NOTE] You have to manually install my self-signed certificate to the trusted root certificate authority on your PC in order for the MSIX package to install.  
+[!WARNING] You have to manually install my self-signed certificate to the trusted root certificate authority on your PC in order for the MSIX package to install.  
 I am having a nightmare trying to figure out this certificate thing. 
 
 </details>
