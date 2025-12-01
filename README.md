@@ -93,7 +93,23 @@ Without HWiNFO running, the `/stats` endpoint will return empty sensor data, but
 </details>
 
 <details>
-<summary><strong>Option 2: Manual Installation</strong></summary>
+<summary><strong>Option 2: Standalone / Portable (The "Publish Folder" Way)</strong></summary>
+
+If you prefer not to use the MSIX installer or don't want to install certificates:
+
+1. Download the `publish` folder from the latest release.
+2. **Right-click `CPCRemote.UI.exe` and select "Run as Administrator"**.
+   > *Note: Running as Admin is highly recommended to ensure the app has permission to install the background service.*
+3. Navigate to the **Service Management** tab.
+4. Click **Install Service** (it will automatically find the executable).
+5. Configure your IP/Port and click **Start Service**.
+
+</details>
+
+<details>
+<summary><strong>Option 3: Manual Installation</strong></summary>
+
+You don't even *need* the GUI, the service is all you really need to control your PC from SmartThings (or however you send HTTP requests)
 
 1. Build from source (see [Development](#development))
 2. Install the Windows Service:
@@ -132,10 +148,10 @@ Edit `appsettings.json` in the service directory:
 | `ipAddress` | IP address to bind (`0.0.0.0` for all interfaces) | Required |
 | `port`      | Port number (1-65535)                             | `5005`   |
 | `secret`    | Authentication token (empty = no auth)            | `""`     |
-| `useHttps`  | Enable HTTPS                                      | `false`  |
+| `useHttps`  | Enable HTTPS (coming soon)                        | `false`  |
 
 > [!WARNING]
-> Always set a strong secret (16+ characters) when exposing the service to your network.
+> Always set a strong secret (8+ characters) when exposing the service to your network.
 
 ## Usage
 
