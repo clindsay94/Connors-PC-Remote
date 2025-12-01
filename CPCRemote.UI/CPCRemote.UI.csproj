@@ -9,12 +9,19 @@
 	<ApplicationManifest>app.manifest</ApplicationManifest>
 	<!-- Disable the XAML-generated Main method so we can use our custom Program.cs -->
 	<DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
-	<!-- Disable MSIX packaging for development/debugging -->
+	<!-- 
+	  MSIX Packaging Configuration:
+	  - Debug: No packaging (faster builds)
+	  - Release on CI: No packaging (no certificate available)
+	  - Release locally: MSIX packaging with signing
+	-->
 	<WindowsPackageType Condition="'$(Configuration)' == 'Debug'">None</WindowsPackageType>
-	<WindowsPackageType Condition="'$(Configuration)' == 'Release'">MSIX</WindowsPackageType>
+	<WindowsPackageType Condition="'$(Configuration)' == 'Release' And '$(CI)' == 'true'">None</WindowsPackageType>
+	<WindowsPackageType Condition="'$(Configuration)' == 'Release' And '$(CI)' != 'true'">MSIX</WindowsPackageType>
 	<AppxManifest Condition="'$(WindowsPackageType)' == 'MSIX'">Package.appxmanifest</AppxManifest>
 	<AppxPackageSigningEnabled Condition="'$(WindowsPackageType)' == 'MSIX'">true</AppxPackageSigningEnabled>
-	 <EnableMsixTooling>true</EnableMsixTooling>
+	<AppxPackageSigningEnabled Condition="'$(WindowsPackageType)' != 'MSIX'">false</AppxPackageSigningEnabled>
+	<EnableMsixTooling>true</EnableMsixTooling>
 		  <!-- Add these lines after AppxPackageSigningEnabled -->
 	<PackageCertificatePassword>9979519</PackageCertificatePassword>
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
