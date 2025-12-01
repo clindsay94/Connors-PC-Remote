@@ -130,17 +130,71 @@ public static class ConfigurationPaths
         
         if (!File.Exists(targetPath))
         {
-            // Try to copy from application directory (bundled default)
-            string sourcePath = Path.Combine(ApplicationDirectory, fileName);
-            if (File.Exists(sourcePath))
+            // Try to copy from various possible source locations
+            string[] possibleSourcePaths =
+            [
+                // Direct in application directory
+                Path.Combine(ApplicationDirectory, fileName),
+                // In ServiceBinaries subfolder (MSIX UI deployment)
+                Path.Combine(ApplicationDirectory, "ServiceBinaries", fileName),
+                // Parent directory (if service is in ServiceBinaries)
+                Path.Combine(ApplicationDirectory, "..", fileName),
+            ];
+
+            foreach (string sourcePath in possibleSourcePaths)
             {
+                string normalizedPath = Path.GetFullPath(sourcePath);
+                if (File.Exists(normalizedPath))
+                {
+                    try
+                    {
+                        File.Copy(normalizedPath, targetPath, overwrite: false);
+                        break;
+                    }
+                    catch (IOException)
+                    {
+                        // File was created by another process, that's fine
+                        break;
+                    }
+                }
+            }
+
+            // If still doesn't exist, create a minimal default config
+            if (!File.Exists(targetPath))
+            {
+                string defaultConfig = """
+                    {
+                      "rsm": {
+                        "ipAddress": "0.0.0.0",
+                        "port": 5005,
+                        "secret": "",
+                        "useHttps": false,
+                        "certificateThumbprint": ""
+                      },
+                      "wol": {
+                        "macAddress": "",
+                        "broadcastAddress": "255.255.255.255",
+                        "port": 9
+                      },
+                      "sensors": {
+                        "cpuLoad": { "sensorName": "CPU", "labelPattern": "Total" },
+                        "memoryLoad": { "sensorName": "Memory", "labelPattern": "Memory" },
+                        "cpuTemp": { "sensorName": "CPU", "labelPattern": "Core" },
+                        "gpuTemp": { "sensorName": "GPU", "labelPattern": "Temperature" },
+                        "customSensors": []
+                      },
+                      "apps": {
+                        "catalogPath": ""
+                      }
+                    }
+                    """;
                 try
                 {
-                    File.Copy(sourcePath, targetPath, overwrite: false);
+                    File.WriteAllText(targetPath, defaultConfig);
                 }
-                catch (IOException)
+                catch
                 {
-                    // File was created by another process, that's fine
+                    // If we can't write, return the path anyway - caller will handle the error
                 }
             }
         }

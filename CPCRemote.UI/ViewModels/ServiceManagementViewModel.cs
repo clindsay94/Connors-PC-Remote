@@ -660,63 +660,14 @@ namespace CPCRemote.UI.ViewModels
 
         private string? FindServiceConfigPath()
         {
-            // For MSIX deployments, always use the writable ProgramData location
+            // Always use the writable ProgramData location for configuration
+            // This works for both MSIX and unpackaged deployments
             // The ConfigurationPaths helper handles copying defaults from the app directory
-            if (CPCRemote.Core.Helpers.ConfigurationPaths.IsPackagedApp())
-            {
-                return CPCRemote.Core.Helpers.ConfigurationPaths.EnsureServiceConfigExists(ConfigFileName);
-            }
-
-            // For unpackaged deployments, try to find config next to service executable first
-            try
-            {
-                string exePath = GetServiceExecutablePath();
-                if (!string.IsNullOrEmpty(exePath))
-                {
-                    string? directory = System.IO.Path.GetDirectoryName(exePath);
-                    if (!string.IsNullOrEmpty(directory))
-                    {
-                        string configPath = System.IO.Path.Combine(directory, ConfigFileName);
-                        if (System.IO.File.Exists(configPath))
-                        {
-                            return configPath;
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                // Service not found or access denied
-            }
-
-            // Fallback: Search relative to the executing assembly
-            string? baseDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            if (string.IsNullOrEmpty(baseDir))
-            {
-                return null;
-            }
-
-            string[] searchPaths =
-            [
-                // Unified bin structure: bin\{Configuration}\CPCRemote.Service\
-                System.IO.Path.Combine(baseDir, "..", "CPCRemote.Service", ConfigFileName),
-                // ServiceBinaries folder
-                System.IO.Path.Combine(baseDir, "ServiceBinaries", ConfigFileName),
-                // Legacy structure
-                System.IO.Path.Combine(baseDir, "..", "..", "..", "..", "CPCRemote.Service", ConfigFileName),
-                System.IO.Path.Combine(baseDir, "..", "CPCRemote.Service", ConfigFileName),
-            ];
-
-            foreach (string path in searchPaths)
-            {
-                string fullPath = System.IO.Path.GetFullPath(path);
-                if (System.IO.File.Exists(fullPath))
-                {
-                    return fullPath;
-                }
-            }
-
-            return null;
+            string configPath = CPCRemote.Core.Helpers.ConfigurationPaths.EnsureServiceConfigExists(ConfigFileName);
+            _logger.LogInformation("Using service config path: {Path} (IsPackagedApp: {IsPackaged})", 
+                configPath, 
+                CPCRemote.Core.Helpers.ConfigurationPaths.IsPackagedApp());
+            return configPath;
         }
 
         private string? FindServiceExecutable()
