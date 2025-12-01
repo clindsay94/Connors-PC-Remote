@@ -106,10 +106,10 @@ READ THIS CAREFULLY. \> This application powers a SmartThings Edge Driver writte
 Before PRs, verify auth works both ways:
 
 \# Header Auth  
-Invoke-WebRequest \-Uri "http://localhost:5005/shutdown" \-Headers @{"Authorization"="Bearer your-secret"}
+Invoke-WebRequest \-Uri "http://ipaddress:5005/shutdown" \-Headers @{"Authorization"="Bearer your-secret"}
 
 \# URL Auth (The SmartThings Way)  
-Invoke-WebRequest \-Uri "http://localhost:5005/your-secret/shutdown"
+Invoke-WebRequest \-Uri "http://ipaddress:5005/your-secret/shutdown"
 
 ## **How to Contribute**
 
