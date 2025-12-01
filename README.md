@@ -5,8 +5,9 @@
 
 # Connor's PC Remote
 
-_Remote PC power management via HTTP_
+_Remote PC power management via HTTP Request_
 
+[![CI](https://github.com/clindsay94/Connors-PC-Remote/actions/workflows/ci.yml/badge.svg)](https://github.com/clindsay94/Connors-PC-Remote/actions)
 ![.NET 10](https://img.shields.io/badge/.NET-10-512bd4?style=flat-square&logo=dotnet)
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-0078d4?style=flat-square&logo=windows)
 ![WinUI 3](https://img.shields.io/badge/WinUI-3-blue?style=flat-square)
