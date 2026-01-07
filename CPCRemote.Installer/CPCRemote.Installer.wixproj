@@ -1,0 +1,14 @@
+<Project Sdk="WixToolset.Sdk/6.0.2">
+  <PropertyGroup>
+    <OutputType>Package</OutputType>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <OutputName>CPCRemote</OutputName>
+    <!-- Suppress ICE03 validation errors from .NET runtime files with invalid language IDs -->
+    <SuppressIces>ICE03</SuppressIces>
+  </PropertyGroup>
+
+  <!-- WiX Extension for UI dialogs -->
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" Version="6.0.2" />
+  </ItemGroup>
+</Project>

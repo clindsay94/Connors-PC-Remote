@@ -10,18 +10,11 @@
 	<!-- Disable the XAML-generated Main method so we can use our custom Program.cs -->
 	<DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
 	<!-- 
-	  MSIX Packaging Configuration:
-	  - Debug: No packaging (faster builds)
-	  - Release on CI: No packaging (no certificate available)
-	  - Release locally: MSIX packaging with signing
+	  UNPACKAGED DEPLOYMENT:
+	  WiX Toolset handles distribution. MSIX packaging is disabled.
 	-->
-	<WindowsPackageType Condition="'$(Configuration)' == 'Debug'">None</WindowsPackageType>
-	<WindowsPackageType Condition="'$(Configuration)' == 'Release' And '$(CI)' == 'true'">None</WindowsPackageType>
-	<WindowsPackageType Condition="'$(Configuration)' == 'Release' And '$(CI)' != 'true'">MSIX</WindowsPackageType>
-	<AppxManifest Condition="'$(WindowsPackageType)' == 'MSIX'">Package.appxmanifest</AppxManifest>
-	<AppxPackageSigningEnabled Condition="'$(WindowsPackageType)' == 'MSIX'">true</AppxPackageSigningEnabled>
-	<AppxPackageSigningEnabled Condition="'$(WindowsPackageType)' != 'MSIX'">false</AppxPackageSigningEnabled>
-	<EnableMsixTooling>true</EnableMsixTooling>
+	<WindowsPackageType>None</WindowsPackageType>
+	<EnableMsixTooling>false</EnableMsixTooling>
 		  <!-- Add these lines after AppxPackageSigningEnabled -->
 	<PackageCertificatePassword>9979519</PackageCertificatePassword>
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>

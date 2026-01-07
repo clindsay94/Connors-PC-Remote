@@ -14,6 +14,7 @@
 - **Testing**: NUnit 4.x with Moq
 - **MVVM**: CommunityToolkit.Mvvm
 - **Patterns**: Dependency Injection, Options Pattern, Background Services
+- **Installer**: WiX Toolset v6 (MSI)
 
 ### Solution Structure
 
@@ -32,12 +33,16 @@ CPCRemote.sln
 │   ├── Worker.cs            # BackgroundService with HttpListener
 │   └── Program.cs           # Service host configuration
 │
-├── CPCRemote.UI/            # WinUI 3 desktop application
+├── CPCRemote.UI/            # WinUI 3 desktop application (Unpackaged)
 │   ├── Pages/               # XAML pages
 │   ├── ViewModels/          # MVVM ViewModels (CommunityToolkit.Mvvm)
 │   ├── Services/            # UI-specific services
 │   ├── Helpers/             # UI utilities
 │   └── Converters/          # XAML value converters
+│
+├── CPCRemote.Installer/     # WiX v6 MSI installer
+│   ├── Product.wxs          # Package definition, components, features
+│   └── CPCRemote.Installer.wixproj
 │
 └── CPCRemote.Tests/         # Unit tests (NUnit + Moq)
     ├── *Tests.cs            # Test files follow {ClassName}Tests.cs pattern

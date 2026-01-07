@@ -84,36 +84,48 @@ Without HWiNFO running, the `/stats` endpoint will return empty sensor data, but
 ### Installation
 
 <details open>
-<summary><strong>Option 1: MSIX Package (Recommended)</strong></summary>
+<summary><strong>Option 1: MSI Installer (Recommended)</strong></summary>
+
+1. Download the latest `CPCRemote.msi` from [Releases](https://github.com/clindsay94/Connors-PC-Remote/releases)
+2. Run the installer as Administrator
+3. The installer will:
+   - Install to `C:\Program Files\CPCRemote`
+   - Register and start the Windows Service automatically
+   - Create a Start Menu shortcut
+
+> [!NOTE]
+> The MSI installer is GPO-compatible for enterprise deployment.
+
+</details>
+
+<details>
+<summary><strong>Option 2: Standalone / Portable</strong></summary>
+
+If you prefer not to use the MSI installer:
+
+1. Download the `publish` folder from the latest release
+2. **Right-click `CPCRemote.UI.exe` and select "Run as Administrator"**
+3. Navigate to the **Service Management** tab
+4. Click **Install Service** (it will automatically find the executable)
+5. Configure your IP/Port and click **Start Service**
+
+</details>
+
+<details>
+<summary><strong>Option 3: MSIX Package (Legacy)</strong></summary>
+
+> [!WARNING]
+> MSIX packaging requires certificate trust configuration. The MSI installer is now recommended.
 
 1. Download the latest MSIX package from [Releases](https://github.com/clindsay94/Connors-PC-Remote/releases)
-2. Double-click to install
-3. Launch "Connor's PC Remote" from the Start menu
-4. Follow the setup wizard to install the service
-
->[!IMPORTANT]
->You have to manually install my self-signed certificate to the trusted root certificate authority on your PC in order for the MSIX package to install.  
-
-I am having a nightmare trying to figure out this certificate thing. 
+2. Install the self-signed certificate to Trusted Root Certificate Authorities
+3. Double-click the MSIX to install
+4. Launch "Connor's PC Remote" from the Start menu
 
 </details>
 
 <details>
-<summary><strong>Option 2: Standalone / Portable (The "Publish Folder" Way)</strong></summary>
-
-If you prefer not to use the MSIX installer or don't want to install certificates:
-
-1. Download the `publish` folder from the latest release.
-2. **Right-click `CPCRemote.UI.exe` and select "Run as Administrator"**.
-   > *Note: Running as Admin is highly recommended to ensure the app has permission to install the background service.*
-3. Navigate to the **Service Management** tab.
-4. Click **Install Service** (it will automatically find the executable).
-5. Configure your IP/Port and click **Start Service**.
-
-</details>
-
-<details>
-<summary><strong>Option 3: Manual Installation</strong></summary>
+<summary><strong>Option 4: Manual Installation</strong></summary>
 
 You don't even *need* the GUI, the service is all you really need to control your PC from SmartThings (or however you send HTTP requests)
 

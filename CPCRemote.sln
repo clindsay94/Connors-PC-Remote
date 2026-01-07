@@ -21,6 +21,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CPCRemote.Tests", "CPCRemot
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CPCRemote.Core", "CPCRemote.Core\CPCRemote.Core.csproj", "{500FB467-FD2A-CB60-24C4-380B58EB904B}"
 EndProject
+Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "CPCRemote.Installer", "CPCRemote.Installer\CPCRemote.Installer.wixproj", "{E1F2A3B4-C5D6-7890-ABCD-EF1234567890}"
+	ProjectSection(ProjectDependencies) = postProject
+		{6D44F5C1-D39D-FE7B-C4D9-84D4FCC428EE} = {6D44F5C1-D39D-FE7B-C4D9-84D4FCC428EE}
+		{9EE1AFE0-A040-704F-8561-B4120D6A96B6} = {9EE1AFE0-A040-704F-8561-B4120D6A96B6}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM64 = Debug|ARM64

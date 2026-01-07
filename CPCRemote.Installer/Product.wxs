@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <!-- 
+    CPCRemote Installer (WiX v6)
+    Agent Alpha (The Forge) and Agent Zeta (The Scribe)
+  -->
+
+  <Package Name="Connor's PC Remote"
+           Version="1.0.1.0"
+           Manufacturer="Lindsay Inc"
+           UpgradeCode="A1B2C3D4-E5F6-7890-ABCD-EF1234567890"
+           Scope="perMachine"
+           InstallerVersion="500">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <ui:WixUI Id="WixUI_Minimal" />
+    <Media Id="1" Cabinet="CPCRemote.cab" EmbedCab="yes" CompressionLevel="high" />
+
+    <!-- Feature: Complete Installation -->
+    <Feature Id="Complete" Title="Connor's PC Remote" Level="1">
+      <ComponentGroupRef Id="UIComponents" />
+      <ComponentGroupRef Id="ServiceComponents" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+
+    <!-- Directory Structure -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="CPCRemote">
+        <Directory Id="UIFolder" Name="UI" />
+        <Directory Id="ServiceFolder" Name="Service" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="Connor's PC Remote" />
+    </StandardDirectory>
+
+    <!-- UI Components harvested with Files element -->
+    <ComponentGroup Id="UIComponents" Directory="UIFolder">
+      <Files Include="..\publish\UI\**" />
+    </ComponentGroup>
+
+    <!-- Service Components with Windows Service installation -->
+    <ComponentGroup Id="ServiceComponents" Directory="ServiceFolder">
+      <Files Include="..\publish\Service\**">
+        <Exclude Files="..\publish\Service\CPCRemote.Service.exe" />
+      </Files>
+      <Component Id="ServiceExeComponent" Guid="C3D4E5F6-A7B8-9012-CDEF-345678901234">
+        <File Id="CPCRemoteServiceExe" Source="..\publish\Service\CPCRemote.Service.exe" KeyPath="yes" />
+        <ServiceInstall Id="CPCRemoteService"
+                        Name="CPCRemote.Service"
+                        DisplayName="Connor's PC Remote Service"
+                        Description="Provides remote control capabilities for PC power functions via HTTP."
+                        Type="ownProcess"
+                        Start="auto"
+                        ErrorControl="normal"
+                        Account="LocalSystem" />
+        <ServiceControl Id="StartService"
+                        Name="CPCRemote.Service"
+                        Start="install"
+                        Stop="both"
+                        Remove="uninstall"
+                        Wait="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- Start Menu Shortcut -->
+    <Component Id="StartMenuShortcut" Directory="ApplicationProgramsFolder" Guid="B2C3D4E5-F6A7-8901-BCDE-F23456789012">
+      <Shortcut Id="ApplicationStartMenuShortcut"
+                Name="Connor's PC Remote"
+                Description="Launch Connor's PC Remote"
+                Target="[UIFolder]CPCRemote.UI.exe"
+                WorkingDirectory="UIFolder" />
+      <RemoveFolder Id="CleanUpShortcutFolder" Directory="ApplicationProgramsFolder" On="uninstall" />
+      <RegistryValue Root="HKCU"
+                     Key="Software\LindsayInc\CPCRemote"
+                     Name="installed"
+                     Type="integer"
+                     Value="1"
+                     KeyPath="yes" />
+    </Component>
+
+  </Package>
+</Wix>

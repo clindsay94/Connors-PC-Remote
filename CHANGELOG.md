@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-01-07
+
+### Added
+
+#### WiX Installer (CPCRemote.Installer)
+
+- New WiX Toolset v6 installer project for traditional MSI-based deployment
+- Automated Windows Service installation during MSI install
+- Start Menu shortcut creation
+- Per-machine installation to `Program Files\CPCRemote`
+- Major upgrade support for seamless version updates
+- GPO-compatible MSI for enterprise deployment
+
+### Changed
+
+#### Architecture Shift
+
+- Migrated from MSIX packaging to WiX MSI installer
+- CPCRemote.UI now builds as unpackaged application (`WindowsPackageType=None`)
+- Self-contained deployment (~80 MB MSI) includes full .NET runtime
+
+#### Build Process
+
+- New three-step build process: Publish UI → Publish Service → Build Installer
+- Added `CPCRemote.Installer.wixproj` to solution
+- Simplified csproj with unconditional unpackaged configuration
+
+### Technical Details
+
+- WiX Toolset 6.0.2
+- WixToolset.UI.wixext for minimal UI dialogs
+- ICE03 validation suppressed for .NET runtime files with non-standard language metadata
+
 ## [1.0.1] - 2025-11-29
 
 ### Added
