@@ -48,7 +48,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Build.props') }}
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.wixproj', '**/Directory.Build.props') }}
           restore-keys: |
             ${{ runner.os }}-nuget-
 
@@ -86,4 +86,22 @@ jobs:
           path: "**/TestResults/*.trx"
           retention-days: 7
 
+      # WiX MSI Installer Build
+      - name: Install WiX Toolset
+        run: dotnet tool install --global wix
 
+      - name: Publish UI (self-contained)
+        run: dotnet publish CPCRemote.UI/CPCRemote.UI.csproj -c Release -r win-x64 --self-contained -o publish/UI
+
+      - name: Publish Service (self-contained)
+        run: dotnet publish CPCRemote.Service/CPCRemote.Service.csproj -c Release -r win-x64 --self-contained -o publish/Service
+
+      - name: Build MSI Installer
+        run: dotnet build CPCRemote.Installer/CPCRemote.Installer.wixproj -c Release
+
+      - name: Upload MSI Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: CPCRemote-Installer
+          path: bin/Release/CPCRemote.Installer/CPCRemote.msi
+          retention-days: 30
