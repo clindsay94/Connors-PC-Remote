@@ -110,7 +110,7 @@ The service listens on the address configured in `appsettings.json` (default: `h
 dotnet run --project CPCRemote.UI/CPCRemote.UI.csproj
 ```
 
-Note: The UI project uses `WindowsPackageType=None` in Debug mode for easier development (no MSIX packaging).
+Note: The UI project uses `WindowsPackageType=None` for unpackaged deployment. The WiX MSI installer handles distribution.
 
 ### Configuration
 
@@ -268,15 +268,31 @@ These null-related warnings are treated as errors (Directory.Build.props):
 ```powershell
 # Build Release configuration
 dotnet build CPCRemote.sln --configuration Release
-
-# Publish self-contained Service
-dotnet publish CPCRemote.Service/CPCRemote.Service.csproj -c Release -r win-x64 --self-contained
-
-# Build MSIX package (UI project)
-msbuild CPCRemote.UI/CPCRemote.UI.csproj /p:Configuration=Release /p:Platform=x64 /p:AppxPackageDir="../publish/" /p:GenerateAppxPackageOnBuild=true
 ```
 
-### Service Installation
+### Build MSI Installer
+
+The project uses WiX Toolset v6 for MSI-based deployment.
+
+```powershell
+# 1. Publish UI and Service (self-contained)
+dotnet publish CPCRemote.UI/CPCRemote.UI.csproj -c Release -r win-x64 --self-contained -o publish/UI
+dotnet publish CPCRemote.Service/CPCRemote.Service.csproj -c Release -r win-x64 --self-contained -o publish/Service
+
+# 2. Build the MSI installer
+dotnet build CPCRemote.Installer/CPCRemote.Installer.wixproj -c Release
+
+# Output: bin/Release/CPCRemote.Installer/CPCRemote.msi (~80 MB)
+```
+
+> **Note**: The MSI installer automatically:
+> - Installs to `C:\Program Files\CPCRemote`
+> - Registers and starts the Windows Service
+> - Creates Start Menu shortcuts
+
+### Manual Service Installation
+
+For development or portable deployment without the MSI:
 
 ```powershell
 # Install as Windows Service (run as Administrator)

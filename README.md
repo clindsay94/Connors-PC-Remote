@@ -44,12 +44,13 @@ A Windows application for remotely controlling PC power functions via HTTP comma
                                         └──────────────────────┘
 ```
 
-| Component             | Description                                          |
-| --------------------- | ---------------------------------------------------- |
-| **CPCRemote.Core**    | Shared library with commands, models, and interfaces |
-| **CPCRemote.Service** | Windows Service with HTTP listener and IPC server    |
-| **CPCRemote.UI**      | WinUI 3 management application                       |
-| **CPCRemote.Tests**   | Unit tests (NUnit + Moq)                             |
+| Component                 | Description                                          |
+| ------------------------- | ---------------------------------------------------- |
+| **CPCRemote.Core**        | Shared library with commands, models, and interfaces |
+| **CPCRemote.Service**     | Windows Service with HTTP listener and IPC server    |
+| **CPCRemote.UI**          | WinUI 3 management application                       |
+| **CPCRemote.Installer**   | WiX v6 MSI installer for deployment                  |
+| **CPCRemote.Tests**       | Unit tests (NUnit + Moq)                             |
 
 ## Requirements
 
@@ -241,6 +242,19 @@ dotnet build
 
 # Run tests
 dotnet test
+```
+
+### Build MSI Installer
+
+```powershell
+# 1. Publish UI and Service
+dotnet publish CPCRemote.UI -c Release -r win-x64 --self-contained -o publish/UI
+dotnet publish CPCRemote.Service -c Release -r win-x64 --self-contained -o publish/Service
+
+# 2. Build the MSI
+dotnet build CPCRemote.Installer -c Release
+
+# Output: bin/Release/CPCRemote.Installer/CPCRemote.msi
 ```
 
 ### Run Locally
