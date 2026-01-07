@@ -113,20 +113,7 @@ If you prefer not to use the MSI installer:
 </details>
 
 <details>
-<summary><strong>Option 3: MSIX Package (Legacy)</strong></summary>
-
-> [!WARNING]
-> MSIX packaging requires certificate trust configuration. The MSI installer is now recommended.
-
-1. Download the latest MSIX package from [Releases](https://github.com/clindsay94/Connors-PC-Remote/releases)
-2. Install the self-signed certificate to Trusted Root Certificate Authorities
-3. Double-click the MSIX to install
-4. Launch "Connor's PC Remote" from the Start menu
-
-</details>
-
-<details>
-<summary><strong>Option 4: Manual Installation</strong></summary>
+<summary><strong>Option 3: Manual Installation</strong></summary>
 
 You don't even *need* the GUI, the service is all you really need to control your PC from SmartThings (or however you send HTTP requests)
 
