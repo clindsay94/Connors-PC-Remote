@@ -11,6 +11,10 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest</AnalysisLevel>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    
+    <!-- Enable building Windows-targeted projects on non-Windows CI runners (e.g., Linux).
+         This resolves NETSDK1100 errors during GitHub automatic dependency submission. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <!-- Warnings as errors for critical null-safety issues only:
          CS8602 - Dereference of possibly null reference
          CS8603 - Possible null reference return
