@@ -36,6 +36,18 @@ public static partial class Program
             // Initialize COM wrappers - required for WinRT interop
             WinRT.ComWrappersSupport.InitializeComWrappers();
 
+            // Global exception handlers for background/stowed exceptions
+            AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+            {
+                LogFailure(e.ExceptionObject as Exception, "AppDomain.UnhandledException");
+            };
+
+            TaskScheduler.UnobservedTaskException += (s, e) =>
+            {
+                LogFailure(e.Exception, "TaskScheduler.UnobservedTaskException");
+                e.SetObserved(); // Prevent process termination if possible
+            };
+
             // Check XAML requirements
             XamlCheckProcessRequirements();
 
@@ -49,21 +61,37 @@ public static partial class Program
         }
         catch (Exception ex)
         {
-            // Log fatal startup errors to a file in LocalAppData, as Event Viewer often truncates or hides details
-            try
-            {
-                string localData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CPCRemote");
-                Directory.CreateDirectory(localData);
-                string logPath = Path.Combine(localData, "StartupError.log");
-                
-                string errorMsg = $"[{DateTime.Now}] FATAL CRASH: {ex}\n\nStack Trace:\n{ex.StackTrace}\n\nInner Exception:\n{ex.InnerException}";
-                File.AppendAllText(logPath, errorMsg + "\n--------------------------------------------------\n");
-                
-                Debug.WriteLine($"FATAL STARTUP ERROR: {ex}");
-            }
-            catch { /* Best effort logging */ }
+            LogFailure(ex, "Main Main() Catch");
+            throw; // Re-throw to ensure Windows reports it
+        }
+    }
+
+    /// <summary>
+    /// Writes fatal errors to a log file in %LOCALAPPDATA%\CPCRemote.
+    /// Uses direct file I/O to maximize chance of success during a crash.
+    /// </summary>
+    public static void LogFailure(Exception? ex, string source)
+    {
+        if (ex == null) return;
+
+        try
+        {
+            string localData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CPCRemote");
+            Directory.CreateDirectory(localData);
+            string logPath = Path.Combine(localData, "StartupError.log");
             
-            throw;
+            string errorMsg = $"[{DateTime.Now}] CRITICAL CRASH ({source}): {ex.GetType().Name}\n" +
+                              $"Message: {ex.Message}\n" +
+                              $"Stack Trace:\n{ex.StackTrace}\n" +
+                              $"Inner Exception:\n{ex.InnerException}\n" +
+                              "--------------------------------------------------\n";
+            
+            File.AppendAllText(logPath, errorMsg);
+            Debug.WriteLine($"CRITICAL LOGGED: {errorMsg}");
+        }
+        catch
+        {
+            // If logging fails during a crash, there's nothing else we can do.
         }
     }
 }

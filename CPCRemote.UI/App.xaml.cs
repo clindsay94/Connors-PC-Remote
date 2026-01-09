@@ -50,6 +50,9 @@ namespace CPCRemote.UI
         /// </summary>
         private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
         {
+            // Log to file first
+            Program.LogFailure(e.Exception, "Xaml.UnhandledException");
+            
             Logger?.LogCritical(e.Exception, "Unhandled exception occurred: {Message}", e.Message);
             Debug.WriteLine($"UNHANDLED EXCEPTION: {e.Exception}");
 
