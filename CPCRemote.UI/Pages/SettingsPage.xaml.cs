@@ -421,25 +421,11 @@ public sealed partial class SettingsPage : Page
         if (BackdropComboBox.SelectedItem is ComboBoxItem item && item.Tag is string backdrop)
         {
             _settingsService.Set("Backdrop", backdrop);
-            ApplyBackdrop(backdrop);
+            App.ApplyBackdrop(backdrop);
         }
     }
 
-    private static void ApplyBackdrop(string backdrop)
-    {
-        if (App.CurrentMainWindow is null)
-        {
-            return;
-        }
 
-        App.CurrentMainWindow.SystemBackdrop = backdrop switch
-        {
-            "Mica" => new MicaBackdrop { Kind = MicaKind.Base },
-            "MicaAlt" => new MicaBackdrop { Kind = MicaKind.BaseAlt },
-            "Acrylic" => new DesktopAcrylicBackdrop(),
-            _ => null
-        };
-    }
 
     // ═══════════════════════════════════════════════════════════════════════════
     // TYPOGRAPHY HANDLERS
@@ -660,7 +646,7 @@ public sealed partial class SettingsPage : Page
         App.ApplyTheme("System");
         App.ApplyFontFamily("Segoe UI Variable");
         App.ApplyFontScale(100);
-        ApplyBackdrop("Mica");
+        App.ApplyBackdrop("Mica");
         ApplyAlwaysOnTop(false);
 
         _isInitializing = false;

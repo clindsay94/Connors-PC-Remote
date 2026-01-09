@@ -8,8 +8,8 @@
   -->
 
   <Package Name="Connor's PC Remote"
-           Version="1.1.0.0"
-           Manufacturer="Lindsay Inc"
+           Version="1.2.0.0"
+           Manufacturer="CLindsay94"
            UpgradeCode="A1B2C3D4-E5F6-7890-ABCD-EF1234567890"
            Scope="perMachine"
            InstallerVersion="500">
@@ -76,7 +76,7 @@
                 WorkingDirectory="UIFolder" />
       <RemoveFolder Id="CleanUpShortcutFolder" Directory="ApplicationProgramsFolder" On="uninstall" />
       <RegistryValue Root="HKCU"
-                     Key="Software\LindsayInc\CPCRemote"
+                     Key="Software\CLindsay94\CPCRemote"
                      Name="installed"
                      Type="integer"
                      Value="1"

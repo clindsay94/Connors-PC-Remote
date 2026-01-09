@@ -27,7 +27,8 @@
 	<PlatformTarget>x64</PlatformTarget>
 	<!-- Enable AssemblyInfo generation to respect Directory.Build.props version (1.1.0) -->
 	<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-	<Company>Lindsay Inc</Company>
+	<Company>CLindsay94</Company>
+	<ApplicationIcon>CPCRemote.ico</ApplicationIcon>
 	<NoWarn>$(NoWarn);CA1416</NoWarn>
 	<!-- 
 	  Self-contained deployment includes SDK runtime in output.

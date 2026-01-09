@@ -49,9 +49,8 @@ namespace CPCRemote.UI
                 throw;
             }
 
-            // Safely initialize the system backdrop (Mica) in code-behind
-            // This prevents XamlParseException on unsupported OS versions
-            TrySetSystemBackdrop();
+            // Set the window icon for taskbar/title bar (unpackaged apps need this)
+            TrySetWindowIcon();
             
             // Navigation moved to PerformInitialNavigation() method
             // Called from App.OnLaunched after window activation and service configuration
@@ -61,32 +60,36 @@ namespace CPCRemote.UI
         }
 
         /// <summary>
-        /// Attempts to set the Mica system backdrop if supported.
-        /// graceful fallback to solid color on failure/unsupported OS.
+        /// Sets the window icon for unpackaged deployment.
+        /// Uses AppWindow API to set the icon from assets.
         /// </summary>
-        private void TrySetSystemBackdrop()
+        private void TrySetWindowIcon()
         {
             try
             {
-                if (Microsoft.UI.Composition.SystemBackdrops.MicaController.IsSupported())
+                var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+                var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
+                var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
+                
+                // Use the 256px target size icon for best quality
+                string iconPath = System.IO.Path.Combine(
+                    AppContext.BaseDirectory, 
+                    "Assets", 
+                    "Square44x44Logo.targetsize-256.png");
+                
+                if (System.IO.File.Exists(iconPath))
                 {
-                    this.SystemBackdrop = new Microsoft.UI.Xaml.Media.MicaBackdrop();
-                    Debug.WriteLine("Mica backdrop enabled.");
-                }
-                else if (Microsoft.UI.Composition.SystemBackdrops.DesktopAcrylicController.IsSupported())
-                {
-                    this.SystemBackdrop = new Microsoft.UI.Xaml.Media.DesktopAcrylicBackdrop();
-                    Debug.WriteLine("DesktopAcrylic backdrop enabled.");
+                    appWindow.SetIcon(iconPath);
+                    Debug.WriteLine($"Window icon set from: {iconPath}");
                 }
                 else
                 {
-                   Debug.WriteLine("System backdrop not supported. Using default background.");
+                    Debug.WriteLine($"Icon not found at: {iconPath}");
                 }
             }
             catch (Exception ex)
             {
-                Program.LogFailure(ex, "Mica Initialization");
-                Debug.WriteLine($"Failed to set SystemBackdrop: {ex}");
+                Debug.WriteLine($"Failed to set window icon: {ex.Message}");
             }
         }
 

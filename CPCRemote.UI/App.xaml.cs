@@ -154,7 +154,7 @@ namespace CPCRemote.UI
         }
 
         /// <summary>
-        /// Applies saved settings (theme, font, etc.) on startup.
+        /// Applies saved settings (theme, font, backdrop, etc.) on startup.
         /// </summary>
         private static void ApplySavedSettings()
         {
@@ -166,6 +166,10 @@ namespace CPCRemote.UI
                 string theme = settings.Get("AppTheme", "System");
                 ApplyTheme(theme);
 
+                // Apply backdrop (default to Acrylic as user preference)
+                string backdrop = settings.Get("Backdrop", "Acrylic");
+                ApplyBackdrop(backdrop);
+
                 // Apply font family
                 string fontFamily = settings.Get("FontFamily", "Segoe UI Variable");
                 ApplyFontFamily(fontFamily);
@@ -174,7 +178,8 @@ namespace CPCRemote.UI
                 int fontScale = settings.Get("FontSizeScale", 100);
                 ApplyFontScale(fontScale);
 
-                Logger?.LogInformation("Applied saved settings: Theme={Theme}, Font={Font}, Scale={Scale}%", theme, fontFamily, fontScale);
+                Logger?.LogInformation("Applied saved settings: Theme={Theme}, Backdrop={Backdrop}, Font={Font}, Scale={Scale}%", 
+                    theme, backdrop, fontFamily, fontScale);
             }
             catch (Exception ex)
             {
@@ -195,6 +200,34 @@ namespace CPCRemote.UI
                     "Dark" => ElementTheme.Dark,
                     _ => ElementTheme.Default
                 };
+            }
+        }
+
+        /// <summary>
+        /// Applies the specified backdrop material to the main window.
+        /// Supports Mica, MicaAlt, Acrylic, and None.
+        /// </summary>
+        public static void ApplyBackdrop(string backdrop)
+        {
+            if (CurrentMainWindow is null)
+            {
+                return;
+            }
+
+            try
+            {
+                CurrentMainWindow.SystemBackdrop = backdrop switch
+                {
+                    "Mica" => new Microsoft.UI.Xaml.Media.MicaBackdrop { Kind = Microsoft.UI.Composition.SystemBackdrops.MicaKind.Base },
+                    "MicaAlt" => new Microsoft.UI.Xaml.Media.MicaBackdrop { Kind = Microsoft.UI.Composition.SystemBackdrops.MicaKind.BaseAlt },
+                    "Acrylic" => new Microsoft.UI.Xaml.Media.DesktopAcrylicBackdrop(),
+                    _ => null
+                };
+                Logger?.LogDebug("Applied backdrop: {Backdrop}", backdrop);
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogWarning(ex, "Failed to apply backdrop: {Backdrop}", backdrop);
             }
         }
 
