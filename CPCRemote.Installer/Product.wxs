@@ -38,9 +38,9 @@
       <Directory Id="ApplicationProgramsFolder" Name="Connor's PC Remote" />
     </StandardDirectory>
 
-    <!-- UI Components harvested with Files element -->
+    <!-- UI Components from BUILD output (not publish) - publish is missing XBF files -->
     <ComponentGroup Id="UIComponents" Directory="UIFolder">
-      <Files Include="..\publish\UI\**" />
+      <Files Include="..\bin\Release\CPCRemote.UI\**" />
     </ComponentGroup>
 
     <!-- Service Components with Windows Service installation -->

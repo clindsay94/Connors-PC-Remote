@@ -1,11 +1,9 @@
-<Window
-    x:Class="CPCRemote.UI.MainWindow"
+<Window x:Class="CPCRemote.UI.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
-
 
     <Grid>
         <NavigationView x:Name="NavView"
@@ -18,35 +16,28 @@
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Dashboard" Tag="DashboardPage">
                     <NavigationViewItem.Icon>
-                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE80F;"/>
+                        <SymbolIcon Symbol="Home"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Content="Quick Actions" Tag="QuickActionsPage">
                     <NavigationViewItem.Icon>
-                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE7E8;"/>
+                        <SymbolIcon Symbol="Play"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Content="App Catalog" Tag="AppCatalogPage">
                     <NavigationViewItem.Icon>
-                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE74C;"/>
+                        <SymbolIcon Symbol="AllApps"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <!-- Item 14: Hidden until scheduling feature is implemented
-                <NavigationViewItem Content="Scheduled Tasks" Tag="ScheduledTasksPage">
-                    <NavigationViewItem.Icon>
-                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE787;"/>
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
-                -->
                 <NavigationViewItem Content="Service Management" Tag="ServiceManagementPage">
                     <NavigationViewItem.Icon>
-                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE7EF;"/>
+                        <SymbolIcon Symbol="Manage"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItemSeparator/>
                 <NavigationViewItem Content="Settings" Tag="SettingsPage">
                     <NavigationViewItem.Icon>
-                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE713;"/>
+                        <SymbolIcon Symbol="Setting"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>

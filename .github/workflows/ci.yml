@@ -90,8 +90,9 @@ jobs:
       - name: Install WiX Toolset
         run: dotnet tool install --global wix
 
-      - name: Publish UI (self-contained)
-        run: dotnet publish CPCRemote.UI/CPCRemote.UI.csproj -c Release -r win-x64 --self-contained -o publish/UI
+      # IMPORTANT: UI uses 'build' not 'publish' because publish is missing XBF (compiled XAML) files
+      - name: Build UI (self-contained)
+        run: dotnet build CPCRemote.UI/CPCRemote.UI.csproj -c Release -r win-x64
 
       - name: Publish Service (self-contained)
         run: dotnet publish CPCRemote.Service/CPCRemote.Service.csproj -c Release -r win-x64 --self-contained -o publish/Service

@@ -13,7 +13,41 @@ namespace CPCRemote.UI
     {
         public MainWindow()
         {
-            this.InitializeComponent();
+            try
+            {
+                this.InitializeComponent();
+            }
+            catch (Microsoft.UI.Xaml.Markup.XamlParseException ex)
+            {
+                // Enhanced diagnostic logging for XamlParseException
+                var errorBuilder = new System.Text.StringBuilder();
+                errorBuilder.AppendLine($"XamlParseException Details:");
+                errorBuilder.AppendLine($"Message: {ex.Message}");
+                errorBuilder.AppendLine($"HResult: 0x{ex.HResult:X8}");
+                errorBuilder.AppendLine($"Source: {ex.Source}");
+                
+                // Check Data dictionary for additional info
+                if (ex.Data != null && ex.Data.Count > 0)
+                {
+                    errorBuilder.AppendLine("Data Dictionary:");
+                    foreach (var key in ex.Data.Keys)
+                    {
+                        errorBuilder.AppendLine($"  {key}: {ex.Data[key]}");
+                    }
+                }
+                
+                if (ex.InnerException != null)
+                {
+                    errorBuilder.AppendLine($"Inner Exception: {ex.InnerException.GetType().Name}");
+                    errorBuilder.AppendLine($"Inner Message: {ex.InnerException.Message}");
+                    errorBuilder.AppendLine($"Inner HResult: 0x{ex.InnerException.HResult:X8}");
+                }
+                
+                errorBuilder.AppendLine($"Stack Trace: {ex.StackTrace}");
+                
+                Program.LogFailure(new Exception(errorBuilder.ToString(), ex), "XamlParse.Enhanced");
+                throw;
+            }
 
             // Safely initialize the system backdrop (Mica) in code-behind
             // This prevents XamlParseException on unsupported OS versions

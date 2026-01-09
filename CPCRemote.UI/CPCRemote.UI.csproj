@@ -37,6 +37,8 @@
 	-->
 	<WindowsAppSDKSelfContained Condition="'$(StoreSubmission)' != 'true'">true</WindowsAppSDKSelfContained>
 	<WindowsAppSDKSelfContained Condition="'$(StoreSubmission)' == 'true'">false</WindowsAppSDKSelfContained>
+	<!-- Also make .NET runtime self-contained (bundled with app) -->
+	<SelfContained Condition="'$(StoreSubmission)' != 'true'">true</SelfContained>
 	<!-- LangVersion preview required for partial property support with CommunityToolkit.Mvvm -->
 	<LangVersion>preview</LangVersion>
 	<StartupObject>CPCRemote.UI.Program</StartupObject>
