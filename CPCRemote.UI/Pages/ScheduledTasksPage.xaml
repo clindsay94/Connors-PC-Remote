@@ -15,7 +15,7 @@
         </Grid.ChildrenTransitions>
         
         <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
-            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE787;" FontSize="48" HorizontalAlignment="Center" />
+            <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE787;" FontSize="48" HorizontalAlignment="Center" />
             <TextBlock Text="Scheduled Tasks" Style="{ThemeResource TitleTextBlockStyle}" HorizontalAlignment="Center" />
             <TextBlock Text="Schedule automatic shutdown, restart, or other power management tasks." 
                        Style="{ThemeResource BodyTextBlockStyle}" 

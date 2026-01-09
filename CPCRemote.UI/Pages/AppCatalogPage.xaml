@@ -138,7 +138,7 @@
                     HorizontalAlignment="Center" 
                     VerticalAlignment="Center"
                     Spacing="16">
-            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE74C;" FontSize="48" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+            <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE74C;" FontSize="48" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
             <TextBlock Text="No apps configured" Style="{StaticResource SubtitleTextBlockStyle}" HorizontalAlignment="Center"/>
             <TextBlock Text="Add an app to get started" Foreground="{ThemeResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
             <Button Content="Add First App" Style="{StaticResource AccentButtonStyle}" Click="AddButton_Click"/>
