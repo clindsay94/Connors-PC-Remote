@@ -16,6 +16,7 @@
 
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
     <ui:WixUI Id="WixUI_Minimal" />
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
     <Media Id="1" Cabinet="CPCRemote.cab" EmbedCab="yes" CompressionLevel="high" />
 
     <!-- Feature: Complete Installation -->

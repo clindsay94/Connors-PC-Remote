@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -48,7 +49,20 @@ public static partial class Program
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"FATAL STARTUP ERROR: {ex}");
+            // Log fatal startup errors to a file in LocalAppData, as Event Viewer often truncates or hides details
+            try
+            {
+                string localData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CPCRemote");
+                Directory.CreateDirectory(localData);
+                string logPath = Path.Combine(localData, "StartupError.log");
+                
+                string errorMsg = $"[{DateTime.Now}] FATAL CRASH: {ex}\n\nStack Trace:\n{ex.StackTrace}\n\nInner Exception:\n{ex.InnerException}";
+                File.AppendAllText(logPath, errorMsg + "\n--------------------------------------------------\n");
+                
+                Debug.WriteLine($"FATAL STARTUP ERROR: {ex}");
+            }
+            catch { /* Best effort logging */ }
+            
             throw;
         }
     }
