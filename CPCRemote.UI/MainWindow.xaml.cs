@@ -14,11 +14,46 @@ namespace CPCRemote.UI
         public MainWindow()
         {
             this.InitializeComponent();
+
+            // Safely initialize the system backdrop (Mica) in code-behind
+            // This prevents XamlParseException on unsupported OS versions
+            TrySetSystemBackdrop();
+            
             // Navigation moved to PerformInitialNavigation() method
             // Called from App.OnLaunched after window activation and service configuration
             
             // Wire up navigation failed handler
             ContentFrame.NavigationFailed += ContentFrame_NavigationFailed;
+        }
+
+        /// <summary>
+        /// Attempts to set the Mica system backdrop if supported.
+        /// graceful fallback to solid color on failure/unsupported OS.
+        /// </summary>
+        private void TrySetSystemBackdrop()
+        {
+            try
+            {
+                if (Microsoft.UI.Composition.SystemBackdrops.MicaController.IsSupported())
+                {
+                    this.SystemBackdrop = new Microsoft.UI.Xaml.Media.MicaBackdrop();
+                    Debug.WriteLine("Mica backdrop enabled.");
+                }
+                else if (Microsoft.UI.Composition.SystemBackdrops.DesktopAcrylicController.IsSupported())
+                {
+                    this.SystemBackdrop = new Microsoft.UI.Xaml.Media.DesktopAcrylicBackdrop();
+                    Debug.WriteLine("DesktopAcrylic backdrop enabled.");
+                }
+                else
+                {
+                   Debug.WriteLine("System backdrop not supported. Using default background.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Program.LogFailure(ex, "Mica Initialization");
+                Debug.WriteLine($"Failed to set SystemBackdrop: {ex}");
+            }
         }
 
         private void ContentFrame_NavigationFailed(object sender, NavigationFailedEventArgs e)
