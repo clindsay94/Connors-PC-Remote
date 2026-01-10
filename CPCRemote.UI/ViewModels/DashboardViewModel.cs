@@ -1,6 +1,7 @@
 namespace CPCRemote.UI.ViewModels;
 
 using System;
+using System.Collections.ObjectModel;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,6 +13,7 @@ using CPCRemote.UI.Services;
 using CPCRemote.UI.Strings;
 
 using Microsoft.Extensions.Logging;
+using Microsoft.UI.Dispatching;
 
 /// <summary>
 /// ViewModel for the Dashboard page displaying live hardware stats and service status.
@@ -21,6 +23,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
     private readonly IPipeClient _pipeClient;
     private readonly ILogger<DashboardViewModel> _logger;
     private readonly SettingsService _settingsService;
+    private readonly DispatcherQueue _dispatcherQueue;
     private CancellationTokenSource? _pollingCts;
     private bool _isDisposed;
 
@@ -229,10 +232,23 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         _pipeClient = pipeClient;
         _logger = logger;
         _settingsService = settingsService;
+        _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
         // Load saved polling interval
         PollingIntervalSeconds = _settingsService.Get(nameof(PollingIntervalSeconds), 5);
     }
+
+    /// <summary>
+    /// Gets the available polling interval options.
+    /// </summary>
+    public ObservableCollection<PollingIntervalOption> PollingIntervalOptions { get; } =
+    [
+        new("1s", 1),
+        new("2s", 2),
+        new("5s", 5),
+        new("10s", 10),
+        new("30s", 30)
+    ];
 
     /// <summary>
     /// Starts polling for stats updates.
@@ -318,8 +334,11 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
             return;
         }
 
-        IsLoading = true;
-        StatusMessage = Resources.Dashboard_ConnectingToService;
+        RunOnUIThread(() =>
+        {
+            IsLoading = true;
+            StatusMessage = Resources.Dashboard_ConnectingToService;
+        });
 
         try
         {
@@ -329,15 +348,16 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
                 bool connected = await _pipeClient.ConnectAsync(IpcConstants.DefaultConnectTimeout, cancellationToken).ConfigureAwait(false);
                 if (!connected)
                 {
-                    IsServiceConnected = false;
-                    StatusMessage = Resources.Dashboard_CannotConnect;
-                    ClearStats();
+                    RunOnUIThread(() =>
+                    {
+                        IsServiceConnected = false;
+                        StatusMessage = Resources.Dashboard_CannotConnect;
+                        ClearStats();
+                    });
 
                     return;
                 }
             }
-
-            IsServiceConnected = true;
 
             // Fetch stats
             var statsResponse = await _pipeClient.SendRequestAsync<GetStatsResponse>(
@@ -345,70 +365,76 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
                 IpcConstants.DefaultTimeout,
                 cancellationToken).ConfigureAwait(false);
 
-            if (statsResponse.Success)
-            {
-                // CPU Stats
-                if (statsResponse.Cpu is not null)
-                {
-                    CpuUtility = statsResponse.Cpu.Utility;
-                    CpuTemp = statsResponse.Cpu.Temperature;
-                    CpuDieAvgTemp = statsResponse.Cpu.DieAvgTemp;
-                    CpuIodHotspot = statsResponse.Cpu.IodHotspot;
-                    CpuPackagePower = statsResponse.Cpu.PackagePower;
-                    CpuPpt = statsResponse.Cpu.Ppt;
-                    CpuCoreClock = statsResponse.Cpu.CoreClock;
-                    CpuEffectiveClock = statsResponse.Cpu.EffectiveClock;
-                    CpuCoreEffectiveClocks = statsResponse.Cpu.CoreEffectiveClocks;
-                }
-
-                // Memory Stats
-                if (statsResponse.Memory is not null)
-                {
-                    MemoryLoad = statsResponse.Memory.Load;
-                    DimmTemps = statsResponse.Memory.DimmTemps;
-                }
-
-                // GPU Stats
-                if (statsResponse.Gpu is not null)
-                {
-                    GpuTemp = statsResponse.Gpu.Temperature;
-                    GpuMemJunctionTemp = statsResponse.Gpu.MemJunctionTemp;
-                    GpuPower = statsResponse.Gpu.Power;
-                    GpuClock = statsResponse.Gpu.Clock;
-                    GpuEffectiveClock = statsResponse.Gpu.EffectiveClock;
-                    GpuMemoryUsage = statsResponse.Gpu.MemoryUsage;
-                    GpuCoreLoad = statsResponse.Gpu.CoreLoad;
-                }
-
-                // Motherboard Stats
-                if (statsResponse.Motherboard is not null)
-                {
-                    Vcore = statsResponse.Motherboard.Vcore;
-                    Vsoc = statsResponse.Motherboard.Vsoc;
-                }
-            }
-
             // Fetch service status
             var statusResponse = await _pipeClient.SendRequestAsync<ServiceStatusResponse>(
                 new ServiceStatusRequest(),
                 IpcConstants.DefaultTimeout,
                 cancellationToken).ConfigureAwait(false);
 
-            if (statusResponse.Success)
+            // Marshal all UI updates to the UI thread
+            RunOnUIThread(() =>
             {
-                ServiceVersion = statusResponse.Version;
-                HttpListenerAddress = statusResponse.HttpListenerAddress;
-                IsHttpListening = statusResponse.IsListening;
+                IsServiceConnected = true;
 
-                TimeSpan uptime = TimeSpan.FromSeconds(statusResponse.UptimeSeconds);
-                ServiceUptime = uptime.TotalHours >= 1
-                    ? $"{(int)uptime.TotalHours}h {uptime.Minutes}m {uptime.Seconds}s"
-                    : uptime.TotalMinutes >= 1
-                        ? $"{uptime.Minutes}m {uptime.Seconds}s"
-                        : $"{uptime.Seconds}s";
-            }
+                if (statsResponse.Success)
+                {
+                    // CPU Stats
+                    if (statsResponse.Cpu is not null)
+                    {
+                        CpuUtility = statsResponse.Cpu.Utility;
+                        CpuTemp = statsResponse.Cpu.Temperature;
+                        CpuDieAvgTemp = statsResponse.Cpu.DieAvgTemp;
+                        CpuIodHotspot = statsResponse.Cpu.IodHotspot;
+                        CpuPackagePower = statsResponse.Cpu.PackagePower;
+                        CpuPpt = statsResponse.Cpu.Ppt;
+                        CpuCoreClock = statsResponse.Cpu.CoreClock;
+                        CpuEffectiveClock = statsResponse.Cpu.EffectiveClock;
+                        CpuCoreEffectiveClocks = statsResponse.Cpu.CoreEffectiveClocks;
+                    }
 
-            StatusMessage = string.Format(Resources.Dashboard_LastUpdated, DateTime.Now.ToString("HH:mm:ss"));
+                    // Memory Stats
+                    if (statsResponse.Memory is not null)
+                    {
+                        MemoryLoad = statsResponse.Memory.Load;
+                        DimmTemps = statsResponse.Memory.DimmTemps;
+                    }
+
+                    // GPU Stats
+                    if (statsResponse.Gpu is not null)
+                    {
+                        GpuTemp = statsResponse.Gpu.Temperature;
+                        GpuMemJunctionTemp = statsResponse.Gpu.MemJunctionTemp;
+                        GpuPower = statsResponse.Gpu.Power;
+                        GpuClock = statsResponse.Gpu.Clock;
+                        GpuEffectiveClock = statsResponse.Gpu.EffectiveClock;
+                        GpuMemoryUsage = statsResponse.Gpu.MemoryUsage;
+                        GpuCoreLoad = statsResponse.Gpu.CoreLoad;
+                    }
+
+                    // Motherboard Stats
+                    if (statsResponse.Motherboard is not null)
+                    {
+                        Vcore = statsResponse.Motherboard.Vcore;
+                        Vsoc = statsResponse.Motherboard.Vsoc;
+                    }
+                }
+
+                if (statusResponse.Success)
+                {
+                    ServiceVersion = statusResponse.Version;
+                    HttpListenerAddress = statusResponse.HttpListenerAddress;
+                    IsHttpListening = statusResponse.IsListening;
+
+                    TimeSpan uptime = TimeSpan.FromSeconds(statusResponse.UptimeSeconds);
+                    ServiceUptime = uptime.TotalHours >= 1
+                        ? $"{(int)uptime.TotalHours}h {uptime.Minutes}m {uptime.Seconds}s"
+                        : uptime.TotalMinutes >= 1
+                            ? $"{uptime.Minutes}m {uptime.Seconds}s"
+                            : $"{uptime.Seconds}s";
+                }
+
+                StatusMessage = string.Format(Resources.Dashboard_LastUpdated, DateTime.Now.ToString("HH:mm:ss"));
+            });
         }
         catch (OperationCanceledException)
         {
@@ -416,23 +442,26 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         }
         catch (InvalidOperationException ex)
         {
-            IsServiceConnected = false;
-            StatusMessage = ex.Message;
+            RunOnUIThread(() =>
+            {
+                IsServiceConnected = false;
+                StatusMessage = ex.Message;
+            });
             _logger.LogWarning(ex, "IPC connection error while fetching stats.");
         }
         catch (IpcException ex)
         {
-            StatusMessage = string.Format(Resources.Dashboard_ServiceError, ex.Message);
+            RunOnUIThread(() => StatusMessage = string.Format(Resources.Dashboard_ServiceError, ex.Message));
             _logger.LogError(ex, "IPC error while fetching stats.");
         }
         catch (Exception ex)
         {
-            StatusMessage = $"{Resources.Error}: {ex.Message}";
+            RunOnUIThread(() => StatusMessage = $"{Resources.Error}: {ex.Message}");
             _logger.LogError(ex, "Unexpected error while fetching stats.");
         }
         finally
         {
-            IsLoading = false;
+            RunOnUIThread(() => IsLoading = false);
         }
     }
 
@@ -471,6 +500,21 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         ServiceUptime = null;
         HttpListenerAddress = null;
         IsHttpListening = false;
+    }
+
+    /// <summary>
+    /// Marshals an action to the UI thread if not already on it.
+    /// </summary>
+    private void RunOnUIThread(DispatcherQueueHandler action)
+    {
+        if (_dispatcherQueue.HasThreadAccess)
+        {
+            action();
+        }
+        else
+        {
+            _dispatcherQueue.TryEnqueue(action);
+        }
     }
 
     /// <inheritdoc />

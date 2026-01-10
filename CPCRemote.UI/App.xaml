@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:CPCRemote.UI"
     xmlns:converters="using:CPCRemote.UI.Converters"
+    xmlns:helpers="using:CPCRemote.UI.Helpers"
     RequestedTheme="Dark">
 
     <Application.Resources>
@@ -11,16 +12,31 @@
             <ResourceDictionary.MergedDictionaries>
                 <!-- This line is required for NavigationView and other WinUI 3 controls -->
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+                <ResourceDictionary Source="Styles/ThemeResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             
-            <!-- Force safe font fallback for stability on non-Win11 systems -->
-            <FontFamily x:Key="SymbolThemeFontFamily">Segoe MDL2 Assets</FontFamily>
+            <converters:NullableFloatToDoubleConverter x:Key="NullableFloatToDoubleConverter"/>
             
-            <!-- Global Converters -->
             <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
             <converters:BoolNegationConverter x:Key="BoolNegationConverter"/>
             <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
             <converters:BoolToGlyphConverter x:Key="BoolToGlyphConverter"/>
+            <converters:SegmentedStringConverter x:Key="SegmentedStringConverter"/>
+            
+            <!-- Global Animations & Styles -->
+            <!-- <Style TargetType="Button">
+                <Setter Property="helpers:CompositionBehavior.IsSpringAnimationEnabled" Value="True"/>
+            </Style> -->
+            
+            <!-- <Style TargetType="NavigationView">
+                 <Setter Property="ContentOverlay" Value="{x:Null}"/>
+            </Style> -->
+
+            
+            <!-- Force safe font fallback for stability on non-Win11 systems -->
+            <!-- <FontFamily x:Key="SymbolThemeFontFamily">Segoe MDL2 Assets</FontFamily> -->
+            
+            <!-- Global Converters -->
         </ResourceDictionary>
     </Application.Resources>
 </Application>

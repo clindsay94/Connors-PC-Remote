@@ -65,9 +65,11 @@ public sealed partial class AppCatalogViewModel : ObservableObject
 
     // Edit form fields
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SaveAppCommand))]
     public partial string? EditSlot { get; set; }
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SaveAppCommand))]
     public partial string? EditName { get; set; }
 
     [ObservableProperty]

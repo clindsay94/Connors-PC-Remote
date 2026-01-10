@@ -1,53 +1,44 @@
+using System;
 using CPCRemote.UI.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Windows.Storage.Pickers;
-using WinRT.Interop;
 
-namespace CPCRemote.UI.Pages
+namespace CPCRemote.UI.Pages;
+
+public sealed partial class ServiceManagementPage : Page
 {
-    public sealed partial class ServiceManagementPage : Page
+    public ServiceManagementViewModel ViewModel { get; }
+
+    public ServiceManagementPage()
     {
-        public ServiceManagementViewModel ViewModel { get; }
+        InitializeComponent();
+        ViewModel = App.GetService<ServiceManagementViewModel>();
+        this.Loaded += ServiceManagementPage_Loaded;
+    }
 
-        public ServiceManagementPage()
+    private async void ServiceManagementPage_Loaded(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.InitializeAsync();
+    }
+
+    private async void BrowseButton_Click(object sender, RoutedEventArgs e)
+    {
+        // Simple file picker logic could go here, for now keeping it simple as per original
+        var picker = new Windows.Storage.Pickers.FileOpenPicker();
+        
+        // Retrieve the window handle (HWND) of the current WinUI 3 window.
+        var window = App.CurrentMainWindow;
+        var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, hWnd);
+
+        picker.ViewMode = Windows.Storage.Pickers.PickerViewMode.List;
+        picker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.ComputerFolder;
+        picker.FileTypeFilter.Add(".exe");
+
+        var file = await picker.PickSingleFileAsync();
+        if (file != null)
         {
-            InitializeComponent();
-            ViewModel = App.GetService<ServiceManagementViewModel>();
-            
-            // Item 8: Call async initialization after page is loaded
-            Loaded += ServiceManagementPage_Loaded;
-        }
-
-        private async void ServiceManagementPage_Loaded(object sender, RoutedEventArgs e)
-        {
-            // Only initialize once
-            Loaded -= ServiceManagementPage_Loaded;
-            await ViewModel.InitializeAsync();
-        }
-
-        private async void BrowseButton_Click(object sender, RoutedEventArgs e)
-        {
-            var picker = new FileOpenPicker
-            {
-                SuggestedStartLocation = PickerLocationId.ComputerFolder,
-                ViewMode = PickerViewMode.List
-            };
-            picker.FileTypeFilter.Add(".exe");
-
-            // Get the window handle for the picker
-            var window = App.CurrentMainWindow;
-            if (window is not null)
-            {
-                var hwnd = WindowNative.GetWindowHandle(window);
-                InitializeWithWindow.Initialize(picker, hwnd);
-            }
-
-            var file = await picker.PickSingleFileAsync();
-            if (file is not null)
-            {
-                ViewModel.ServiceExecutablePath = file.Path;
-            }
+            ViewModel.ServiceExecutablePath = file.Path;
         }
     }
 }

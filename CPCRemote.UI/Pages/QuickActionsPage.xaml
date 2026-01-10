@@ -4,23 +4,139 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:media="using:Microsoft.UI.Xaml.Media"
+    xmlns:helpers="using:CPCRemote.UI.Helpers"
+    xmlns:animations="using:CommunityToolkit.WinUI.Animations"
     mc:Ignorable="d"
     Background="Transparent">
 
-    <Grid>
-        <Grid.ChildrenTransitions>
-            <TransitionCollection>
-                <EntranceThemeTransition />
-            </TransitionCollection>
-        </Grid.ChildrenTransitions>
-        <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
-            <Button x:Name="ShutdownButton" Content="Shutdown" Style="{StaticResource AccentButtonStyle}" MinWidth="200" />
-            <Button x:Name="RestartButton" Content="Restart" Style="{StaticResource AccentButtonStyle}" MinWidth="200" />
-            <Button x:Name="ForceShutdownButton" Content="Force Shutdown" Style="{StaticResource AccentButtonStyle}" MinWidth="200" />
-            <Button x:Name="UEFIRebootButton" Content="UEFI Reboot" Style="{StaticResource AccentButtonStyle}" MinWidth="200" />
-            <Button x:Name="LockButton" Content="Lock" Style="{StaticResource AccentButtonStyle}" MinWidth="200" />
-            <Button x:Name="TurnScreenOffButton" Content="Turn Screen Off" Style="{StaticResource AccentButtonStyle}" MinWidth="200" />
-        </StackPanel>
+    <Page.Resources>
+        <!-- Tile Style -->
+        <Style x:Key="QuickActionTileStyle" TargetType="Button">
+            <Setter Property="Width" Value="140"/>
+            <Setter Property="Height" Value="140"/>
+            <Setter Property="Margin" Value="8"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+            <Setter Property="Background" Value="{ThemeResource GlassBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{ThemeResource GlassBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="helpers:CompositionBehavior.IsSpringAnimationEnabled" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid x:Name="RootGrid" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootGrid.Background" Value="{ThemeResource SystemAccentColor}"/> <!-- solid accent on hover for bold effect? Or semi-transparent? let's stick to glass but maybe lighter -->
+                                            <!-- Actually, let's use the VibrantMesh as a subtle overlay or just lighten the glass -->
+                                            <Setter Target="RootGrid.Background" Value="{ThemeResource AcrylicInAppFillColorDefaultBrush}"/>
+                                            <Setter Target="RootGrid.BorderBrush" Value="{ThemeResource SystemAccentColor}"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootGrid.Opacity" Value="0.8"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            
+                            <!-- Content -->
+                            <ContentPresenter x:Name="ContentPresenter"
+                                              Content="{TemplateBinding Content}"
+                                              ContentTransitions="{TemplateBinding ContentTransitions}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              Padding="{TemplateBinding Padding}"
+                                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              AutomationProperties.AccessibilityView="Raw" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Page.Resources>
+    
+    <Grid Padding="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock Grid.Row="0" Text="QUICK ACTIONS" Style="{StaticResource HyperTitleTextBlockStyle}" Margin="0,0,0,32"/>
+
+        <!-- Tile Grid -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+             <!-- WrapPanel for responsive tiling -->
+            <VariableSizedWrapGrid Orientation="Horizontal" ItemHeight="156" ItemWidth="156" HorizontalAlignment="Center">
+                
+                <Button Style="{StaticResource QuickActionTileStyle}" Command="{x:Bind ViewModel.ShutdownCommand}">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
+                        <FontIcon Glyph="&#xE7E8;" FontSize="32" Foreground="#FF4444"/> <!-- Red for Shutdown -->
+                        <TextBlock Text="Shutdown" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Style="{StaticResource QuickActionTileStyle}" Command="{x:Bind ViewModel.RestartCommand}">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
+                        <FontIcon Glyph="&#xE777;" FontSize="32" Foreground="#44AAFF"/>
+                        <TextBlock Text="Restart" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Style="{StaticResource QuickActionTileStyle}" Command="{x:Bind ViewModel.LockCommand}">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
+                        <FontIcon Glyph="&#xE72E;" FontSize="32" Foreground="#FFDD44"/>
+                        <TextBlock Text="Lock" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Style="{StaticResource QuickActionTileStyle}" Command="{x:Bind ViewModel.TurnScreenOffCommand}">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
+                        <FontIcon Glyph="&#xE7F4;" FontSize="32" Foreground="#88FF88"/>
+                        <TextBlock Text="Screen Off" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+                
+                 <!-- We can add more if ViewModel supports them, looks like WakeOnLan is there too -->
+                <Button Style="{StaticResource QuickActionTileStyle}" Command="{x:Bind ViewModel.WakeOnLanCommand}">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
+                        <FontIcon Glyph="&#xE968;" FontSize="32" Foreground="{ThemeResource SystemAccentColor}"/>
+                        <TextBlock Text="Wake on LAN" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+
+            </VariableSizedWrapGrid>
+        </ScrollViewer>
+
+        <!-- Log/Status Console -->
+        <Border Grid.Row="2" Height="100" Margin="0,24,0,0" 
+                Background="{ThemeResource GlassBackgroundBrush}" 
+                BorderBrush="{ThemeResource GlassBorderBrush}" 
+                BorderThickness="1" 
+                CornerRadius="8" 
+                Padding="12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="Response Log" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.5" Margin="0,0,0,4"/>
+                <ScrollViewer Grid.Row="1">
+                    <TextBlock Text="{x:Bind ViewModel.ResponseLog, Mode=OneWay}" 
+                               FontFamily="Consolas" 
+                               FontSize="12" 
+                               TextWrapping="Wrap" 
+                               Opacity="0.8"/>
+                </ScrollViewer>
+            </Grid>
+        </Border>
     </Grid>
 </Page>

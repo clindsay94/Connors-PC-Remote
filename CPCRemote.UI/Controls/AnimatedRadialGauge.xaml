@@ -1,0 +1,44 @@
+<UserControl
+    x:Class="CPCRemote.UI.Controls.AnimatedRadialGauge"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    SizeChanged="UserControl_SizeChanged">
+
+    <Grid>
+        <!-- Background Ring -->
+        <Ellipse x:Name="TrackRing"
+                 Stroke="{ThemeResource SurfaceStrokeColorDefaultBrush}"
+                 StrokeThickness="8"
+                 Width="100" Height="100"/>
+
+        <!-- Progress Ring (We use an Arc-like Path or just a partial ellipse via Clip, but simple StrokeDashArray logic with Ellipse is easiest for XAML-only, 
+             but for true animations we might need a Path or standard ProgressRing customization. 
+             Let's use a standard ProgressRing but styled? No, standard ProgressRing is hard to style thick/round.
+             
+             Let's use a Path for the Arc.
+        -->
+        <Path x:Name="ProgressPath"
+              Stroke="{ThemeResource VibrantMesh}"
+              StrokeThickness="8"
+              StrokeStartLineCap="Round"
+              StrokeEndLineCap="Round"
+              Width="100" Height="100"/>
+
+        <!-- Content -->
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+            <TextBlock x:Name="ValueText" 
+                       Text="0" 
+                       Style="{StaticResource TitleLargeTextBlockStyle}" 
+                       HorizontalAlignment="Center"
+                       Foreground="{ThemeResource VibrantMesh}"/>
+            <TextBlock x:Name="UnitText" 
+                       Text="%" 
+                       Style="{StaticResource CaptionTextBlockStyle}" 
+                       HorizontalAlignment="Center"
+                       Opacity="0.7"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

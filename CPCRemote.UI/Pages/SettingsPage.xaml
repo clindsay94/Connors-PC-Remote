@@ -5,7 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
-    xmlns:colorPicker="using:CommunityToolkit.WinUI.Controls"
+    xmlns:viewmodels="using:CPCRemote.UI.ViewModels"
     mc:Ignorable="d"
     Background="Transparent">
 
@@ -17,112 +17,45 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24">
         <StackPanel Spacing="4" MaxWidth="800">
-            <TextBlock Text="Settings" Style="{StaticResource TitleTextBlockStyle}" Margin="0,0,0,16"/>
+            <TextBlock Text="Settings" Style="{StaticResource HyperTitleTextBlockStyle}" Margin="0,0,0,16"/>
 
-            <!-- ═══════════════════════════════════════════════════════════════════════ -->
-            <!-- APPEARANCE SECTION -->
-            <!-- ═══════════════════════════════════════════════════════════════════════ -->
+            <!-- APPEARANCE -->
             <TextBlock Text="Appearance" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,16,0,4"/>
-
-            <!-- Theme Selection -->
-            <controls:SettingsCard Header="App theme"
-                                   Description="Select which app theme to display">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE790;"/>
-                </controls:SettingsCard.HeaderIcon>
-                <controls:Segmented x:Name="ThemeSegmented" SelectionMode="Single" SelectionChanged="ThemeSegmented_SelectionChanged">
-                    <controls:SegmentedItem Content="Light" Tag="Light">
-                        <controls:SegmentedItem.Icon>
-                            <FontIcon Glyph="&#xE706;"/>
-                        </controls:SegmentedItem.Icon>
-                    </controls:SegmentedItem>
-                    <controls:SegmentedItem Content="Dark" Tag="Dark">
-                        <controls:SegmentedItem.Icon>
-                            <FontIcon Glyph="&#xE708;"/>
-                        </controls:SegmentedItem.Icon>
-                    </controls:SegmentedItem>
-                    <controls:SegmentedItem Content="System" Tag="System">
-                        <controls:SegmentedItem.Icon>
-                            <FontIcon Glyph="&#xE770;"/>
-                        </controls:SegmentedItem.Icon>
-                    </controls:SegmentedItem>
+            
+            <controls:SettingsCard Header="App theme" Description="Select which app theme to display">
+                <controls:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE790;"/></controls:SettingsCard.HeaderIcon>
+                <controls:Segmented SelectionMode="Single" SelectedItem="{x:Bind ViewModel.AppTheme, Mode=TwoWay, Converter={StaticResource SegmentedStringConverter}}">
+                    <controls:SegmentedItem Content="Light" Tag="Light"><controls:SegmentedItem.Icon><FontIcon Glyph="&#xE706;"/></controls:SegmentedItem.Icon></controls:SegmentedItem>
+                    <controls:SegmentedItem Content="Dark" Tag="Dark"><controls:SegmentedItem.Icon><FontIcon Glyph="&#xE708;"/></controls:SegmentedItem.Icon></controls:SegmentedItem>
+                    <controls:SegmentedItem Content="System" Tag="System"><controls:SegmentedItem.Icon><FontIcon Glyph="&#xE770;"/></controls:SegmentedItem.Icon></controls:SegmentedItem>
                 </controls:Segmented>
             </controls:SettingsCard>
 
-            <!-- Accent Color -->
-            <controls:SettingsExpander Header="Accent color"
-                                       Description="Customize the app's accent color">
-                <controls:SettingsExpander.HeaderIcon>
-                    <FontIcon Glyph="&#xE790;"/>
-                </controls:SettingsExpander.HeaderIcon>
+            <controls:SettingsExpander Header="Accent color" Description="Customize the app's accent color">
+                <controls:SettingsExpander.HeaderIcon><FontIcon Glyph="&#xE790;"/></controls:SettingsExpander.HeaderIcon>
                 <controls:SettingsExpander.Items>
                     <controls:SettingsCard Header="Use Windows accent color">
-                        <ToggleSwitch x:Name="UseSystemAccentToggle" IsOn="True" Toggled="UseSystemAccentToggle_Toggled"/>
+                        <ToggleSwitch IsOn="{x:Bind ViewModel.UseSystemAccent, Mode=TwoWay}"/>
                     </controls:SettingsCard>
-                    <controls:SettingsCard Header="Custom accent color"
-                                           x:Name="CustomAccentCard"
-                                           IsEnabled="False">
-                        <Button x:Name="AccentColorButton" 
-                                Width="48" Height="32" 
-                                CornerRadius="4"
-                                Click="AccentColorButton_Click">
-                            <Button.Content>
-                                <Border x:Name="AccentColorPreview" 
-                                        Width="40" Height="24" CornerRadius="2">
-                                    <Border.Background>
-                                        <SolidColorBrush Color="{ThemeResource SystemAccentColor}"/>
-                                    </Border.Background>
-                                </Border>
-                            </Button.Content>
+                    <controls:SettingsCard Header="Custom accent color">
+                        <Button Content="Pick Color">
+                            <Button.Flyout>
+                                <Flyout>
+                                    <ColorPicker x:Name="AccentColorPicker"
+                                                 IsColorSliderVisible="True" 
+                                                 IsHexInputVisible="True"
+                                                 IsAlphaEnabled="False"
+                                                 ColorChanged="ColorPicker_ColorChanged"/>
+                                </Flyout>
+                            </Button.Flyout>
                         </Button>
                     </controls:SettingsCard>
-                    <controls:SettingsCard Header="Preset colors">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Button Tag="#0078D4" Click="PresetColor_Click" Width="32" Height="32" CornerRadius="16" Padding="0">
-                                <Border Background="#0078D4" Width="28" Height="28" CornerRadius="14"/>
-                            </Button>
-                            <Button Tag="#107C10" Click="PresetColor_Click" Width="32" Height="32" CornerRadius="16" Padding="0">
-                                <Border Background="#107C10" Width="28" Height="28" CornerRadius="14"/>
-                            </Button>
-                            <Button Tag="#D83B01" Click="PresetColor_Click" Width="32" Height="32" CornerRadius="16" Padding="0">
-                                <Border Background="#D83B01" Width="28" Height="28" CornerRadius="14"/>
-                            </Button>
-                            <Button Tag="#881798" Click="PresetColor_Click" Width="32" Height="32" CornerRadius="16" Padding="0">
-                                <Border Background="#881798" Width="28" Height="28" CornerRadius="14"/>
-                            </Button>
-                            <Button Tag="#E81123" Click="PresetColor_Click" Width="32" Height="32" CornerRadius="16" Padding="0">
-                                <Border Background="#E81123" Width="28" Height="28" CornerRadius="14"/>
-                            </Button>
-                            <Button Tag="#FFB900" Click="PresetColor_Click" Width="32" Height="32" CornerRadius="16" Padding="0">
-                                <Border Background="#FFB900" Width="28" Height="28" CornerRadius="14"/>
-                            </Button>
-                            <Button Tag="#00B294" Click="PresetColor_Click" Width="32" Height="32" CornerRadius="16" Padding="0">
-                                <Border Background="#00B294" Width="28" Height="28" CornerRadius="14"/>
-                            </Button>
-                        </StackPanel>
-                    </controls:SettingsCard>
                 </controls:SettingsExpander.Items>
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Border x:Name="CurrentAccentPreview" 
-                            Width="24" Height="24" CornerRadius="4">
-                        <Border.Background>
-                            <SolidColorBrush Color="{ThemeResource SystemAccentColor}"/>
-                        </Border.Background>
-                    </Border>
-                    <TextBlock x:Name="AccentColorText" 
-                               Text="System Default" 
-                               VerticalAlignment="Center"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                </StackPanel>
             </controls:SettingsExpander>
 
-            <!-- Backdrop Material -->
-            <controls:SettingsCard Header="Window backdrop"
-                                   Description="Choose the window background material">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE71C;"/>
-                </controls:SettingsCard.HeaderIcon>
-                <ComboBox x:Name="BackdropComboBox" MinWidth="150" SelectionChanged="BackdropComboBox_SelectionChanged">
+            <controls:SettingsCard Header="Window backdrop" Description="Choose the window background material">
+                <controls:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE71C;"/></controls:SettingsCard.HeaderIcon>
+                <ComboBox SelectedValue="{x:Bind ViewModel.Backdrop, Mode=TwoWay}" SelectedValuePath="Tag">
                     <ComboBoxItem Content="Mica" Tag="Mica"/>
                     <ComboBoxItem Content="Mica Alt" Tag="MicaAlt"/>
                     <ComboBoxItem Content="Acrylic" Tag="Acrylic"/>
@@ -130,186 +63,104 @@
                 </ComboBox>
             </controls:SettingsCard>
 
-            <!-- ═══════════════════════════════════════════════════════════════════════ -->
-            <!-- TYPOGRAPHY SECTION -->
-            <!-- ═══════════════════════════════════════════════════════════════════════ -->
+            <!-- TYPOGRAPHY -->
             <TextBlock Text="Typography" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,24,0,4"/>
-
-            <!-- Font Family -->
-            <controls:SettingsCard Header="Font family"
-                                   Description="Choose the font used throughout the app">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE8D2;"/>
-                </controls:SettingsCard.HeaderIcon>
-                <ComboBox x:Name="FontFamilyComboBox" MinWidth="200" MaxDropDownHeight="400" SelectionChanged="FontFamilyComboBox_SelectionChanged"/>
+            
+            <controls:SettingsCard Header="Font family" Description="Choose the font used throughout the app">
+                <controls:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE8D2;"/></controls:SettingsCard.HeaderIcon>
+                <ComboBox ItemsSource="{x:Bind ViewModel.InstalledFonts, Mode=OneWay}" SelectedItem="{x:Bind ViewModel.SelectedFontFamily, Mode=TwoWay}" MinWidth="200" MaxDropDownHeight="400"/>
             </controls:SettingsCard>
 
-            <!-- Font Size Scale -->
-            <controls:SettingsCard Header="Text size"
-                                   Description="Adjust the base text size">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE8E9;"/>
-                </controls:SettingsCard.HeaderIcon>
+            <controls:SettingsCard Header="Text size" Description="Adjust the base text size">
+                <controls:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE8E9;"/></controls:SettingsCard.HeaderIcon>
                 <StackPanel Orientation="Horizontal" Spacing="12">
-                    <Slider x:Name="FontSizeSlider" 
-                            Minimum="80" Maximum="150" 
-                            Value="100" 
-                            Width="150"
-                            ValueChanged="FontSizeSlider_ValueChanged"/>
-                    <TextBlock x:Name="FontSizeText" Text="100%" VerticalAlignment="Center" MinWidth="40"/>
+                    <Slider Minimum="80" Maximum="150" Value="{x:Bind ViewModel.FontSizeScale, Mode=TwoWay}" Width="150"/>
+                    <TextBlock Text="{x:Bind ViewModel.FontSizeScale, Mode=OneWay}" VerticalAlignment="Center" MinWidth="40"/>
+                    <TextBlock Text="%" VerticalAlignment="Center"/>
                 </StackPanel>
             </controls:SettingsCard>
 
-            <!-- ═══════════════════════════════════════════════════════════════════════ -->
-            <!-- BEHAVIOR SECTION -->
-            <!-- ═══════════════════════════════════════════════════════════════════════ -->
+            <!-- BEHAVIOR -->
             <TextBlock Text="Behavior" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,24,0,4"/>
 
-            <!-- Confirmation Dialogs -->
-            <controls:SettingsCard Header="Confirmation dialogs"
-                                   Description="Show confirmation before executing power commands">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE7BA;"/>
-                </controls:SettingsCard.HeaderIcon>
-                <ToggleSwitch x:Name="ConfirmationsToggle" IsOn="True" Toggled="ConfirmationsToggle_Toggled"/>
+            <controls:SettingsCard Header="Confirmation dialogs" Description="Show confirmation before power commands">
+                <controls:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE7BA;"/></controls:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind ViewModel.ShowConfirmations, Mode=TwoWay}"/>
             </controls:SettingsCard>
 
-            <!-- Auto-connect -->
-            <controls:SettingsCard Header="Auto-connect to service"
-                                   Description="Automatically connect to the service when the app starts">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE703;"/>
-                </controls:SettingsCard.HeaderIcon>
-                <ToggleSwitch x:Name="AutoConnectToggle" IsOn="True" Toggled="AutoConnectToggle_Toggled"/>
+            <controls:SettingsCard Header="Auto-connect to service" Description="Connect on startup">
+                <controls:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE703;"/></controls:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind ViewModel.AutoConnect, Mode=TwoWay}"/>
             </controls:SettingsCard>
 
-            <!-- Sound Effects -->
-            <controls:SettingsCard Header="Sound effects"
-                                   Description="Play sounds for successful actions and errors">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE767;"/>
-                </controls:SettingsCard.HeaderIcon>
-                <ToggleSwitch x:Name="SoundEffectsToggle" IsOn="True" Toggled="SoundEffectsToggle_Toggled"/>
+            <controls:SettingsCard Header="Sound effects" Description="Play sounds for actions">
+                <controls:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE767;"/></controls:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind ViewModel.SoundEffects, Mode=TwoWay}"/>
             </controls:SettingsCard>
-
-            <!-- ═══════════════════════════════════════════════════════════════════════ -->
-            <!-- DASHBOARD SECTION -->
-            <!-- ═══════════════════════════════════════════════════════════════════════ -->
+            
+            <!-- DASHBOARD -->
             <TextBlock Text="Dashboard" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,24,0,4"/>
-
-            <!-- Stats Refresh Interval -->
-            <controls:SettingsCard Header="Stats refresh interval"
-                                   Description="How often to refresh hardware statistics">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE895;"/>
-                </controls:SettingsCard.HeaderIcon>
-                <ComboBox x:Name="RefreshIntervalComboBox" MinWidth="120" SelectionChanged="RefreshIntervalComboBox_SelectionChanged">
-                    <ComboBoxItem Content="1 second" Tag="1"/>
-                    <ComboBoxItem Content="2 seconds" Tag="2"/>
-                    <ComboBoxItem Content="5 seconds" Tag="5"/>
-                    <ComboBoxItem Content="10 seconds" Tag="10"/>
-                    <ComboBoxItem Content="30 seconds" Tag="30"/>
+            
+            <controls:SettingsCard Header="Stats refresh interval" Description="Seconds between updates">
+                <controls:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE895;"/></controls:SettingsCard.HeaderIcon>
+                <ComboBox SelectedValue="{x:Bind ViewModel.RefreshInterval, Mode=TwoWay}" SelectedValuePath="Tag" MinWidth="120">
+                     <ComboBoxItem Content="1 second" Tag="1" />
+                     <ComboBoxItem Content="2 seconds" Tag="2" />
+                     <ComboBoxItem Content="5 seconds" Tag="5" />
+                     <ComboBoxItem Content="10 seconds" Tag="10" />
+                     <ComboBoxItem Content="30 seconds" Tag="30" />
                 </ComboBox>
             </controls:SettingsCard>
 
-            <!-- Temperature Unit -->
-            <controls:SettingsCard Header="Temperature unit"
-                                   Description="Display temperatures in Celsius or Fahrenheit">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE9CA;"/>
-                </controls:SettingsCard.HeaderIcon>
-                <controls:Segmented x:Name="TempUnitSegmented" SelectionMode="Single" SelectionChanged="TempUnitSegmented_SelectionChanged">
+             <controls:SettingsCard Header="Temperature unit" Description="Celsius or Fahrenheit">
+                <controls:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE9CA;"/></controls:SettingsCard.HeaderIcon>
+                <controls:Segmented SelectedItem="{x:Bind ViewModel.TemperatureUnit, Mode=TwoWay, Converter={StaticResource SegmentedStringConverter}}">
                     <controls:SegmentedItem Content="°C" Tag="Celsius"/>
                     <controls:SegmentedItem Content="°F" Tag="Fahrenheit"/>
                 </controls:Segmented>
             </controls:SettingsCard>
-
-            <!-- Show Animations -->
-            <controls:SettingsCard Header="Dashboard animations"
-                                   Description="Enable animated gauges and charts on the dashboard">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE805;"/>
-                </controls:SettingsCard.HeaderIcon>
-                <ToggleSwitch x:Name="AnimationsToggle" IsOn="True" Toggled="AnimationsToggle_Toggled"/>
+            
+            <controls:SettingsCard Header="Dashboard animations" Description="Enable animated gauges">
+                <controls:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE805;"/></controls:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind ViewModel.DashboardAnimations, Mode=TwoWay}"/>
             </controls:SettingsCard>
 
-            <!-- ═══════════════════════════════════════════════════════════════════════ -->
-            <!-- WINDOW SECTION -->
-            <!-- ═══════════════════════════════════════════════════════════════════════ -->
+            <!-- WINDOW -->
             <TextBlock Text="Window" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,24,0,4"/>
 
-            <!-- Always on Top -->
-            <controls:SettingsCard Header="Always on top"
-                                   Description="Keep the app window above other windows">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE718;"/>
-                </controls:SettingsCard.HeaderIcon>
-                <ToggleSwitch x:Name="AlwaysOnTopToggle" IsOn="False" Toggled="AlwaysOnTopToggle_Toggled"/>
+            <controls:SettingsCard Header="Always on top" Description="Keep window above others">
+                <controls:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE718;"/></controls:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind ViewModel.AlwaysOnTop, Mode=TwoWay}"/>
             </controls:SettingsCard>
 
-            <!-- Start Minimized -->
-            <controls:SettingsCard Header="Start minimized"
-                                   Description="Start the app minimized to the system tray">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE921;"/>
-                </controls:SettingsCard.HeaderIcon>
-                <ToggleSwitch x:Name="StartMinimizedToggle" IsOn="False" Toggled="StartMinimizedToggle_Toggled"/>
+            <controls:SettingsCard Header="Start minimized" Description="Start in system tray">
+                <controls:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE921;"/></controls:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind ViewModel.StartMinimized, Mode=TwoWay}"/>
             </controls:SettingsCard>
-
-            <!-- Remember Window Position -->
-            <controls:SettingsCard Header="Remember window position"
-                                   Description="Restore the last window position and size on startup">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE8A0;"/>
-                </controls:SettingsCard.HeaderIcon>
-                <ToggleSwitch x:Name="RememberPositionToggle" IsOn="True" Toggled="RememberPositionToggle_Toggled"/>
+            
+             <controls:SettingsCard Header="Remember window position" Description="Restore position on startup">
+                <controls:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE8A0;"/></controls:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind ViewModel.RememberPosition, Mode=TwoWay}"/>
             </controls:SettingsCard>
-
-            <!-- ═══════════════════════════════════════════════════════════════════════ -->
-            <!-- RESET SECTION -->
-            <!-- ═══════════════════════════════════════════════════════════════════════ -->
+            
+             <!-- RESET -->
             <TextBlock Text="Reset" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,24,0,4"/>
-
-            <!-- Reset Settings -->
-            <controls:SettingsCard Header="Reset all settings"
-                                   Description="Restore all settings to their default values"
-                                   IsClickEnabled="True"
-                                   Click="ResetSettings_Click">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE777;"/>
-                </controls:SettingsCard.HeaderIcon>
-                <Button x:Name="ResetButton" Content="Reset" Style="{StaticResource AccentButtonStyle}"/>
+            <controls:SettingsCard Header="Reset all settings" Description="Restore defaults" IsClickEnabled="True" Command="{x:Bind ViewModel.ResetSettingsCommand}">
+                <controls:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE777;"/></controls:SettingsCard.HeaderIcon>
+                <Button Content="Reset" Style="{StaticResource AccentButtonStyle}" Command="{x:Bind ViewModel.ResetSettingsCommand}"/>
             </controls:SettingsCard>
-
-            <!-- ═══════════════════════════════════════════════════════════════════════ -->
-            <!-- ABOUT SECTION -->
-            <!-- ═══════════════════════════════════════════════════════════════════════ -->
+            
+            <!-- ABOUT -->
             <TextBlock Text="About" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,24,0,4"/>
-
-            <controls:SettingsExpander Header="CPC Remote"
-                                       Description="Control your Windows PC from SmartThings">
-                <controls:SettingsExpander.HeaderIcon>
-                    <FontIcon Glyph="&#xE946;"/>
-                </controls:SettingsExpander.HeaderIcon>
+             <controls:SettingsExpander Header="CPC Remote" Description="Control your Windows PC from SmartThings">
+                <controls:SettingsExpander.HeaderIcon><FontIcon Glyph="&#xE946;"/></controls:SettingsExpander.HeaderIcon>
                 <controls:SettingsExpander.Items>
-                    <controls:SettingsCard Header="Version">
-                        <TextBlock x:Name="VersionText" Text="1.0.0" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                    </controls:SettingsCard>
-                    <controls:SettingsCard Header=".NET Runtime">
-                        <TextBlock x:Name="RuntimeText" Text=".NET 10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                    </controls:SettingsCard>
-                    <controls:SettingsCard Header="Windows App SDK">
-                        <TextBlock Text="1.8" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                    </controls:SettingsCard>
-                    <controls:SettingsCard Header="Source code" IsClickEnabled="True" Click="OpenGitHub_Click">
-                        <FontIcon Glyph="&#xE8A7;"/>
-                    </controls:SettingsCard>
+                    <controls:SettingsCard Header="Version"><TextBlock Text="{x:Bind ViewModel.VersionString}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></controls:SettingsCard>
+                    <controls:SettingsCard Header=".NET Runtime"><TextBlock Text="{x:Bind ViewModel.RuntimeString}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></controls:SettingsCard>
+                    <controls:SettingsCard Header="Source code" IsClickEnabled="True" Command="{x:Bind ViewModel.OpenGitHubCommand}"><FontIcon Glyph="&#xE8A7;"/></controls:SettingsCard>
                 </controls:SettingsExpander.Items>
-                <TextBlock x:Name="VersionSummaryText" Text="v1.0.0" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
             </controls:SettingsExpander>
 
-            <!-- Spacer at bottom -->
-            <Border Height="24"/>
         </StackPanel>
     </ScrollViewer>
 </Page>

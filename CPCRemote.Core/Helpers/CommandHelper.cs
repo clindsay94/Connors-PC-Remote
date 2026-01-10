@@ -45,6 +45,15 @@ public sealed partial class CommandHelper(WolOptions wolOptions) : ICommandCatal
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool LockWorkStation();
 
+    [LibraryImport("wtsapi32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool WTSDisconnectSession(IntPtr hServer, uint sessionId, [MarshalAs(UnmanagedType.Bool)] bool bWait);
+
+    [LibraryImport("kernel32.dll")]
+    private static partial uint WTSGetActiveConsoleSessionId();
+
+    private static readonly IntPtr WTS_CURRENT_SERVER_HANDLE = IntPtr.Zero;
+
     /// <inheritdoc />
     public IReadOnlyList<TrayCommand> Commands => Catalog;
 
@@ -259,7 +268,21 @@ public sealed partial class CommandHelper(WolOptions wolOptions) : ICommandCatal
         {
             if (!LockWorkStation())
             {
-                throw new InvalidOperationException($"LockWorkStation returned false for '{commandType}'.");
+                // If standard LockWorkStation fails (e.g. running in Session 0), try WTSDisconnectSession
+                // This behaves like "Switch User" which effectively locks the station
+                Debug.WriteLine($"LockWorkStation returned false. Attempting WTS fallback.");
+
+                uint activeSessionId = WTSGetActiveConsoleSessionId();
+                // 0xFFFFFFFF indicates no active console session
+                if (activeSessionId == 0xFFFFFFFF) 
+                {
+                     throw new InvalidOperationException($"LockWorkStation failed and no active console session found to disconnect.");
+                }
+
+                if (!WTSDisconnectSession(WTS_CURRENT_SERVER_HANDLE, activeSessionId, false))
+                {
+                    throw new InvalidOperationException($"LockWorkStation failed and WTSDisconnectSession failed for session {activeSessionId}.");
+                }
             }
         }
         catch (Exception ex) when (ex is not InvalidOperationException)

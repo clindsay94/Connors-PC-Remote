@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
-
+using CommunityToolkit.WinUI;
 namespace CPCRemote.UI
 {
     public partial class App : Application
@@ -134,6 +134,7 @@ namespace CPCRemote.UI
             services.AddTransient<QuickActionsViewModel>();      // Transient: Fresh state on each page visit
             services.AddTransient<DashboardViewModel>();         // Transient: Refreshes stats on each navigation
             services.AddTransient<AppCatalogViewModel>();        // Transient: Reloads catalog from service each visit
+            services.AddTransient<SettingsPageViewModel>();      // Transient: Settings Page VM
 
             // Core Services - WolOptions is required by CommandHelper (not used in UI but needed for DI)
             services.AddSingleton(new CPCRemote.Core.Models.WolOptions());
@@ -236,25 +237,50 @@ namespace CPCRemote.UI
         /// </summary>
         public static void ApplyFontFamily(string fontFamilyName)
         {
-            if (CurrentMainWindow?.Content is Grid grid)
+            if (string.IsNullOrWhiteSpace(fontFamilyName)) return;
+
+            try
             {
-                // Find the NavigationView inside the Grid
-                foreach (var child in grid.Children)
+                var font = new FontFamily(fontFamilyName);
+
+                // 1. Update Global Resource (affects new controls & dynamic lookups)
+                // Note: This might not refresh existing controls immediately unless they use ThemeResource
+                if (Application.Current.Resources.ContainsKey("ContentControlThemeFontFamily"))
                 {
-                    if (child is NavigationView navView)
+                    Application.Current.Resources["ContentControlThemeFontFamily"] = font;
+                }
+                else
+                {
+                    Application.Current.Resources.Add("ContentControlThemeFontFamily", font);
+                }
+
+                // 2. Apply to MainWindow Content (Cascades to children via inheritance)
+                if (CurrentMainWindow?.Content is Control rootControl)
+                {
+                    rootControl.FontFamily = font;
+                }
+                else if (CurrentMainWindow?.Content is Panel rootPanel)
+                {
+                    // If root is a Grid/Panel, it doesn't have FontFamily, so set on children
+                    foreach (var child in rootPanel.Children)
                     {
-                        navView.FontFamily = new FontFamily(fontFamilyName);
-                        Logger?.LogDebug("Applied font family: {Font}", fontFamilyName);
-                        return;
+                        if (child is Control control)
+                        {
+                            control.FontFamily = font;
+                        }
+                        else if (child is NavigationView navView)
+                        {
+                            // NavigationView is a Control, but specifically calling it out just in case
+                            navView.FontFamily = font;
+                        }
                     }
                 }
+
+                Logger?.LogDebug("Applied font family globally: {Font}", fontFamilyName);
             }
-            
-            // Fallback: try to set on Content directly if it's a Control
-            if (CurrentMainWindow?.Content is Control rootControl)
+            catch (Exception ex)
             {
-                rootControl.FontFamily = new FontFamily(fontFamilyName);
-                Logger?.LogDebug("Applied font family (fallback): {Font}", fontFamilyName);
+                Logger?.LogWarning(ex, "Failed to apply font family: {Font}", fontFamilyName);
             }
         }
 

@@ -6,14 +6,15 @@
     mc:Ignorable="d"
     Title="Connor's PC Remote">
 
-    <Grid>
+    <Grid Background="Transparent">
         <NavigationView x:Name="NavView"
                         SelectionChanged="NavView_SelectionChanged"
                         IsBackButtonVisible="Collapsed"
                         IsBackEnabled="False"
                         PaneDisplayMode="Left"
                         IsPaneOpen="True"
-                        Header="Connor's PC Remote">
+                        Header="Connor's PC Remote"
+                        Background="Transparent">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Dashboard" Tag="DashboardPage">
                     <NavigationViewItem.Icon>
@@ -43,7 +44,17 @@
                 </NavigationViewItem>
             </NavigationView.MenuItems>
 
-            <Frame x:Name="ContentFrame"/>
+            <Frame x:Name="ContentFrame">
+                <Frame.ContentTransitions>
+                    <TransitionCollection>
+                        <NavigationThemeTransition>
+                            <NavigationThemeTransition.DefaultNavigationTransitionInfo>
+                                <DrillInNavigationTransitionInfo />
+                            </NavigationThemeTransition.DefaultNavigationTransitionInfo>
+                        </NavigationThemeTransition>
+                    </TransitionCollection>
+                </Frame.ContentTransitions>
+            </Frame>
         </NavigationView>
     </Grid>
 </Window>

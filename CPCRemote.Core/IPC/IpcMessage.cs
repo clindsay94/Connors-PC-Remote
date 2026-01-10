@@ -24,6 +24,8 @@ using System.Text.Json.Serialization;
 [JsonDerivedType(typeof(GetSensorConfigResponse), "GetSensorConfigResponse")]
 [JsonDerivedType(typeof(SaveSensorConfigRequest), "SaveSensorConfigRequest")]
 [JsonDerivedType(typeof(SaveSensorConfigResponse), "SaveSensorConfigResponse")]
+[JsonDerivedType(typeof(SaveRsmConfigRequest), "SaveRsmConfigRequest")]
+[JsonDerivedType(typeof(SaveRsmConfigResponse), "SaveRsmConfigResponse")]
 [JsonDerivedType(typeof(ErrorResponse), "ErrorResponse")]
 public abstract record IpcMessage
 {

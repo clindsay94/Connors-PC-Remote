@@ -5,15 +5,39 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:CPCRemote.Core.Models"
+    xmlns:helpers="using:CPCRemote.UI.Helpers"
+    xmlns:converters="using:CPCRemote.UI.Converters"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:animations="using:CommunityToolkit.WinUI.Animations"
+    xmlns:viewmodels="using:CPCRemote.UI.ViewModels"
     mc:Ignorable="d"
+    x:Name="RootPage"
     Background="Transparent">
 
-    <Page.Transitions>
-        <TransitionCollection>
-            <EntranceThemeTransition />
-        </TransitionCollection>
-    </Page.Transitions>
-
+    <Page.Resources>
+        <converters:ZeroCountToVisibilityConverter x:Key="ZeroCountToVisibilityConverter"/>
+        <converters:NullToTitleConverter x:Key="NullToTitleConverter"/>
+        <!-- App Card Style -->
+        <Style x:Key="AppCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource GlassBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{ThemeResource GlassBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Width" Value="240"/>
+            <Setter Property="Height" Value="180"/>
+            <Setter Property="Margin" Value="0,0,16,16"/>
+            <!-- Implicit Animations -->
+            <Setter Property="animations:Implicit.ShowAnimations">
+                <Setter.Value>
+                    <animations:ImplicitAnimationSet>
+                        <animations:TranslationAnimation Duration="0:0:0.6" From="0,20,0" To="0,0,0" />
+                        <animations:OpacityAnimation Duration="0:0:0.6" From="0" To="1.0"/>
+                    </animations:ImplicitAnimationSet>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Page.Resources>
+    
     <Grid Padding="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -21,136 +45,186 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Header -->
+        <!-- Header & Toolbar -->
         <Grid Grid.Row="0" Margin="0,0,0,24">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-
+            
             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="16">
-                <TextBlock Text="App Catalog" Style="{StaticResource TitleTextBlockStyle}"/>
-                <ProgressRing x:Name="LoadingRing" IsActive="False" Width="24" Height="24" VerticalAlignment="Center"/>
+                <TextBlock Text="APP CATALOG" Style="{StaticResource HyperTitleTextBlockStyle}"/>
+                <ProgressRing x:Name="LoadingRing" IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" Width="20" Height="20" VerticalAlignment="Center" Foreground="{ThemeResource VibrantMesh}"/>
             </StackPanel>
-
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                <Button x:Name="RefreshButton" Content="Refresh" Click="RefreshButton_Click">
-                    <Button.KeyboardAccelerators>
-                        <KeyboardAccelerator Key="F5" />
-                    </Button.KeyboardAccelerators>
+            
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                <Button Command="{x:Bind ViewModel.RefreshAppsCommand}" Style="{StaticResource ToolbarButtonStyle}" ToolTipService.ToolTip="Refresh (F5)">
+                    <FontIcon Glyph="&#xE72C;"/>
                 </Button>
-                <Button x:Name="AddButton" Content="Add App" Style="{StaticResource AccentButtonStyle}" Click="AddButton_Click">
-                    <Button.KeyboardAccelerators>
-                        <KeyboardAccelerator Key="N" Modifiers="Control" />
-                    </Button.KeyboardAccelerators>
+                <Button Command="{x:Bind ViewModel.AddNewAppCommand}" Style="{StaticResource AccentButtonStyle}" ToolTipService.ToolTip="Add App (Ctrl+N)">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE710;"/>
+                        <TextBlock Text="Add App"/>
+                    </StackPanel>
                 </Button>
             </StackPanel>
         </Grid>
 
-        <!-- App List -->
-        <ListView Grid.Row="1" 
-                  x:Name="AppsListView"
-                  SelectionMode="Single"
-                  CanReorderItems="True"
-                  AllowDrop="True"
-                  CanDragItems="True"
-                  DragItemsCompleted="AppsListView_DragItemsCompleted"
-                  SelectionChanged="AppsListView_SelectionChanged"
-                  IsItemClickEnabled="True"
-                  ItemClick="AppsListView_ItemClick">
-            <ListView.ItemTemplate>
-                <DataTemplate x:DataType="models:AppCatalogEntry">
-                    <Grid Padding="12" ColumnSpacing="16">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="60"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Slot Badge -->
-                        <Border Grid.Column="0"
-                                Background="{ThemeResource AccentFillColorDefaultBrush}"
-                                CornerRadius="4"
-                                Padding="8,4"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center">
-                            <TextBlock Text="{x:Bind Slot}" 
-                                       Foreground="White" 
-                                       FontWeight="SemiBold"
-                                       FontSize="12"/>
-                        </Border>
-
-                        <!-- App Info -->
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="{x:Bind Name}" Style="{StaticResource SubtitleTextBlockStyle}"/>
-                            <TextBlock Text="{x:Bind Path}" 
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" 
-                                       FontSize="12"
-                                       TextTrimming="CharacterEllipsis"
-                                       MaxLines="1"/>
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <TextBlock Text="{x:Bind Category}" 
-                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" 
-                                           FontSize="11"/>
-                                <TextBlock Text="• Admin" 
-                                           Visibility="{x:Bind RunAsAdmin}"
-                                           Foreground="{ThemeResource SystemFillColorCautionBrush}" 
-                                           FontSize="11"/>
-                                <TextBlock Text="• Disabled" 
-                                           Visibility="{x:Bind Enabled, Converter={StaticResource BoolNegationConverter}}"
-                                           Foreground="{ThemeResource TextFillColorDisabledBrush}" 
-                                           FontSize="11"/>
-                            </StackPanel>
-                        </StackPanel>
-
-                        <!-- Launch Button -->
-                        <Button Grid.Column="2" 
-                                Content="Launch" 
-                                Style="{StaticResource AccentButtonStyle}"
-                                Click="LaunchButton_Click"
-                                Tag="{x:Bind}"
-                                VerticalAlignment="Center"/>
-
-                        <!-- Edit Button -->
-                        <Button Grid.Column="3" 
-                                Content="Edit" 
-                                Click="EditButton_Click"
-                                Tag="{x:Bind}"
-                                VerticalAlignment="Center"/>
-
-                        <!-- Delete Button -->
-                        <Button Grid.Column="4" 
-                                Content="Delete" 
-                                Click="DeleteButton_Click"
-                                Tag="{x:Bind}"
-                                VerticalAlignment="Center"/>
-                    </Grid>
-                </DataTemplate>
-            </ListView.ItemTemplate>
-        </ListView>
-
+        <!-- Content Area -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+             <ItemsControl ItemsSource="{x:Bind ViewModel.Apps, Mode=OneWay}">
+                 <ItemsControl.ItemsPanel>
+                     <ItemsPanelTemplate>
+                         <controls:WrapPanel Orientation="Horizontal" />
+                     </ItemsPanelTemplate>
+                 </ItemsControl.ItemsPanel>
+                 
+                 <ItemsControl.ItemTemplate>
+                     <DataTemplate x:DataType="models:AppCatalogEntry">
+                         <Border Style="{StaticResource AppCardStyle}" helpers:CompositionBehavior.IsSpringAnimationEnabled="True">
+                             <Grid Padding="16">
+                                 <Grid.RowDefinitions>
+                                     <RowDefinition Height="Auto"/>
+                                     <RowDefinition Height="*"/>
+                                     <RowDefinition Height="Auto"/>
+                                 </Grid.RowDefinitions>
+                                 
+                                 <!-- Header: Slot Badge & Category -->
+                                 <Grid Grid.Row="0" Margin="0,0,0,12">
+                                     <Grid.ColumnDefinitions>
+                                         <ColumnDefinition Width="Auto"/>
+                                         <ColumnDefinition Width="*"/>
+                                     </Grid.ColumnDefinitions>
+                                     <Border Background="{ThemeResource SystemAccentColor}" CornerRadius="4" Padding="8,2">
+                                         <TextBlock Text="{x:Bind Slot}" Foreground="White" FontSize="11" FontWeight="Bold"/>
+                                     </Border>
+                                     <TextBlock Grid.Column="1" Text="{x:Bind Category}" 
+                                                HorizontalAlignment="Right" 
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" 
+                                                FontSize="11"/>
+                                 </Grid>
+                                 
+                                 <!-- Main Content: Name & Status -->
+                                 <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                                     <TextBlock Text="{x:Bind Name}" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                                     
+                                     <!-- Status Indicators -->
+                                     <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                                          <FontIcon Glyph="&#xE7EF;" FontSize="12" Visibility="{x:Bind RunAsAdmin}" ToolTipService.ToolTip="Runs as Admin" Foreground="{ThemeResource SystemFillColorCautionBrush}"/>
+                                          <TextBlock Text="Disabled" Visibility="{x:Bind Enabled, Converter={StaticResource BoolNegationConverter}}" Foreground="{ThemeResource TextFillColorDisabledBrush}" FontSize="12"/>
+                                     </StackPanel>
+                                 </StackPanel>
+                                 
+                                 <!-- Footer: Actions -->
+                                 <Grid Grid.Row="2" ColumnSpacing="8" Margin="0,12,0,0">
+                                     <Grid.ColumnDefinitions>
+                                         <ColumnDefinition Width="*"/>
+                                         <ColumnDefinition Width="Auto"/>
+                                         <ColumnDefinition Width="Auto"/>
+                                     </Grid.ColumnDefinitions>
+                                     
+                                     <Button Grid.Column="0" Content="Launch" HorizontalAlignment="Stretch" 
+                                             Command="{Binding ElementName=RootPage, Path=ViewModel.LaunchAppCommand}" 
+                                             CommandParameter="{x:Bind}"
+                                             Style="{StaticResource AccentButtonStyle}"/>
+                                             
+                                     <Button Grid.Column="1" ToolTipService.ToolTip="Edit"
+                                             Command="{Binding ElementName=RootPage, Path=ViewModel.EditAppCommand}"
+                                             CommandParameter="{x:Bind}">
+                                         <FontIcon Glyph="&#xE70F;" FontSize="14"/>
+                                     </Button>
+                                     
+                                     <Button Grid.Column="2" ToolTipService.ToolTip="Delete"
+                                             Command="{Binding ElementName=RootPage, Path=ViewModel.DeleteAppCommand}"
+                                             CommandParameter="{x:Bind}">
+                                          <FontIcon Glyph="&#xE74D;" FontSize="14"/>
+                                     </Button>
+                                 </Grid>
+                             </Grid>
+                             
+                             <!-- Context Menu for more options -->
+                             <Border.ContextFlyout>
+                                 <MenuFlyout>
+                                     <MenuFlyoutItem Text="Edit" Icon="Edit" 
+                                                     Command="{Binding ElementName=RootPage, Path=ViewModel.EditAppCommand}" CommandParameter="{x:Bind}"/>
+                                     <MenuFlyoutItem Text="Delete" Icon="Delete" 
+                                                     Command="{Binding ElementName=RootPage, Path=ViewModel.DeleteAppCommand}" CommandParameter="{x:Bind}"/>
+                                 </MenuFlyout>
+                             </Border.ContextFlyout>
+                         </Border>
+                     </DataTemplate>
+                 </ItemsControl.ItemTemplate>
+             </ItemsControl>
+        </ScrollViewer>
+        
         <!-- Empty State -->
-        <StackPanel Grid.Row="1" 
-                    x:Name="EmptyState"
-                    Visibility="Collapsed"
-                    HorizontalAlignment="Center" 
-                    VerticalAlignment="Center"
-                    Spacing="16">
-            <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE74C;" FontSize="48" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-            <TextBlock Text="No apps configured" Style="{StaticResource SubtitleTextBlockStyle}" HorizontalAlignment="Center"/>
-            <TextBlock Text="Add an app to get started" Foreground="{ThemeResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
-            <Button Content="Add First App" Style="{StaticResource AccentButtonStyle}" Click="AddButton_Click"/>
+        <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="24"
+                    Visibility="{x:Bind ViewModel.Apps.Count, Mode=OneWay, Converter={StaticResource ZeroCountToVisibilityConverter}}">
+             <Border Width="100" Height="100" CornerRadius="50" Background="{ThemeResource SurfaceStrokeColorDefaultBrush}" Opacity="0.5">
+                 <FontIcon Glyph="&#xE74C;" FontSize="48" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+             </Border>
+             <TextBlock Text="No Apps Found" Style="{StaticResource SubtitleTextBlockStyle}" HorizontalAlignment="Center"/>
+             <Button Content="Add Your First App" Command="{x:Bind ViewModel.AddNewAppCommand}" Style="{StaticResource AccentButtonStyle}"/>
         </StackPanel>
 
-        <!-- Status Bar -->
-        <Border Grid.Row="2" Margin="0,16,0,0">
-            <TextBlock x:Name="StatusText" 
-                       Text="Ready" 
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" 
-                       FontSize="12"/>
-        </Border>
+        <!-- Edit Dialog (Inline or ContentDialog?) 
+             The ViewModel uses 'IsEditDialogOpen'. We should probably use a ContentDialog or a popup overlay.
+             For a "Glass" UI, an overlay Grid is nice. -->
+        <Grid Grid.RowSpan="3" Background="{ThemeResource SystemControlPageBackgroundMediumAltMediumBrush}" 
+              Visibility="{x:Bind ViewModel.IsEditDialogOpen, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+             <!-- Simple Backdrop Blur? -->
+             <Border Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}" VerticalAlignment="Center" HorizontalAlignment="Center" CornerRadius="12" Padding="24" Width="500" BorderBrush="{ThemeResource GlassBorderBrush}" BorderThickness="1">
+                 <StackPanel Spacing="16">
+                     <TextBlock Text="{x:Bind ViewModel.SelectedApp, Converter={StaticResource NullToTitleConverter}, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                     
+                     <Grid ColumnSpacing="12">
+                         <Grid.ColumnDefinitions>
+                             <ColumnDefinition Width="*"/>
+                             <ColumnDefinition Width="2*"/>
+                         </Grid.ColumnDefinitions>
+                         <ComboBox Header="Slot" ItemsSource="{x:Bind viewmodels:AppCatalogViewModel.AvailableSlots}" SelectedItem="{x:Bind ViewModel.EditSlot, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                         <TextBox Grid.Column="1" Header="Name" Text="{x:Bind ViewModel.EditName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                     </Grid>
+                     
+                     <Grid ColumnSpacing="12">
+                         <Grid.ColumnDefinitions>
+                             <ColumnDefinition Width="*"/>
+                             <ColumnDefinition Width="Auto"/>
+                         </Grid.ColumnDefinitions>
+                         <TextBox Header="Path" Text="{x:Bind ViewModel.EditPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                         <Button Grid.Column="1" Content="Browse..." Click="BrowsePathButton_Click" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
+                     </Grid>
+                     <TextBox Header="Arguments" Text="{x:Bind ViewModel.EditArguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                     
+                     <Grid ColumnSpacing="12">
+                         <Grid.ColumnDefinitions>
+                             <ColumnDefinition Width="*"/>
+                             <ColumnDefinition Width="*"/>
+                         </Grid.ColumnDefinitions>
+                          <TextBox Grid.Column="0" Header="Working Directory" Text="{x:Bind ViewModel.EditWorkingDirectory, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                          <ComboBox Grid.Column="1" Header="Category" ItemsSource="{x:Bind viewmodels:AppCatalogViewModel.CommonCategories}" SelectedItem="{x:Bind ViewModel.EditCategory, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                     </Grid>
 
+                     <StackPanel Orientation="Horizontal" Spacing="24">
+                         <CheckBox Content="Run as Administrator" IsChecked="{x:Bind ViewModel.EditRunAsAdmin, Mode=TwoWay}"/>
+                         <ToggleSwitch Header="Enabled" IsOn="{x:Bind ViewModel.EditEnabled, Mode=TwoWay}" OffContent="No" OnContent="Yes"/>
+                     </StackPanel>
+                     
+                     <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right" Margin="0,12,0,0">
+                         <Button Content="Cancel" Command="{x:Bind ViewModel.CancelEditCommand}"/>
+                         <Button Content="Save App" Style="{StaticResource AccentButtonStyle}" Command="{x:Bind ViewModel.SaveAppCommand}"/>
+                     </StackPanel>
+                 </StackPanel>
+             </Border>
+        </Grid>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="2" Margin="0,12,0,0" Padding="12,8" Background="{ThemeResource GlassBackgroundBrush}" CornerRadius="8" BorderBrush="{ThemeResource GlassBorderBrush}" BorderThickness="1">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <FontIcon Glyph="&#xE946;" FontSize="12" Foreground="{ThemeResource SystemAccentColor}"/>
+                <TextBlock Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+            </StackPanel>
+        </Border>
     </Grid>
 </Page>

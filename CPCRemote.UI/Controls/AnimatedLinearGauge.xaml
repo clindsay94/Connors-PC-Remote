@@ -1,0 +1,39 @@
+<UserControl
+    x:Class="CPCRemote.UI.Controls.AnimatedLinearGauge"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid RowSpacing="4">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Label -->
+        <TextBlock x:Name="LabelText" Grid.Row="0" Text="" FontSize="12" Opacity="0.7" Margin="0,0,0,2"/>
+        
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- Bar -->
+            <Grid Grid.Column="0" VerticalAlignment="Center" Height="8" CornerRadius="4" Background="{ThemeResource SurfaceStrokeColorDefaultBrush}" Margin="0,0,12,0">
+                <Rectangle x:Name="FillRect" 
+                           HorizontalAlignment="Left" 
+                           RadiusX="4" RadiusY="4"
+                           Fill="{ThemeResource VibrantMesh}"/>
+            </Grid>
+            
+            <!-- Value -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" MinWidth="50">
+                <TextBlock x:Name="ValueText" Text="0" Style="{StaticResource BodyStrongTextBlockStyle}" Foreground="{ThemeResource VibrantMesh}"/>
+                <TextBlock x:Name="UnitText" Text="%" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

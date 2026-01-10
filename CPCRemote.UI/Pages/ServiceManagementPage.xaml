@@ -1,251 +1,231 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Page
     x:Class="CPCRemote.UI.Pages.ServiceManagementPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:local="using:CPCRemote.UI.Pages"
+    xmlns:helpers="using:CPCRemote.UI.Helpers"
+    xmlns:animations="using:CommunityToolkit.WinUI.Animations"
     mc:Ignorable="d"
     Background="Transparent">
 
-    <ScrollViewer>
-        <StackPanel Padding="24" Spacing="16" MaxWidth="800">
-            <TextBlock Text="Service Management" Style="{StaticResource TitleTextBlockStyle}"/>
-            
-            <TextBlock TextWrapping="Wrap" 
-                       Text="Manage the Connor's PC Remote Windows Service directly from the GUI. Install, configure, and control the service without using PowerShell scripts."/>
+    <Page.Resources>
+        <!-- Service Card Style -->
+        <Style x:Key="ServiceCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource GlassBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{ThemeResource GlassBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="20"/>
+            <Setter Property="Margin" Value="0,0,16,16"/>
+            <Setter Property="animations:Implicit.ShowAnimations">
+                <Setter.Value>
+                    <animations:ImplicitAnimationSet>
+                        <animations:TranslationAnimation Duration="0:0:0.6" From="0,20,0" To="0,0,0" />
+                        <animations:OpacityAnimation Duration="0:0:0.6" From="0" To="1.0"/>
+                    </animations:ImplicitAnimationSet>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-            <!-- Service Status Section -->
-            <Expander Header="Service Status" IsExpanded="True" HorizontalAlignment="Stretch" Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}">
-                <StackPanel Spacing="12" Padding="12">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="Status:" FontWeight="SemiBold" MinWidth="120"/>
-                        <TextBlock Text="{x:Bind ViewModel.ServiceStatusText, Mode=OneWay}" Foreground="{ThemeResource SystemAccentColor}"/>
-                    </StackPanel>
-                    
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="Installation:" FontWeight="SemiBold" MinWidth="120"/>
-                        <TextBlock Text="{x:Bind ViewModel.ServiceInstalledText, Mode=OneWay}"/>
-                    </StackPanel>
-                    
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button Command="{x:Bind ViewModel.RefreshStatusCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE72C;"/>
-                                <TextBlock Text="Refresh Status" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                        <ProgressRing IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}" Width="20" Height="20"/>
-                    </StackPanel>
-                </StackPanel>
-            </Expander>
+        <!-- Pulse Animation -->
+        <Storyboard x:Key="PulseAnimation" RepeatBehavior="Forever" AutoReverse="True">
+            <DoubleAnimation Storyboard.TargetName="StatusIndicatorScale" Storyboard.TargetProperty="ScaleX" From="1.0" To="1.2" Duration="0:0:1" />
+            <DoubleAnimation Storyboard.TargetName="StatusIndicatorScale" Storyboard.TargetProperty="ScaleY" From="1.0" To="1.2" Duration="0:0:1" />
+            <DoubleAnimation Storyboard.TargetName="StatusIndicator" Storyboard.TargetProperty="Opacity" From="1.0" To="0.7" Duration="0:0:1" />
+        </Storyboard>
+    </Page.Resources>
+    
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Padding="24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-            <!-- Service Control Section -->
-            <Expander Header="Service Control" IsExpanded="True" HorizontalAlignment="Stretch" Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}">
-                <StackPanel Spacing="12" Padding="12">
-                    <InfoBar IsOpen="{x:Bind ViewModel.IsInfoBarOpen, Mode=OneWay}"
-                             Message="{x:Bind ViewModel.InfoBarMessage, Mode=OneWay}"
-                             Severity="{x:Bind ViewModel.InfoBarSeverity, Mode=OneWay}"
-                             IsClosable="True"/>
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button Command="{x:Bind ViewModel.StartServiceCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE768;"/>
-                                <TextBlock Text="Start Service" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                        
-                        <Button Command="{x:Bind ViewModel.StopServiceCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE71A;"/>
-                                <TextBlock Text="Stop Service" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                        
-                        <Button Command="{x:Bind ViewModel.RestartServiceCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE777;"/>
-                                <TextBlock Text="Restart Service" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
-                </StackPanel>
-            </Expander>
+            <!-- Header -->
+            <StackPanel Grid.Row="0" Margin="0,0,0,24">
+                <TextBlock Text="SERVICE MANAGEMENT" Style="{StaticResource HyperTitleTextBlockStyle}"/>
+                <TextBlock Text="Manage the background service controlling your PC." Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,4,0,0"/>
+            </StackPanel>
 
-            <!-- Quick Actions Section -->
-            <Expander Header="Quick Actions" IsExpanded="True" HorizontalAlignment="Stretch" Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}">
-                <StackPanel Spacing="12" Padding="12">
-                    <TextBlock TextWrapping="Wrap" 
-                               Text="Send common commands to the remote PC. The service must be running."/>
-                    
-                    <ToggleSwitch Header="Safety Lock" 
-                                  IsOn="{x:Bind ViewModel.IsSafetyLockEnabled, Mode=TwoWay}"
-                                  OnContent="Enabled" 
-                                  OffContent="Disabled"/>
+            <!-- Main Grid -->
+            <Grid Grid.Row="1">
+                <Grid.RowDefinitions>
+                     <RowDefinition Height="Auto"/> <!-- Status & Control -->
+                     <RowDefinition Height="Auto"/> <!-- Config & Install -->
+                     <RowDefinition Height="Auto"/> <!-- Advanced -->
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
-                        <Button Command="{x:Bind ViewModel.ShutdownCommand}" IsEnabled="{x:Bind ViewModel.IsShutdownEnabled, Mode=OneWay}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE7E8;"/>
-                                <TextBlock Text="Shutdown" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                        
-                        <Button Command="{x:Bind ViewModel.RestartCommand}" IsEnabled="{x:Bind ViewModel.IsShutdownEnabled, Mode=OneWay}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE777;"/>
-                                <TextBlock Text="Restart" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
+                <!-- Top Row: Status (Left) & Control (Right) -->
+                 <!-- Responsive split could be done with AdaptiveTrigger, but Grid with ColDefs is simpler for desktop -->
+                 <Grid Grid.Row="0">
+                     <Grid.ColumnDefinitions>
+                         <ColumnDefinition Width="*"/>
+                         <ColumnDefinition Width="*"/>
+                     </Grid.ColumnDefinitions>
+                     
+                     <!-- Status Card -->
+                     <Border Grid.Column="0" Style="{StaticResource ServiceCardStyle}" helpers:CompositionBehavior.IsSpringAnimationEnabled="True">
+                         <StackPanel Spacing="16">
+                             <StackPanel Orientation="Horizontal" Spacing="12">
+                                 <FontIcon Glyph="&#xE9D9;" Foreground="{ThemeResource SystemAccentColor}"/>
+                                 <TextBlock Text="Service Status" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                             </StackPanel>
+                             
+                             <Grid>
+                                 <Grid.ColumnDefinitions>
+                                     <ColumnDefinition Width="Auto"/>
+                                     <ColumnDefinition Width="*"/>
+                                 </Grid.ColumnDefinitions>
+                                 
+                                 <!-- Animated Indicator -->
+                                 <Grid Grid.Column="0" Width="40" Height="40" Margin="0,0,16,0">
+                                      <Ellipse x:Name="StatusIndicator" Width="16" Height="16" Fill="{x:Bind ViewModel.IsServiceRunning, Mode=OneWay, Converter={StaticResource BoolToColorConverter}}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                          <Ellipse.RenderTransform>
+                                              <ScaleTransform x:Name="StatusIndicatorScale" CenterX="8" CenterY="8"/>
+                                          </Ellipse.RenderTransform>
+                                      </Ellipse>
+                                      <!-- Outer Ring -->
+                                      <Ellipse Stroke="{x:Bind ViewModel.IsServiceRunning, Mode=OneWay, Converter={StaticResource BoolToColorConverter}}" StrokeThickness="2" Opacity="0.3"/>
+                                 </Grid>
+                                 
+                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                     <TextBlock Text="{x:Bind ViewModel.ServiceStatusText, Mode=OneWay}" FontSize="20" FontWeight="SemiBold"/>
+                                     <TextBlock Text="{x:Bind ViewModel.ServiceInstalledText, Mode=OneWay}" FontSize="12" Opacity="0.6"/>
+                                 </StackPanel>
+                             </Grid>
+                             
+                             <Button Command="{x:Bind ViewModel.RefreshStatusCommand}" HorizontalAlignment="Stretch">
+                                 <StackPanel Orientation="Horizontal" Spacing="8">
+                                     <FontIcon Glyph="&#xE72C;"/>
+                                     <TextBlock Text="Refresh Status"/>
+                                 </StackPanel>
+                             </Button>
+                         </StackPanel>
+                     </Border>
 
-                        <Button Command="{x:Bind ViewModel.LockCommand}" IsEnabled="{x:Bind ViewModel.IsShutdownEnabled, Mode=OneWay}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE72E;"/>
-                                <TextBlock Text="Lock" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
-                </StackPanel>
-            </Expander>
+                     <!-- Control Card -->
+                     <Border Grid.Column="1" Style="{StaticResource ServiceCardStyle}" helpers:CompositionBehavior.IsSpringAnimationEnabled="True">
+                         <StackPanel Spacing="16">
+                             <StackPanel Orientation="Horizontal" Spacing="12">
+                                 <FontIcon Glyph="&#xE768;" Foreground="{ThemeResource SystemAccentColor}"/>
+                                 <TextBlock Text="Service Control" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                             </StackPanel>
 
-            <!-- Installation Section -->
-            <Expander Header="Installation" IsExpanded="False" HorizontalAlignment="Stretch" Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}">
-                <StackPanel Spacing="12" Padding="12">
-                    <TextBlock TextWrapping="Wrap" 
-                               Text="Install or uninstall the Connor's PC Remote Windows Service. The service must be installed and running to accept remote commands."/>
-                    
-                    <TextBox x:Name="ExePathTextBox" 
-                             Header="Service Executable Path" 
-                             PlaceholderText="C:\Path\to\CPCRemote.Service.exe"
-                             Text="{x:Bind ViewModel.ServiceExecutablePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                    
-                    <Button Click="BrowseButton_Click">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon Glyph="&#xE8E5;"/>
-                            <TextBlock Text="Browse..." VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
+                            <InfoBar IsOpen="{x:Bind ViewModel.IsInfoBarOpen, Mode=OneWay}"
+                                     Message="{x:Bind ViewModel.InfoBarMessage, Mode=OneWay}"
+                                     Severity="{x:Bind ViewModel.InfoBarSeverity, Mode=OneWay}"
+                                     IsClosable="True"/>
 
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button Command="{x:Bind ViewModel.InstallServiceCommand}"
-                                CommandParameter="{x:Bind ViewModel.ServiceExecutablePath, Mode=OneWay}"
-                                Style="{StaticResource AccentButtonStyle}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE896;"/>
-                                <TextBlock Text="Install Service" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                        
-                        <Button Command="{x:Bind ViewModel.UninstallServiceCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE74D;"/>
-                                <TextBlock Text="Uninstall Service" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
+                             <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+                                 <Button Command="{x:Bind ViewModel.StartServiceCommand}" Style="{StaticResource AccentButtonStyle}" Padding="16,12">
+                                     <StackPanel Spacing="8">
+                                         <FontIcon Glyph="&#xE768;"/>
+                                         <TextBlock Text="Start"/>
+                                     </StackPanel>
+                                 </Button>
+                                 <Button Command="{x:Bind ViewModel.StopServiceCommand}" Padding="16,12">
+                                     <StackPanel Spacing="8">
+                                         <FontIcon Glyph="&#xE71A;"/>
+                                         <TextBlock Text="Stop"/>
+                                     </StackPanel>
+                                 </Button>
+                                 <Button Command="{x:Bind ViewModel.RestartServiceCommand}" Padding="16,12">
+                                     <StackPanel Spacing="8">
+                                         <FontIcon Glyph="&#xE777;" />
+                                         <TextBlock Text="Restart"/>
+                                     </StackPanel>
+                                 </Button>
+                             </StackPanel>
+                         </StackPanel>
+                     </Border>
+                 </Grid>
+                 
+                 <!-- Config Card -->
+                 <Border Grid.Row="1" Style="{StaticResource ServiceCardStyle}">
+                     <StackPanel Spacing="16">
+                         <StackPanel Orientation="Horizontal" Spacing="12">
+                             <FontIcon Glyph="&#xE713;" Foreground="{ThemeResource SystemAccentColor}"/>
+                             <TextBlock Text="Configuration" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                         </StackPanel>
+                         
+                         <Grid ColumnSpacing="24" RowSpacing="16">
+                             <Grid.ColumnDefinitions>
+                                 <ColumnDefinition Width="*"/>
+                                 <ColumnDefinition Width="*"/>
+                             </Grid.ColumnDefinitions>
+                             <Grid.RowDefinitions>
+                                 <RowDefinition Height="Auto"/>
+                                 <RowDefinition Height="Auto"/>
+                             </Grid.RowDefinitions>
+                             
+                             <TextBox Grid.Row="0" Grid.Column="0" Header="Bind Address (Optional)" Text="{x:Bind ViewModel.IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                             <NumberBox Grid.Row="1" Grid.Column="0" Header="Port" Value="{x:Bind ViewModel.Port, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SpinButtonPlacementMode="Inline"/>
+                             
+                             <PasswordBox Grid.Row="0" Grid.Column="1" Header="Secret (Optional)" Password="{x:Bind ViewModel.Secret, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PasswordRevealMode="Peek"/>
+                             <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
+                                 <TextBlock Text="Preview URL:" Opacity="0.7" FontSize="12"/>
+                                 <TextBlock Text="{x:Bind ViewModel.PreviewUrl, Mode=OneWay}" FontFamily="Consolas" Foreground="{ThemeResource SystemAccentColor}"/>
+                             </StackPanel>
+                         </Grid>
+                         
+                         <Button Command="{x:Bind ViewModel.SaveConfigurationCommand}" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Right" Content="Save Configuration"/>
+                     </StackPanel>
+                 </Border>
 
-                        <Button Command="{x:Bind ViewModel.CancelOperationCommand}" IsEnabled="{x:Bind ViewModel.IsBusy, Mode=OneWay}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE71A;"/>
-                                <TextBlock Text="Cancel" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
+                 <!-- Installation & Advanced Split -->
+                 <Grid Grid.Row="2">
+                     <Grid.ColumnDefinitions>
+                         <ColumnDefinition Width="2*"/>
+                         <ColumnDefinition Width="1*"/>
+                     </Grid.ColumnDefinitions>
+                     
+                     <!-- Installation -->
+                     <Border Grid.Column="0" Style="{StaticResource ServiceCardStyle}">
+                         <StackPanel Spacing="16">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                 <FontIcon Glyph="&#xE896;" Foreground="{ThemeResource SystemAccentColor}"/>
+                                 <TextBlock Text="Installation" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                             </StackPanel>
+                             
+                             <Grid ColumnSpacing="12">
+                                 <Grid.ColumnDefinitions>
+                                     <ColumnDefinition Width="*"/>
+                                     <ColumnDefinition Width="Auto"/>
+                                 </Grid.ColumnDefinitions>
+                                 <TextBox Header="Service Executable Path" Text="{x:Bind ViewModel.ServiceExecutablePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                 <Button Content="Browse..." Click="BrowseButton_Click" VerticalAlignment="Bottom" Grid.Column="1" Margin="0,0,0,6"/>
+                             </Grid>
+                             
+                             <StackPanel Orientation="Horizontal" Spacing="12">
+                                 <Button Command="{x:Bind ViewModel.InstallServiceCommand}" CommandParameter="{x:Bind ViewModel.ServiceExecutablePath, Mode=OneWay}" Content="Install Service"/>
+                                 <Button Command="{x:Bind ViewModel.UninstallServiceCommand}" Content="Uninstall Service"/>
+                                 <ProgressRing IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}" Width="20" Height="20"/>
+                             </StackPanel>
+                         </StackPanel>
+                     </Border>
+                     
+                     <!-- Advanced / URL Reservation -->
+                     <Border Grid.Column="1" Style="{StaticResource ServiceCardStyle}" Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}">
+                         <StackPanel Spacing="16">
+                             <TextBlock Text="Advanced" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+                             <TextBlock Text="URL Reservation required if Access Denied errors occur." TextWrapping="Wrap" FontSize="12" Opacity="0.7"/>
+                             <Button Content="Reserve URL" HorizontalAlignment="Stretch">
+                                  <Button.Flyout>
+                                      <Flyout>
+                                          <TextBlock Text="Run: netsh http add urlacl..." FontFamily="Consolas"/>
+                                      </Flyout>
+                                  </Button.Flyout>
+                             </Button>
+                         </StackPanel>
+                     </Border>
+                 </Grid>
 
-                    <ProgressRing IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}" Value="{x:Bind ViewModel.Progress, Mode=OneWay}" IsIndeterminate="False" Width="200" Height="20"/>
-                </StackPanel>
-            </Expander>
-
-            <!-- Configuration Section -->
-            <Expander Header="Service Configuration" IsExpanded="False" HorizontalAlignment="Stretch" Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}">
-                <StackPanel Spacing="12" Padding="12">
-                    <TextBlock TextWrapping="Wrap" 
-                               Text="Configure the HTTP listener settings. Changes require service restart to take effect."/>
-                    
-                    <TextBox Header="IP Address" 
-                             PlaceholderText="localhost or 10.0.0.69"
-                             Text="{x:Bind ViewModel.IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                    
-                    <NumberBox Header="Port" 
-                               PlaceholderText="5005"
-                               Minimum="1" 
-                               Maximum="65535"
-                               Value="{x:Bind ViewModel.Port, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                               SpinButtonPlacementMode="Inline"/>
-                    
-                    <PasswordBox Header="Secret (Optional)" 
-                                 PlaceholderText="Leave empty for no secret"
-                                 Password="{x:Bind ViewModel.Secret, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                 PasswordRevealMode="Peek"/>
-
-                    <TextBlock Text="Preview URL:" FontWeight="SemiBold"/>
-                    <TextBlock Text="{x:Bind ViewModel.PreviewUrl, Mode=OneWay}" 
-                               FontFamily="Consolas"
-                               IsTextSelectionEnabled="True"
-                               Foreground="{ThemeResource SystemAccentColor}"/>
-
-                    <Button Command="{x:Bind ViewModel.SaveConfigurationCommand}"
-                            Style="{StaticResource AccentButtonStyle}">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon Glyph="&#xE74E;"/>
-                            <TextBlock Text="Save Configuration" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
-            </Expander>
-
-            <!-- Test Commands Section -->
-            <Expander Header="Test Commands" IsExpanded="False" HorizontalAlignment="Stretch" Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}">
-                <StackPanel Spacing="12" Padding="12">
-                    <TextBlock TextWrapping="Wrap" 
-                               Text="Test the service by sending commands. Make sure the service is running before testing."/>
-                    
-                    <Button Command="{x:Bind ViewModel.TestPingCommand}">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon Glyph="&#xE968;"/>
-                            <TextBlock Text="Test Ping" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-
-                    <TextBlock Text="Send Command:" FontWeight="SemiBold"/>
-                    <ComboBox PlaceholderText="Select a command"
-                              MinWidth="200">
-                        <ComboBoxItem Content="Shutdown"/>
-                        <ComboBoxItem Content="Restart"/>
-                        <ComboBoxItem Content="Lock"/>
-                        <ComboBoxItem Content="TurnScreenOff"/>
-                        <ComboBoxItem Content="ForceShutdown"/>
-                        <ComboBoxItem Content="UEFIReboot"/>
-                    </ComboBox>
-
-                    <Button IsEnabled="False">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon Glyph="&#xE7C1;"/>
-                            <TextBlock Text="Send Command (Warning: Will Execute!)" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
-            </Expander>
-
-            <!-- URL Reservation Section -->
-            <Expander Header="URL Reservation (Advanced)" IsExpanded="False" HorizontalAlignment="Stretch" Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}">
-                <StackPanel Spacing="12" Padding="12">
-                    <TextBlock TextWrapping="Wrap" 
-                               Text="If the service fails to start with 'Access Denied' error, you may need to reserve the URL. This requires administrator privileges."/>
-                    
-                    <TextBlock TextWrapping="Wrap" FontStyle="Italic">
-                        <Run Text="Command: "/>
-                        <Run Text="netsh http add urlacl url=http://[address]:[port]/ user=EVERYONE" FontFamily="Consolas"/>
-                    </TextBlock>
-
-                    <Button>
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon Glyph="&#xE7EF;"/>
-                            <TextBlock Text="Reserve URL (Requires Admin)" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
-            </Expander>
-        </StackPanel>
+            </Grid>
+        </Grid>
     </ScrollViewer>
 </Page>

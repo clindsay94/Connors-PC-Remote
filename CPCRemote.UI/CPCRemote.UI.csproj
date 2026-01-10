@@ -58,9 +58,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-	<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <!-- ... -->
+  </ItemGroup>
+
+
+
+
+  
+  <!-- All XAML files included -->
+<ItemGroup>
 	<PackageReference Include="CommunityToolkit.WinUI.Animations" Version="8.2.250402" />
-	<PackageReference Include="CommunityToolkit.WinUI.Behaviors" Version="8.2.250402" />
+ 	<PackageReference Include="CommunityToolkit.WinUI.Behaviors" Version="8.2.250402" />
 	<PackageReference Include="CommunityToolkit.WinUI.Collections" Version="8.2.250402" />
 	<PackageReference Include="CommunityToolkit.WinUI.Controls.ColorPicker" Version="8.2.250402" />
 	<PackageReference Include="CommunityToolkit.WinUI.Controls.HeaderedControls" Version="8.2.250402" />

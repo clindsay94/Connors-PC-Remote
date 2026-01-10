@@ -27,6 +27,7 @@ namespace CPCRemote.UI.ViewModels
         private readonly ILogger<ServiceManagementViewModel> _logger;
         private readonly SettingsService _settingsService;
         private readonly HttpClient _httpClient;
+        private readonly NamedPipeClient _pipeClient;
 
         [ObservableProperty]
         public partial string? ServiceStatusText { get; set; }
@@ -104,11 +105,13 @@ namespace CPCRemote.UI.ViewModels
         public ServiceManagementViewModel(
             ILogger<ServiceManagementViewModel> logger,
             SettingsService settingsService,
-            HttpClient httpClient)
+            HttpClient httpClient,
+            NamedPipeClient pipeClient)
         {
             _logger = logger;
             _settingsService = settingsService;
             _httpClient = httpClient;
+            _pipeClient = pipeClient;
             ServiceStatusText = Resources.Unknown;
             ServiceInstalledText = Resources.Unknown;
             IsSafetyLockEnabled = _settingsService.Get<bool>(nameof(IsSafetyLockEnabled), true);
@@ -172,59 +175,112 @@ namespace CPCRemote.UI.ViewModels
                 await _settingsService.SaveServiceConfigurationAsync(config);
                 _settingsService.Set(nameof(IsSafetyLockEnabled), IsSafetyLockEnabled);
 
-                // 2. Save to Service's appsettings.json
-                string? serviceConfigPath = FindServiceConfigPath();
-                if (!string.IsNullOrEmpty(serviceConfigPath))
+                // 2. Try to update Service via IPC
+                bool ipcSuccess = false;
+                if (IsServiceRunning)
                 {
                     try
                     {
-                        string jsonContent = await System.IO.File.ReadAllTextAsync(serviceConfigPath);
-                        var jsonNode = System.Text.Json.Nodes.JsonNode.Parse(jsonContent);
-
-                        if (jsonNode != null)
+                        if (!_pipeClient.IsConnected)
                         {
-                            // Ensure 'rsm' section exists
-                            if (jsonNode["rsm"] is not System.Text.Json.Nodes.JsonObject rsmNode)
+                            await _pipeClient.ConnectAsync(TimeSpan.FromSeconds(2));
+                        }
+
+                        if (_pipeClient.IsConnected)
+                        {
+                            var request = new CPCRemote.Core.IPC.SaveRsmConfigRequest
                             {
-                                rsmNode = new System.Text.Json.Nodes.JsonObject();
-                                jsonNode["rsm"] = rsmNode;
-                            }
-
-                            // Helper to update or add property case-insensitively
-                            void UpdateProperty(System.Text.Json.Nodes.JsonObject node, string propertyName, System.Text.Json.Nodes.JsonNode? value)
-                            {
-                                var existingKey = node.Select(x => x.Key).FirstOrDefault(k => k.Equals(propertyName, StringComparison.OrdinalIgnoreCase));
-                                if (existingKey != null)
+                                Config = new CPCRemote.Core.IPC.RsmConfigDto
                                 {
-                                    node[existingKey] = value;
+                                    IpAddress = this.IpAddress ?? "0.0.0.0",
+                                    Port = (int)this.Port,
+                                    Secret = this.Secret
                                 }
-                                else
-                                {
-                                    node[propertyName] = value;
-                                }
-                            }
+                            };
 
-                            UpdateProperty(rsmNode, "IpAddress", System.Text.Json.Nodes.JsonValue.Create(this.IpAddress));
-                            UpdateProperty(rsmNode, "Port", System.Text.Json.Nodes.JsonValue.Create(this.Port));
-                            UpdateProperty(rsmNode, "Secret", System.Text.Json.Nodes.JsonValue.Create(this.Secret));
-
-                            var options = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
-                            await System.IO.File.WriteAllTextAsync(serviceConfigPath, jsonNode.ToJsonString(options));
+                            var response = await _pipeClient.SendRequestAsync<CPCRemote.Core.IPC.SaveRsmConfigResponse>(request, TimeSpan.FromSeconds(5));
                             
-                            _logger.LogInformation("Updated service configuration at {Path}", serviceConfigPath);
+                            if (response.Success)
+                            {
+                                ipcSuccess = true;
+                                _logger.LogInformation("Service configuration updated via IPC.");
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Service configuration IPC update failed: {Error}", response.ErrorMessage);
+                            }
                         }
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Failed to write to service configuration file at {Path}", serviceConfigPath);
-                        throw new InvalidOperationException(string.Format(Resources.ServiceManagement_ConfigUpdateFailed, ex.Message));
+                        _logger.LogWarning(ex, "Failed to update service config via IPC.");
                     }
                 }
-                else
+
+                // 3. Fallback to direct file write if IPC failed or service not running
+                if (!ipcSuccess)
                 {
-                    _logger.LogWarning("Could not locate service configuration file to update.");
-                    ShowInfoBar(Resources.ServiceManagement_ConfigSavedWarning, InfoBarSeverity.Warning);
-                    return;
+                    _logger.LogInformation("Falling back to direct file write for service config.");
+                    
+                    string? serviceConfigPath = FindServiceConfigPath();
+                    if (!string.IsNullOrEmpty(serviceConfigPath))
+                    {
+                        try
+                        {
+                            string jsonContent = await System.IO.File.ReadAllTextAsync(serviceConfigPath);
+                            var jsonNode = System.Text.Json.Nodes.JsonNode.Parse(jsonContent);
+
+                            if (jsonNode != null)
+                            {
+                                // Ensure 'rsm' section exists
+                                if (jsonNode["rsm"] is not System.Text.Json.Nodes.JsonObject rsmNode)
+                                {
+                                    rsmNode = new System.Text.Json.Nodes.JsonObject();
+                                    jsonNode["rsm"] = rsmNode;
+                                }
+
+                                // Helper to update or add property case-insensitively
+                                void UpdateProperty(System.Text.Json.Nodes.JsonObject node, string propertyName, System.Text.Json.Nodes.JsonNode? value)
+                                {
+                                    var existingKey = node.Select(x => x.Key).FirstOrDefault(k => k.Equals(propertyName, StringComparison.OrdinalIgnoreCase));
+                                    if (existingKey != null)
+                                    {
+                                        node[existingKey] = value;
+                                    }
+                                    else
+                                    {
+                                        node[propertyName] = value;
+                                    }
+                                }
+
+                                UpdateProperty(rsmNode, "IpAddress", System.Text.Json.Nodes.JsonValue.Create(this.IpAddress));
+                                UpdateProperty(rsmNode, "Port", System.Text.Json.Nodes.JsonValue.Create(this.Port));
+                                UpdateProperty(rsmNode, "Secret", System.Text.Json.Nodes.JsonValue.Create(this.Secret));
+
+                                var options = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
+                                await System.IO.File.WriteAllTextAsync(serviceConfigPath, jsonNode.ToJsonString(options));
+                                
+                                _logger.LogInformation("Updated service configuration at {Path}", serviceConfigPath);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Failed to write to service configuration file at {Path}", serviceConfigPath);
+                            // Only throw if we had no success via IPC either (which we know we didn't)
+                            // But maybe we don't want to crash the whole operation?
+                            // Let's warn the user.
+                            ShowInfoBar(string.Format(Resources.ServiceManagement_ConfigUpdateFailed, ex.Message), InfoBarSeverity.Warning);
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Could not locate service configuration file to update.");
+                        if (!ipcSuccess) // Redundant check but clear intent
+                        {
+                             ShowInfoBar(Resources.ServiceManagement_ConfigSavedWarning, InfoBarSeverity.Warning);
+                             return;
+                        }
+                    }
                 }
 
                 ShowInfoBar(Resources.ServiceManagement_ConfigSavedSuccess, InfoBarSeverity.Success);

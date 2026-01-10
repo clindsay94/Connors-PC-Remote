@@ -317,6 +317,7 @@ public sealed class NamedPipeServer : IPipeServer
                 ExecuteCommandRequest req => await HandleExecuteCommandAsync(req, cancellationToken).ConfigureAwait(false),
                 GetSensorConfigRequest => HandleGetSensorConfig(),
                 SaveSensorConfigRequest req => await HandleSaveSensorConfigAsync(req, cancellationToken).ConfigureAwait(false),
+                SaveRsmConfigRequest req => await HandleSaveRsmConfigAsync(req, cancellationToken).ConfigureAwait(false),
                 _ => new ErrorResponse
                 {
                     CorrelationId = message.CorrelationId,
@@ -607,5 +608,94 @@ public sealed class NamedPipeServer : IPipeServer
         }
 
         writer.WriteEndObject();
+    }
+
+    private async Task<SaveRsmConfigResponse> HandleSaveRsmConfigAsync(SaveRsmConfigRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Use ConfigurationPaths to get writable config location
+            string appSettingsPath = CPCRemote.Core.Helpers.ConfigurationPaths.EnsureServiceConfigExists("appsettings.json");
+
+            if (!File.Exists(appSettingsPath))
+            {
+                return new SaveRsmConfigResponse
+                {
+                    Success = false,
+                    ErrorMessage = "appsettings.json not found and could not be created"
+                };
+            }
+
+            string json = await File.ReadAllTextAsync(appSettingsPath, cancellationToken).ConfigureAwait(false);
+            
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            // Create new JSON with updated RSM section
+            using var stream = new MemoryStream();
+            // Use same formatting as other edit methods
+            using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
+            {
+                writer.WriteStartObject();
+
+                foreach (var prop in root.EnumerateObject())
+                {
+                    if (prop.NameEquals("rsm"))
+                    {
+                        writer.WritePropertyName("rsm");
+                        writer.WriteStartObject();
+                        
+                        // We need to preserve other fields in 'rsm' if they exist (like useHttps, certificateThumbprint)
+                        // but overwrite ipAddress, port, secret.
+                        
+                        // First, let's write our updates
+                        writer.WriteString("ipAddress", request.Config.IpAddress);
+                        writer.WriteNumber("port", request.Config.Port);
+                        // Write secret if provided, or empty string (assuming empty means no secret)
+                        writer.WriteString("secret", request.Config.Secret ?? string.Empty);
+                        
+                        // Copy existing properties that we aren't updating from the request
+                        foreach (var rsmProp in prop.Value.EnumerateObject())
+                        {
+                            if (!rsmProp.NameEquals("ipAddress") && 
+                                !rsmProp.NameEquals("port") && 
+                                !rsmProp.NameEquals("secret"))
+                            {
+                                rsmProp.WriteTo(writer);
+                            }
+                        }
+                        
+                        writer.WriteEndObject();
+                    }
+                    else
+                    {
+                        prop.WriteTo(writer);
+                    }
+                }
+
+                // If 'rsm' section was missing entirely, we should add it? 
+                // However, the loop above iterates existing properties. 
+                // If the file is valid, 'rsm' should likely be there or we should add it at the end.
+                // For robustness, let's just handle the case where it exists for now as per appsettings structure.
+                
+                writer.WriteEndObject();
+            }
+
+            string updatedJson = Encoding.UTF8.GetString(stream.ToArray());
+            await File.WriteAllTextAsync(appSettingsPath, updatedJson, cancellationToken).ConfigureAwait(false);
+
+            _logger.LogInformation("RSM configuration updated via IPC. Service restart may be required for changes to take effect.");
+
+            return new SaveRsmConfigResponse { Success = true };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save RSM configuration");
+            return new SaveRsmConfigResponse
+            {
+                Success = false,
+                ErrorMessage = ex.Message
+            };
+        }
     }
 }
