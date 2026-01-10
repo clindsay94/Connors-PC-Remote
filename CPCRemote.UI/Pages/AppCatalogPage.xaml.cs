@@ -37,7 +37,8 @@ public sealed partial class AppCatalogPage : Page
         var file = await picker.PickSingleFileAsync();
         if (file != null)
         {
-            ViewModel.EditPath = file.Path;
+            // Sanitize path (remove any invisible chars/whitespace)
+            ViewModel.EditPath = file.Path.Trim().TrimEnd('\0', '\r', '\n');
         }
     }
 }

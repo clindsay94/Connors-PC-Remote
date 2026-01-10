@@ -24,6 +24,22 @@
     <!-- Glass/Frost Effects -->
     <SolidColorBrush x:Key="GlassBorderBrush" Color="#33FFFFFF"/>
     <SolidColorBrush x:Key="GlassBackgroundBrush" Color="#15FFFFFF"/>
+
+    <!-- ULTRA-GLASS RESOURCES (Phase 2) -->
+    <!-- In-App Acrylic for Cards (Blur behind content) -->
+    <!-- ULTRA-GLASS RESOURCES (Phase 2) -->
+    <!-- Transparency allows Window Backdrop (Mica/Acrylic) to show through -->
+    <SolidColorBrush x:Key="UltraGlassBrush" Color="#20303030"/>
+
+    <!-- Frosted Edge Lighting (Top-Left Light -> Bottom-Right Dark) -->
+    <LinearGradientBrush x:Key="EdgeLightingBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#80FFFFFF" Offset="0.0"/>   <!-- White Highlight -->
+        <GradientStop Color="#20FFFFFF" Offset="0.5"/>   <!-- Mid fade -->
+        <GradientStop Color="#00FFFFFF" Offset="1.0"/>   <!-- Transparent -->
+    </LinearGradientBrush>
+
+    <!-- Neon Glow Wrapper (References SystemAccentColor dynamically) -->
+    <SolidColorBrush x:Key="NeonGlowBrush" Color="{ThemeResource SystemAccentColor}"/>
     
     <!-- 
         OVERRIDES FOR TRANSPARENCY 

@@ -313,27 +313,30 @@ public sealed partial class AppCatalogViewModel : ObservableObject
     /// <summary>
     /// Deletes the selected app.
     /// </summary>
-    [RelayCommand(CanExecute = nameof(CanDeleteApp))]
-    public async Task DeleteAppAsync()
+    [RelayCommand]
+    public async Task DeleteAppAsync(AppCatalogEntry? app)
     {
-        if (SelectedApp is null)
+        // If app passed via CommandParameter use it, otherwise fallback to SelectedApp
+        var targetApp = app ?? SelectedApp;
+
+        if (targetApp is null)
         {
             return;
         }
 
         IsLoading = true;
-        StatusMessage = string.Format(Resources.AppCatalog_DeletingApp, SelectedApp.Name);
+        StatusMessage = string.Format(Resources.AppCatalog_DeletingApp, targetApp.Name);
 
         try
         {
             var response = await _pipeClient.SendRequestAsync<DeleteAppResponse>(
-                new DeleteAppRequest { Slot = SelectedApp.Slot },
+                new DeleteAppRequest { Slot = targetApp.Slot },
                 IpcConstants.DefaultTimeout);
 
             if (response.Success)
             {
-                StatusMessage = string.Format(Resources.AppCatalog_DeletedApp, SelectedApp.Name);
-                SelectedApp = null;
+                StatusMessage = string.Format(Resources.AppCatalog_DeletedApp, targetApp.Name);
+                if (SelectedApp == targetApp) SelectedApp = null;
                 await RefreshAppsAsync();
             }
             else
@@ -356,7 +359,7 @@ public sealed partial class AppCatalogViewModel : ObservableObject
         }
     }
 
-    private bool CanDeleteApp() => SelectedApp is not null;
+    private bool CanDeleteApp(AppCatalogEntry? app) => true; // Always allow command, handle null inside
 
     /// <summary>
     /// Closes the edit dialog without saving.

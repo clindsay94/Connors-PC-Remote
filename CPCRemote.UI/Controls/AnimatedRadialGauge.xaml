@@ -8,20 +8,26 @@
     SizeChanged="UserControl_SizeChanged">
 
     <Grid>
+        <!-- Glow Ring (Backlight) -->
+        <Ellipse Stroke="{ThemeResource NeonGlowBrush}"
+                 StrokeThickness="12"
+                 Width="100" Height="100"
+                 Opacity="0.2"/>
+
         <!-- Background Ring -->
         <Ellipse x:Name="TrackRing"
                  Stroke="{ThemeResource SurfaceStrokeColorDefaultBrush}"
                  StrokeThickness="8"
                  Width="100" Height="100"/>
-
-        <!-- Progress Ring (We use an Arc-like Path or just a partial ellipse via Clip, but simple StrokeDashArray logic with Ellipse is easiest for XAML-only, 
-             but for true animations we might need a Path or standard ProgressRing customization. 
-             Let's use a standard ProgressRing but styled? No, standard ProgressRing is hard to style thick/round.
-             
-             Let's use a Path for the Arc.
+                 
+        <!-- Active Glow (We can't easily animate a second path without duplicating logic, 
+             so let's just make the main path glow via Shadow if possible or just use a bright brush) 
+             For now, just updating the main path to use SystemAccentColor is a win.
         -->
+                 
+        <!-- Progress Ring -->
         <Path x:Name="ProgressPath"
-              Stroke="{ThemeResource VibrantMesh}"
+              Stroke="{ThemeResource NeonGlowBrush}"
               StrokeThickness="8"
               StrokeStartLineCap="Round"
               StrokeEndLineCap="Round"

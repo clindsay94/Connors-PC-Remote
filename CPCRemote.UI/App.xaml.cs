@@ -179,6 +179,13 @@ namespace CPCRemote.UI
                 int fontScale = settings.Get("FontSizeScale", 100);
                 ApplyFontScale(fontScale);
 
+                // Apply accent color (if custom)
+                if (!settings.Get("UseSystemAccent", true))
+                {
+                    string accentColor = settings.Get("AccentColor", string.Empty);
+                    ApplyAccentColor(accentColor);
+                }
+
                 Logger?.LogInformation("Applied saved settings: Theme={Theme}, Backdrop={Backdrop}, Font={Font}, Scale={Scale}%", 
                     theme, backdrop, fontFamily, fontScale);
             }
@@ -230,6 +237,69 @@ namespace CPCRemote.UI
             {
                 Logger?.LogWarning(ex, "Failed to apply backdrop: {Backdrop}", backdrop);
             }
+        }
+
+        /// <summary>
+        /// Applies the specified hex color as the application's accent color.
+        /// Generates necessary light/dark variants for proper contrast.
+        /// </summary>
+        public static void ApplyAccentColor(string hexColor)
+        {
+            if (string.IsNullOrWhiteSpace(hexColor)) return;
+
+            try
+            {
+                // Parse hex string to Color
+                hexColor = hexColor.Replace("#", "");
+                if (hexColor.Length == 6) hexColor = "FF" + hexColor; // Add Alpha if missing
+
+                var color = Windows.UI.Color.FromArgb(
+                    byte.Parse(hexColor.Substring(0, 2), System.Globalization.NumberStyles.HexNumber),
+                    byte.Parse(hexColor.Substring(2, 2), System.Globalization.NumberStyles.HexNumber),
+                    byte.Parse(hexColor.Substring(4, 2), System.Globalization.NumberStyles.HexNumber),
+                    byte.Parse(hexColor.Substring(6, 2), System.Globalization.NumberStyles.HexNumber));
+
+                // Update Application Resources
+                Application.Current.Resources["SystemAccentColor"] = color;
+                Application.Current.Resources["SystemAccentColorLight1"] = ChangeColorBrightness(color, 0.3f);
+                Application.Current.Resources["SystemAccentColorLight2"] = ChangeColorBrightness(color, 0.5f);
+                Application.Current.Resources["SystemAccentColorLight3"] = ChangeColorBrightness(color, 0.7f);
+                Application.Current.Resources["SystemAccentColorDark1"] = ChangeColorBrightness(color, -0.3f);
+                Application.Current.Resources["SystemAccentColorDark2"] = ChangeColorBrightness(color, -0.5f);
+                Application.Current.Resources["SystemAccentColorDark3"] = ChangeColorBrightness(color, -0.7f);
+
+                // Force update on some brushes if they don't automatically update
+                // (WinUI ThemeResources usually bind to SystemAccentColor, but dynamic updates can be tricky)
+                
+                Logger?.LogDebug("Applied custom accent color: {Hex}", hexColor);
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogWarning(ex, "Failed to apply accent color: {Hex}", hexColor);
+            }
+        }
+
+        private static Windows.UI.Color ChangeColorBrightness(Windows.UI.Color color, float factor)
+        {
+            float r = (float)color.R;
+            float g = (float)color.G;
+            float b = (float)color.B;
+
+            if (factor < 0)
+            {
+                factor = 1 + factor;
+                r *= factor;
+                g *= factor;
+                b *= factor;
+            }
+            else
+            {
+                r = (255 - r) * factor + r;
+                g = (255 - g) * factor + g;
+                b = (255 - b) * factor + b;
+            }
+
+            return Windows.UI.Color.FromArgb(color.A, (byte)r, (byte)g, (byte)b);
         }
 
         /// <summary>

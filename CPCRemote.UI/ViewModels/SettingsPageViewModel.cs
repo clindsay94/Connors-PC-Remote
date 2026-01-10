@@ -127,7 +127,7 @@ public partial class SettingsPageViewModel : ObservableObject
     {
         if (_isInitializing) return;
         _settingsService.Set("AccentColor", value);
-        // Note: Actual color application might need UI thread or App helper if not bound directly
+        App.ApplyAccentColor(value);
     }
 
     partial void OnBackdropChanged(string value)

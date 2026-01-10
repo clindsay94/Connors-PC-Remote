@@ -1,5 +1,6 @@
 using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Input;
 using System.Numerics;
@@ -42,6 +43,7 @@ public static class CompositionBehavior
     {
         if (sender is UIElement element)
         {
+            Canvas.SetZIndex(element, 1);
             ApplyScaleAnimation(element, 1.05f);
         }
     }
@@ -50,6 +52,7 @@ public static class CompositionBehavior
     {
         if (sender is UIElement element)
         {
+            Canvas.SetZIndex(element, 0);
             ApplyScaleAnimation(element, 1.0f);
         }
     }
@@ -58,6 +61,7 @@ public static class CompositionBehavior
     {
         if (sender is UIElement element)
         {
+            Canvas.SetZIndex(element, 1);
             ApplyScaleAnimation(element, 0.95f);
         }
     }
@@ -66,6 +70,7 @@ public static class CompositionBehavior
     {
         if (sender is UIElement element)
         {
+            Canvas.SetZIndex(element, 1);
             ApplyScaleAnimation(element, 1.05f); // Return to hover state
         }
     }
@@ -75,15 +80,31 @@ public static class CompositionBehavior
         var visual = ElementCompositionPreview.GetElementVisual(element);
         var compositor = visual.Compositor;
 
+        // Enable translation for this visual
+        ElementCompositionPreview.SetIsTranslationEnabled(element, true);
+
         // Ensure CenterPoint is set to center of element for scaling
         visual.CenterPoint = new Vector3((float)element.RenderSize.Width / 2, (float)element.RenderSize.Height / 2, 0);
 
-        // Use keyframe animation for simpler API compatibility
+        // 1. Scale Animation
         var scaleAnim = compositor.CreateVector3KeyFrameAnimation();
         scaleAnim.Target = "Scale";
         scaleAnim.InsertKeyFrame(1.0f, new Vector3(scale), compositor.CreateCubicBezierEasingFunction(new Vector2(0.1f, 0.9f), new Vector2(0.2f, 1.0f)));
-        scaleAnim.Duration = System.TimeSpan.FromMilliseconds(150);
+        scaleAnim.Duration = System.TimeSpan.FromMilliseconds(400);
 
+        // 2. Translation (Lift) Animation
+        // Derived from scale: >1 means lift up (-8), <1 means press down (+2), 1 means reset
+        float translateY = 0f;
+        if (scale > 1.0f) translateY = -8.0f;       // Lift up on hover
+        else if (scale < 1.0f) translateY = 2.0f;   // Push down on press
+
+        var transAnim = compositor.CreateVector3KeyFrameAnimation();
+        transAnim.Target = "Translation";
+        transAnim.InsertKeyFrame(1.0f, new Vector3(0, translateY, 0), compositor.CreateCubicBezierEasingFunction(new Vector2(0.1f, 0.9f), new Vector2(0.2f, 1.0f)));
+        transAnim.Duration = System.TimeSpan.FromMilliseconds(400);
+
+        // Start both
         visual.StartAnimation("Scale", scaleAnim);
+        visual.StartAnimation("Translation", transAnim);
     }
 }

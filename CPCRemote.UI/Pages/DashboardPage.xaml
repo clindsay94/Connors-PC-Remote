@@ -10,15 +10,21 @@
     mc:Ignorable="d"
     Background="Transparent">
 
+    <Page.Transitions>
+        <TransitionCollection>
+             <EntranceThemeTransition FromVerticalOffset="50" IsStaggeringEnabled="True"/>
+        </TransitionCollection>
+    </Page.Transitions>
+
     <Page.Resources>
         <!-- Card Style -->
         <Style x:Key="DashboardCardStyle" TargetType="Border">
-            <Setter Property="Background" Value="{ThemeResource GlassBackgroundBrush}"/>
-            <Setter Property="BorderBrush" Value="{ThemeResource GlassBorderBrush}"/>
+            <Setter Property="Background" Value="{ThemeResource UltraGlassBrush}"/>
+            <Setter Property="BorderBrush" Value="{ThemeResource EdgeLightingBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="CornerRadius" Value="16"/>
             <Setter Property="Padding" Value="20"/>
-            <Setter Property="Margin" Value="0,0,16,16"/>
+            <Setter Property="Margin" Value="0,0,16,24"/>
             <!-- Implicit Animations for smooth entry -->
             <Setter Property="animations:Implicit.ShowAnimations">
                 <Setter.Value>
@@ -70,7 +76,7 @@
 
         <!-- Main Content -->
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <Grid>
+            <Grid Padding="32">
                 <Grid.RowDefinitions>
                      <RowDefinition Height="Auto"/> <!-- Service Status -->
                      <RowDefinition Height="Auto"/> <!-- CPU -->

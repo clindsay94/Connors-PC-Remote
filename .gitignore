@@ -446,3 +446,11 @@ DOTNET-BEST-PRACTICES-AUDIT.md
 best practices remediation plan.md
 .github/prompts/dotnet-upgrade.prompt.md
 docs/StoreJustification.md
+build_output_padding_fix.txt
+build_output_clipping.txt
+build_output_browse_fix.txt
+build_output_5.txt
+build_output_4.txt
+build_output_3.txt
+build_output_2.txt
+build_output.txt
