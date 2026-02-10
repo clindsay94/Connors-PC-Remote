@@ -22,4 +22,28 @@ public sealed partial class SettingsPage : Page
         ViewModel.AccentColor = hex;
         ViewModel.UseSystemAccent = false;
     }
+
+    private void CpuColorPicker_ColorChanged(ColorPicker sender, ColorChangedEventArgs args)
+        => ViewModel.CpuColor = args.NewColor;
+
+    private void GpuColorPicker_ColorChanged(ColorPicker sender, ColorChangedEventArgs args)
+        => ViewModel.GpuColor = args.NewColor;
+
+    private void MemoryColorPicker_ColorChanged(ColorPicker sender, ColorChangedEventArgs args)
+        => ViewModel.MemoryColor = args.NewColor;
+
+    private void MotherboardColorPicker_ColorChanged(ColorPicker sender, ColorChangedEventArgs args)
+        => ViewModel.MotherboardColor = args.NewColor;
+
+    private void StorageColorPicker_ColorChanged(ColorPicker sender, ColorChangedEventArgs args)
+        => ViewModel.StorageColor = args.NewColor;
+
+    private void CoolingColorPicker_ColorChanged(ColorPicker sender, ColorChangedEventArgs args)
+        => ViewModel.CoolingColor = args.NewColor;
+
+    private void NetworkColorPicker_ColorChanged(ColorPicker sender, ColorChangedEventArgs args)
+        => ViewModel.NetworkColor = args.NewColor;
+
+    private void OtherColorPicker_ColorChanged(ColorPicker sender, ColorChangedEventArgs args)
+        => ViewModel.OtherColor = args.NewColor;
 }

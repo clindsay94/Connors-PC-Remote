@@ -20,6 +20,12 @@ namespace CPCRemote.UI
         public static MainWindow? CurrentMainWindow { get; private set; }
         public static ILogger? Logger { get; private set; }
         public static IServiceProvider? Services { get; private set; }
+        public static TrayService? Tray { get; private set; }
+
+        /// <summary>
+        /// When true, the next window close will actually exit the app instead of hiding to tray.
+        /// </summary>
+        internal static bool RequestExit { get; set; }
 
         private ILoggerFactory? _loggerFactory;
         private Window? m_window;
@@ -82,11 +88,26 @@ namespace CPCRemote.UI
                 // 7. Perform initial navigation after services are ready
                 CurrentMainWindow?.PerformInitialNavigation();
 
-                // Cleanup on exit
+                // 8. Initialize system tray icon
+                Tray = new TrayService(Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread());
+                Tray.Initialize();
+
+                // Handle window close: minimize to tray unless exit was explicitly requested
                 m_window.Closed += (s, e) =>
                 {
+                    if (!RequestExit)
+                    {
+                        // Hide window to tray instead of closing
+                        e.Handled = true;
+                        CurrentMainWindow?.Hide();
+                        return;
+                    }
+
+                    // True exit: cleanup everything
                     Logger?.LogInformation("Application shutting down...");
                     
+                    Tray?.Dispose();
+
                     // Dispose the pipe client
                     if (Services?.GetService<IPipeClient>() is IAsyncDisposable disposable)
                     {
@@ -123,6 +144,7 @@ namespace CPCRemote.UI
             // - Singleton: Shared state across navigation, survives page changes (e.g., service status)
             // - Transient: Fresh instance each time, no shared state (e.g., dashboard refreshes on each visit)
             services.AddSingleton<SettingsService>();           // Singleton: Caches settings, shared across pages
+            services.AddSingleton<CategoryColorService>();       // Singleton: Category colors shared across dashboard
             
             // HttpClient for ServiceManagementViewModel - uses IHttpClientFactory pattern
             // This properly manages HttpClient lifecycle, avoiding socket exhaustion
@@ -133,6 +155,7 @@ namespace CPCRemote.UI
             
             services.AddTransient<QuickActionsViewModel>();      // Transient: Fresh state on each page visit
             services.AddTransient<DashboardViewModel>();         // Transient: Refreshes stats on each navigation
+            services.AddTransient<HomePageViewModel>();          // Transient: Fresh widget state on each visit
             services.AddTransient<AppCatalogViewModel>();        // Transient: Reloads catalog from service each visit
             services.AddTransient<SettingsPageViewModel>();      // Transient: Settings Page VM
 
@@ -179,8 +202,20 @@ namespace CPCRemote.UI
                 int fontScale = settings.Get("FontSizeScale", 100);
                 ApplyFontScale(fontScale);
 
+                // Apply accent color (if custom)
+                if (!settings.Get("UseSystemAccent", true))
+                {
+                    string accentColor = settings.Get("AccentColor", string.Empty);
+                    ApplyAccentColor(accentColor);
+                }
+
                 Logger?.LogInformation("Applied saved settings: Theme={Theme}, Backdrop={Backdrop}, Font={Font}, Scale={Scale}%", 
                     theme, backdrop, fontFamily, fontScale);
+
+                // Initialize category color service on view models
+                var colorService = GetService<CategoryColorService>();
+                DashboardWidgetViewModel.SetColorService(colorService);
+                SensorCardViewModel.SetColorService(colorService);
             }
             catch (Exception ex)
             {
@@ -230,6 +265,69 @@ namespace CPCRemote.UI
             {
                 Logger?.LogWarning(ex, "Failed to apply backdrop: {Backdrop}", backdrop);
             }
+        }
+
+        /// <summary>
+        /// Applies the specified hex color as the application's accent color.
+        /// Generates necessary light/dark variants for proper contrast.
+        /// </summary>
+        public static void ApplyAccentColor(string hexColor)
+        {
+            if (string.IsNullOrWhiteSpace(hexColor)) return;
+
+            try
+            {
+                // Parse hex string to Color
+                hexColor = hexColor.Replace("#", "");
+                if (hexColor.Length == 6) hexColor = "FF" + hexColor; // Add Alpha if missing
+
+                var color = Windows.UI.Color.FromArgb(
+                    byte.Parse(hexColor.Substring(0, 2), System.Globalization.NumberStyles.HexNumber),
+                    byte.Parse(hexColor.Substring(2, 2), System.Globalization.NumberStyles.HexNumber),
+                    byte.Parse(hexColor.Substring(4, 2), System.Globalization.NumberStyles.HexNumber),
+                    byte.Parse(hexColor.Substring(6, 2), System.Globalization.NumberStyles.HexNumber));
+
+                // Update Application Resources
+                Application.Current.Resources["SystemAccentColor"] = color;
+                Application.Current.Resources["SystemAccentColorLight1"] = ChangeColorBrightness(color, 0.3f);
+                Application.Current.Resources["SystemAccentColorLight2"] = ChangeColorBrightness(color, 0.5f);
+                Application.Current.Resources["SystemAccentColorLight3"] = ChangeColorBrightness(color, 0.7f);
+                Application.Current.Resources["SystemAccentColorDark1"] = ChangeColorBrightness(color, -0.3f);
+                Application.Current.Resources["SystemAccentColorDark2"] = ChangeColorBrightness(color, -0.5f);
+                Application.Current.Resources["SystemAccentColorDark3"] = ChangeColorBrightness(color, -0.7f);
+
+                // Force update on some brushes if they don't automatically update
+                // (WinUI ThemeResources usually bind to SystemAccentColor, but dynamic updates can be tricky)
+                
+                Logger?.LogDebug("Applied custom accent color: {Hex}", hexColor);
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogWarning(ex, "Failed to apply accent color: {Hex}", hexColor);
+            }
+        }
+
+        private static Windows.UI.Color ChangeColorBrightness(Windows.UI.Color color, float factor)
+        {
+            float r = (float)color.R;
+            float g = (float)color.G;
+            float b = (float)color.B;
+
+            if (factor < 0)
+            {
+                factor = 1 + factor;
+                r *= factor;
+                g *= factor;
+                b *= factor;
+            }
+            else
+            {
+                r = (255 - r) * factor + r;
+                g = (255 - g) * factor + g;
+                b = (255 - b) * factor + b;
+            }
+
+            return Windows.UI.Color.FromArgb(color.A, (byte)r, (byte)g, (byte)b);
         }
 
         /// <summary>

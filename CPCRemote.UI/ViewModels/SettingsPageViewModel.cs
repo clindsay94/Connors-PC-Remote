@@ -4,15 +4,19 @@ using CPCRemote.UI.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using Windows.UI;
+using CPCRemote.Core.Helpers;
 
 namespace CPCRemote.UI.ViewModels;
 
 public partial class SettingsPageViewModel : ObservableObject
 {
     private readonly SettingsService _settingsService;
+    private readonly CategoryColorService _colorService;
     private bool _isInitializing = true;
 
     [ObservableProperty]
@@ -68,13 +72,65 @@ public partial class SettingsPageViewModel : ObservableObject
 
     public ObservableCollection<string> InstalledFonts { get; } = new();
 
-    public SettingsPageViewModel(SettingsService settingsService)
+    // ── Firewall properties ──
+
+    [ObservableProperty]
+    public partial bool IsFirewallRuleActive { get; set; }
+
+    [ObservableProperty]
+    public partial string FirewallStatus { get; set; } = "Checking...";
+
+    [ObservableProperty]
+    public partial string ConfiguredPort { get; set; } = "--";
+
+    [ObservableProperty]
+    public partial bool ShowFirewallInfo { get; set; }
+
+    [ObservableProperty]
+    public partial InfoBarSeverity FirewallInfoSeverity { get; set; } = InfoBarSeverity.Informational;
+
+    [ObservableProperty]
+    public partial string FirewallInfoTitle { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string FirewallInfoMessage { get; set; } = string.Empty;
+
+    // ── Category Colors ──
+
+    [ObservableProperty]
+    public partial Color CpuColor { get; set; }
+
+    [ObservableProperty]
+    public partial Color GpuColor { get; set; }
+
+    [ObservableProperty]
+    public partial Color MemoryColor { get; set; }
+
+    [ObservableProperty]
+    public partial Color MotherboardColor { get; set; }
+
+    [ObservableProperty]
+    public partial Color StorageColor { get; set; }
+
+    [ObservableProperty]
+    public partial Color CoolingColor { get; set; }
+
+    [ObservableProperty]
+    public partial Color NetworkColor { get; set; }
+
+    [ObservableProperty]
+    public partial Color OtherColor { get; set; }
+
+    public SettingsPageViewModel(SettingsService settingsService, CategoryColorService colorService)
     {
         _settingsService = settingsService;
+        _colorService = colorService;
         
         LoadSettings();
+        LoadCategoryColors();
         PopulateFonts();
         SetVersionInfo();
+        LoadFirewallStatus();
         
         _isInitializing = false;
     }
@@ -97,6 +153,27 @@ public partial class SettingsPageViewModel : ObservableObject
         StartMinimized = _settingsService.Get("StartMinimized", false);
         RememberPosition = _settingsService.Get("RememberPosition", true);
     }
+
+    private void LoadCategoryColors()
+    {
+        CpuColor = _colorService.GetColor("CPU");
+        GpuColor = _colorService.GetColor("GPU");
+        MemoryColor = _colorService.GetColor("Memory");
+        MotherboardColor = _colorService.GetColor("Motherboard");
+        StorageColor = _colorService.GetColor("Storage");
+        CoolingColor = _colorService.GetColor("Cooling");
+        NetworkColor = _colorService.GetColor("Network");
+        OtherColor = _colorService.GetColor("Other");
+    }
+
+    partial void OnCpuColorChanged(Color value) { if (!_isInitializing) _colorService.SetColor("CPU", value); }
+    partial void OnGpuColorChanged(Color value) { if (!_isInitializing) _colorService.SetColor("GPU", value); }
+    partial void OnMemoryColorChanged(Color value) { if (!_isInitializing) _colorService.SetColor("Memory", value); }
+    partial void OnMotherboardColorChanged(Color value) { if (!_isInitializing) _colorService.SetColor("Motherboard", value); }
+    partial void OnStorageColorChanged(Color value) { if (!_isInitializing) _colorService.SetColor("Storage", value); }
+    partial void OnCoolingColorChanged(Color value) { if (!_isInitializing) _colorService.SetColor("Cooling", value); }
+    partial void OnNetworkColorChanged(Color value) { if (!_isInitializing) _colorService.SetColor("Network", value); }
+    partial void OnOtherColorChanged(Color value) { if (!_isInitializing) _colorService.SetColor("Other", value); }
 
     private void SetVersionInfo()
     {
@@ -127,7 +204,7 @@ public partial class SettingsPageViewModel : ObservableObject
     {
         if (_isInitializing) return;
         _settingsService.Set("AccentColor", value);
-        // Note: Actual color application might need UI thread or App helper if not bound directly
+        App.ApplyAccentColor(value);
     }
 
     partial void OnBackdropChanged(string value)
@@ -258,9 +335,163 @@ public partial class SettingsPageViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void ResetCategoryColors()
+    {
+        _isInitializing = true;
+        _colorService.ResetAll();
+        LoadCategoryColors();
+        _isInitializing = false;
+    }
+
+    [RelayCommand]
     private async Task OpenGitHub()
     {
         await Windows.System.Launcher.LaunchUriAsync(new Uri("https://github.com/clindsay94/Connors-PC-Remote"));
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // Firewall Management
+    // ══════════════════════════════════════════════════════════
+
+    private const string FirewallRuleName = "CPCRemote Service";
+
+    private void LoadFirewallStatus()
+    {
+        // Read port from service config
+        try
+        {
+            string configPath = ConfigurationPaths.EnsureServiceConfigExists("appsettings.json");
+            if (File.Exists(configPath))
+            {
+                string json = File.ReadAllText(configPath);
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("rsm", out var rsm) &&
+                    rsm.TryGetProperty("port", out var portEl))
+                {
+                    ConfiguredPort = portEl.GetInt32().ToString();
+                }
+            }
+        }
+        catch
+        {
+            ConfiguredPort = "8080";
+        }
+
+        // Check if firewall rule exists
+        _ = CheckFirewallStatusAsync();
+    }
+
+    [RelayCommand]
+    private async Task CheckFirewallStatus()
+    {
+        await CheckFirewallStatusAsync();
+    }
+
+    private async Task CheckFirewallStatusAsync()
+    {
+        try
+        {
+            var result = await RunNetshAsync($"advfirewall firewall show rule name=\"{FirewallRuleName}\"");
+            bool exists = result.ExitCode == 0 && result.Output.Contains(FirewallRuleName, StringComparison.OrdinalIgnoreCase);
+            IsFirewallRuleActive = exists;
+            FirewallStatus = exists ? "Rule active" : "No rule found";
+        }
+        catch
+        {
+            IsFirewallRuleActive = false;
+            FirewallStatus = "Unable to check";
+        }
+    }
+
+    [RelayCommand]
+    private async Task OpenFirewallPort()
+    {
+        try
+        {
+            if (!int.TryParse(ConfiguredPort, out int port) || port <= 0)
+            {
+                ShowFirewallFeedback(InfoBarSeverity.Error, "Invalid Port", "Cannot determine port from config.");
+                return;
+            }
+
+            // Remove existing rule first (ignore errors)
+            await RunNetshAsync($"advfirewall firewall delete rule name=\"{FirewallRuleName}\"");
+
+            // Create inbound TCP rule
+            var result = await RunNetshAsync(
+                $"advfirewall firewall add rule name=\"{FirewallRuleName}\" dir=in action=allow protocol=TCP localport={port}");
+
+            if (result.ExitCode == 0)
+            {
+                ShowFirewallFeedback(InfoBarSeverity.Success, "Firewall Rule Created",
+                    $"Inbound TCP rule created for port {port}.");
+                IsFirewallRuleActive = true;
+                FirewallStatus = "Rule active";
+            }
+            else
+            {
+                ShowFirewallFeedback(InfoBarSeverity.Error, "Failed", result.Output);
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowFirewallFeedback(InfoBarSeverity.Error, "Error", ex.Message);
+        }
+    }
+
+    [RelayCommand]
+    private async Task RemoveFirewallRule()
+    {
+        try
+        {
+            var result = await RunNetshAsync($"advfirewall firewall delete rule name=\"{FirewallRuleName}\"");
+
+            if (result.ExitCode == 0)
+            {
+                ShowFirewallFeedback(InfoBarSeverity.Success, "Rule Removed",
+                    "The CPCRemote firewall rule has been deleted.");
+                IsFirewallRuleActive = false;
+                FirewallStatus = "No rule found";
+            }
+            else
+            {
+                ShowFirewallFeedback(InfoBarSeverity.Warning, "Not Found", "No matching rule to remove.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowFirewallFeedback(InfoBarSeverity.Error, "Error", ex.Message);
+        }
+    }
+
+    private void ShowFirewallFeedback(InfoBarSeverity severity, string title, string message)
+    {
+        FirewallInfoSeverity = severity;
+        FirewallInfoTitle = title;
+        FirewallInfoMessage = message;
+        ShowFirewallInfo = true;
+    }
+
+    private static async Task<(int ExitCode, string Output)> RunNetshAsync(string arguments)
+    {
+        using var process = new Process();
+        process.StartInfo = new ProcessStartInfo
+        {
+            FileName = "netsh",
+            Arguments = arguments,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true,
+            Verb = "runas"
+        };
+
+        process.Start();
+        string output = await process.StandardOutput.ReadToEndAsync();
+        string error = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+
+        return (process.ExitCode, string.IsNullOrEmpty(output) ? error : output);
     }
     
     // Logic for applying window top-most state

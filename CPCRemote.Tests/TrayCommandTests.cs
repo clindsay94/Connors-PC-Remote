@@ -29,11 +29,9 @@ public class TrayCommandTests
     }
 
     [Test]
-    [TestCase(TrayCommandType.Shutdown, "Shutdown")]
-    [TestCase(TrayCommandType.Restart, "Restart")]
-    [TestCase(TrayCommandType.TurnScreenOff, "Turn screen off")]
-    [TestCase(TrayCommandType.ForceShutdown, "Force Shutdown")]
-    [TestCase(TrayCommandType.Lock, "Lock")]
+            [TestCase(TrayCommandType.Shutdown, "Shutdown")]
+            [TestCase(TrayCommandType.Restart, "Restart")]
+            [TestCase(TrayCommandType.ForceShutdown, "Force Shutdown")]    [TestCase(TrayCommandType.Lock, "Lock")]
     [TestCase(TrayCommandType.UEFIReboot, "UEFI Reboot")]
     [TestCase(TrayCommandType.WakeOnLan, "Wake on LAN")]
     public void GetText_KnownCommandType_ReturnsDisplayName(TrayCommandType commandType, string expectedText)
@@ -59,11 +57,9 @@ public class TrayCommandTests
     }
 
     [Test]
-    [TestCase("Shutdown", TrayCommandType.Shutdown)]
-    [TestCase("restart", TrayCommandType.Restart)]
-    [TestCase("TURN SCREEN OFF", TrayCommandType.TurnScreenOff)]
-    [TestCase("Force Shutdown", TrayCommandType.ForceShutdown)]
-    [TestCase("Lock", TrayCommandType.Lock)]
+            [TestCase("Shutdown", TrayCommandType.Shutdown)]
+            [TestCase("restart", TrayCommandType.Restart)]
+            [TestCase("Force Shutdown", TrayCommandType.ForceShutdown)]    [TestCase("Lock", TrayCommandType.Lock)]
     [TestCase("UEFI Reboot", TrayCommandType.UEFIReboot)]
     [TestCase("Wake on LAN", TrayCommandType.WakeOnLan)]
     [TestCase("WakeOnLan", TrayCommandType.WakeOnLan)] // Verify slug fallback
@@ -103,7 +99,6 @@ public class TrayCommandTests
         {
             Assert.That(commands.Any(c => c.CommandType == TrayCommandType.Shutdown && c.Name == "Shutdown"));
             Assert.That(commands.Any(c => c.CommandType == TrayCommandType.Restart && c.Name == "Restart"));
-            Assert.That(commands.Any(c => c.CommandType == TrayCommandType.TurnScreenOff && c.Name == "Turn screen off"));
             Assert.That(commands.Any(c => c.CommandType == TrayCommandType.ForceShutdown && c.Name == "Force Shutdown"));
             Assert.That(commands.Any(c => c.CommandType == TrayCommandType.Lock && c.Name == "Lock"));
             Assert.That(commands.Any(c => c.CommandType == TrayCommandType.UEFIReboot && c.Name == "UEFI Reboot"));

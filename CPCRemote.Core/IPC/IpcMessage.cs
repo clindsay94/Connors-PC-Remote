@@ -26,6 +26,26 @@ using System.Text.Json.Serialization;
 [JsonDerivedType(typeof(SaveSensorConfigResponse), "SaveSensorConfigResponse")]
 [JsonDerivedType(typeof(SaveRsmConfigRequest), "SaveRsmConfigRequest")]
 [JsonDerivedType(typeof(SaveRsmConfigResponse), "SaveRsmConfigResponse")]
+[JsonDerivedType(typeof(GetGadgetSensorsRequest), "GetGadgetSensorsRequest")]
+[JsonDerivedType(typeof(GetGadgetSensorsResponse), "GetGadgetSensorsResponse")]
+[JsonDerivedType(typeof(GetSensorPreferencesRequest), "GetSensorPreferencesRequest")]
+[JsonDerivedType(typeof(GetSensorPreferencesResponse), "GetSensorPreferencesResponse")]
+[JsonDerivedType(typeof(SaveSensorPreferencesRequest), "SaveSensorPreferencesRequest")]
+[JsonDerivedType(typeof(SaveSensorPreferencesResponse), "SaveSensorPreferencesResponse")]
+// Media & Volume Control
+[JsonDerivedType(typeof(GetVolumeRequest), "GetVolumeRequest")]
+[JsonDerivedType(typeof(GetVolumeResponse), "GetVolumeResponse")]
+[JsonDerivedType(typeof(SetVolumeRequest), "SetVolumeRequest")]
+[JsonDerivedType(typeof(SetVolumeResponse), "SetVolumeResponse")]
+[JsonDerivedType(typeof(ToggleMuteRequest), "ToggleMuteRequest")]
+[JsonDerivedType(typeof(ToggleMuteResponse), "ToggleMuteResponse")]
+[JsonDerivedType(typeof(SendMediaKeyRequest), "SendMediaKeyRequest")]
+[JsonDerivedType(typeof(SendMediaKeyResponse), "SendMediaKeyResponse")]
+// Process Management
+[JsonDerivedType(typeof(GetTopProcessesRequest), "GetTopProcessesRequest")]
+[JsonDerivedType(typeof(GetTopProcessesResponse), "GetTopProcessesResponse")]
+[JsonDerivedType(typeof(KillProcessRequest), "KillProcessRequest")]
+[JsonDerivedType(typeof(KillProcessResponse), "KillProcessResponse")]
 [JsonDerivedType(typeof(ErrorResponse), "ErrorResponse")]
 public abstract record IpcMessage
 {

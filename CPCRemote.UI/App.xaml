@@ -21,7 +21,13 @@
             <converters:BoolNegationConverter x:Key="BoolNegationConverter"/>
             <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
             <converters:BoolToGlyphConverter x:Key="BoolToGlyphConverter"/>
+            <converters:BoolToEditGlyphConverter x:Key="BoolToEditGlyphConverter"/>
+            <converters:BoolToEditTextConverter x:Key="BoolToEditTextConverter"/>
             <converters:SegmentedStringConverter x:Key="SegmentedStringConverter"/>
+            <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
+            <converters:BoolToInverseVisibilityConverter x:Key="BoolToInverseVisibilityConverter"/>
+            <converters:ColorToTransparentConverter x:Key="ColorToTransparentConverter"/>
+            <converters:EnumToVisibilityConverter x:Key="EnumToVisibilityConverter"/>
             
             <!-- Global Animations & Styles -->
             <!-- <Style TargetType="Button">

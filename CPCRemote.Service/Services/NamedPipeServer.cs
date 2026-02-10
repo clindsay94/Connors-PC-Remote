@@ -20,28 +20,47 @@ public sealed class NamedPipeServer : IPipeServer
 {
     private readonly ILogger<NamedPipeServer> _logger;
     private readonly HardwareMonitor _hardwareMonitor;
+    private readonly HWInfoRegistryReader _registryReader;
     private readonly AppCatalogService _appCatalog;
     private readonly ICommandExecutor _commandExecutor;
     private readonly IOptionsMonitor<SensorOptions> _sensorOptionsMonitor;
+    private readonly MediaService _mediaService;
+    private readonly ProcessService _processService;
+    private readonly string _sensorPreferencesPath;
 
     public NamedPipeServer(
         ILogger<NamedPipeServer> logger,
         HardwareMonitor hardwareMonitor,
+        HWInfoRegistryReader registryReader,
         AppCatalogService appCatalog,
         ICommandExecutor commandExecutor,
-        IOptionsMonitor<SensorOptions> sensorOptionsMonitor)
+        IOptionsMonitor<SensorOptions> sensorOptionsMonitor,
+        MediaService mediaService,
+        ProcessService processService)
     {
         ArgumentNullException.ThrowIfNull(logger);
         ArgumentNullException.ThrowIfNull(hardwareMonitor);
+        ArgumentNullException.ThrowIfNull(registryReader);
         ArgumentNullException.ThrowIfNull(appCatalog);
         ArgumentNullException.ThrowIfNull(commandExecutor);
         ArgumentNullException.ThrowIfNull(sensorOptionsMonitor);
+        ArgumentNullException.ThrowIfNull(mediaService);
+        ArgumentNullException.ThrowIfNull(processService);
 
         _logger = logger;
         _hardwareMonitor = hardwareMonitor;
+        _registryReader = registryReader;
         _appCatalog = appCatalog;
         _commandExecutor = commandExecutor;
         _sensorOptionsMonitor = sensorOptionsMonitor;
+        _mediaService = mediaService;
+        _processService = processService;
+        
+        // Initialize sensor preferences path
+        var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var configDir = Path.Combine(appData, "CPCRemote");
+        Directory.CreateDirectory(configDir);
+        _sensorPreferencesPath = Path.Combine(configDir, "sensor-preferences.json");
     }
 
     private readonly DateTime _startTimeUtc = DateTime.UtcNow;
@@ -318,6 +337,17 @@ public sealed class NamedPipeServer : IPipeServer
                 GetSensorConfigRequest => HandleGetSensorConfig(),
                 SaveSensorConfigRequest req => await HandleSaveSensorConfigAsync(req, cancellationToken).ConfigureAwait(false),
                 SaveRsmConfigRequest req => await HandleSaveRsmConfigAsync(req, cancellationToken).ConfigureAwait(false),
+                GetGadgetSensorsRequest => HandleGetGadgetSensors(),
+                GetSensorPreferencesRequest => await HandleGetSensorPreferencesAsync(cancellationToken).ConfigureAwait(false),
+                SaveSensorPreferencesRequest req => await HandleSaveSensorPreferencesAsync(req, cancellationToken).ConfigureAwait(false),
+                // Media & Volume Control
+                GetVolumeRequest => HandleGetVolume(),
+                SetVolumeRequest req => HandleSetVolume(req),
+                ToggleMuteRequest => HandleToggleMute(),
+                SendMediaKeyRequest req => HandleSendMediaKey(req),
+                // Process Management
+                GetTopProcessesRequest req => HandleGetTopProcesses(req),
+                KillProcessRequest req => HandleKillProcess(req),
                 _ => new ErrorResponse
                 {
                     CorrelationId = message.CorrelationId,
@@ -697,5 +727,170 @@ public sealed class NamedPipeServer : IPipeServer
                 ErrorMessage = ex.Message
             };
         }
+    }
+
+    private GetGadgetSensorsResponse HandleGetGadgetSensors()
+    {
+        var gadgetSensors = _registryReader.ReadGadgetSensors();
+
+        // Load saved preferences if they exist
+        Dictionary<string, SensorPreferenceDto>? prefsLookup = null;
+        try
+        {
+            if (File.Exists(_sensorPreferencesPath))
+            {
+                string prefsJson = File.ReadAllText(_sensorPreferencesPath);
+                var prefs = JsonSerializer.Deserialize<SensorPreferenceDto[]>(prefsJson, JsonOptions);
+                if (prefs is not null)
+                {
+                    prefsLookup = prefs.ToDictionary(p => p.Label, p => p);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to load sensor preferences for gadget sensors response");
+        }
+
+        var dtos = gadgetSensors.Select(s =>
+        {
+            var pref = prefsLookup?.GetValueOrDefault(s.Label);
+            return new GadgetSensorDto
+            {
+                Index = s.Index,
+                SensorName = s.SensorName,
+                Label = s.Label,
+                Value = s.ValueRaw,
+                Unit = s.Unit,
+                Category = s.Category,
+                Color = s.Color,
+                IsVisible = pref?.IsVisible ?? true,
+                DisplayOrder = pref?.DisplayOrder ?? s.Index
+            };
+        }).OrderBy(d => d.DisplayOrder).ToArray();
+
+        return new GetGadgetSensorsResponse
+        {
+            Success = true,
+            Sensors = dtos
+        };
+    }
+
+    private async Task<GetSensorPreferencesResponse> HandleGetSensorPreferencesAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (!File.Exists(_sensorPreferencesPath))
+            {
+                return new GetSensorPreferencesResponse
+                {
+                    Success = true,
+                    Preferences = []
+                };
+            }
+
+            string json = await File.ReadAllTextAsync(_sensorPreferencesPath, cancellationToken).ConfigureAwait(false);
+            var preferences = JsonSerializer.Deserialize<SensorPreferenceDto[]>(json, JsonOptions) ?? [];
+
+            return new GetSensorPreferencesResponse
+            {
+                Success = true,
+                Preferences = preferences
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to read sensor preferences");
+            return new GetSensorPreferencesResponse
+            {
+                Success = false,
+                ErrorMessage = ex.Message
+            };
+        }
+    }
+
+    private async Task<SaveSensorPreferencesResponse> HandleSaveSensorPreferencesAsync(
+        SaveSensorPreferencesRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            string json = JsonSerializer.Serialize(request.Preferences, new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
+
+            await File.WriteAllTextAsync(_sensorPreferencesPath, json, cancellationToken).ConfigureAwait(false);
+            _logger.LogInformation("Saved {Count} sensor preferences", request.Preferences.Length);
+
+            return new SaveSensorPreferencesResponse { Success = true };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save sensor preferences");
+            return new SaveSensorPreferencesResponse
+            {
+                Success = false,
+                ErrorMessage = ex.Message
+            };
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // Media & Volume Control Handlers
+    // ══════════════════════════════════════════════════════════
+
+    private GetVolumeResponse HandleGetVolume()
+    {
+        return new GetVolumeResponse
+        {
+            Success = true,
+            Level = _mediaService.GetVolume(),
+            IsMuted = _mediaService.GetMuteState()
+        };
+    }
+
+    private SetVolumeResponse HandleSetVolume(SetVolumeRequest request)
+    {
+        _mediaService.SetVolume(request.Level);
+        return new SetVolumeResponse { Success = true };
+    }
+
+    private ToggleMuteResponse HandleToggleMute()
+    {
+        bool newState = _mediaService.ToggleMute();
+        return new ToggleMuteResponse { Success = true, IsMuted = newState };
+    }
+
+    private SendMediaKeyResponse HandleSendMediaKey(SendMediaKeyRequest request)
+    {
+        _mediaService.SendMediaKey(request.Action);
+        return new SendMediaKeyResponse { Success = true };
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // Process Management Handlers
+    // ══════════════════════════════════════════════════════════
+
+    private GetTopProcessesResponse HandleGetTopProcesses(GetTopProcessesRequest request)
+    {
+        var processes = _processService.GetTopProcesses(request.Count);
+        return new GetTopProcessesResponse
+        {
+            Success = true,
+            Processes = processes
+        };
+    }
+
+    private KillProcessResponse HandleKillProcess(KillProcessRequest request)
+    {
+        var (success, processName, error) = _processService.KillProcess(request.Pid);
+        return new KillProcessResponse
+        {
+            Success = success,
+            ProcessName = processName,
+            ErrorMessage = error
+        };
     }
 }

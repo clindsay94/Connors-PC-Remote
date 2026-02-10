@@ -5,20 +5,27 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:controls="using:CPCRemote.UI.Controls"
+    xmlns:vm="using:CPCRemote.UI.ViewModels"
     xmlns:helpers="using:CPCRemote.UI.Helpers"
     xmlns:animations="using:CommunityToolkit.WinUI.Animations"
     mc:Ignorable="d"
     Background="Transparent">
 
+    <Page.Transitions>
+        <TransitionCollection>
+             <EntranceThemeTransition FromVerticalOffset="50" IsStaggeringEnabled="True"/>
+        </TransitionCollection>
+    </Page.Transitions>
+
     <Page.Resources>
         <!-- Card Style -->
         <Style x:Key="DashboardCardStyle" TargetType="Border">
-            <Setter Property="Background" Value="{ThemeResource GlassBackgroundBrush}"/>
-            <Setter Property="BorderBrush" Value="{ThemeResource GlassBorderBrush}"/>
+            <Setter Property="Background" Value="{ThemeResource UltraGlassBrush}"/>
+            <Setter Property="BorderBrush" Value="{ThemeResource EdgeLightingBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="CornerRadius" Value="16"/>
             <Setter Property="Padding" Value="20"/>
-            <Setter Property="Margin" Value="0,0,16,16"/>
+            <Setter Property="Margin" Value="0,0,16,24"/>
             <!-- Implicit Animations for smooth entry -->
             <Setter Property="animations:Implicit.ShowAnimations">
                 <Setter.Value>
@@ -70,12 +77,13 @@
 
         <!-- Main Content -->
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <Grid>
+            <Grid Padding="32">
                 <Grid.RowDefinitions>
                      <RowDefinition Height="Auto"/> <!-- Service Status -->
-                     <RowDefinition Height="Auto"/> <!-- CPU -->
-                     <RowDefinition Height="Auto"/> <!-- GPU -->
-                     <RowDefinition Height="Auto"/> <!-- Memory + Mobo -->
+                     <RowDefinition Height="Auto"/> <!-- Dynamic Sensors (new) -->
+                     <RowDefinition Height="Auto"/> <!-- CPU (legacy) -->
+                     <RowDefinition Height="Auto"/> <!-- GPU (legacy) -->
+                     <RowDefinition Height="Auto"/> <!-- Memory + Mobo (legacy) -->
                 </Grid.RowDefinitions>
 
                 <!-- Service Status Bar -->
@@ -100,136 +108,111 @@
                     </Grid>
                 </Border>
 
-                <!-- CPU CARD -->
-                <Border Grid.Row="1" Style="{StaticResource DashboardCardStyle}" helpers:CompositionBehavior.IsSpringAnimationEnabled="True">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
+                <!-- ===== DYNAMIC GADGET SENSORS ===== -->
+                <StackPanel Grid.Row="1" Visibility="{x:Bind ViewModel.UseDynamicDashboard, Mode=OneWay}">
+                    <!-- Section Header with Edit Toggle -->
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="HWINFO GADGET SENSORS" Style="{StaticResource CaptionTextBlockStyle}" 
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" 
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="{x:Bind ViewModel.GadgetSensors.Count, Mode=OneWay}" 
+                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                   FontSize="12" Margin="0,0,12,0" VerticalAlignment="Center"/>
                         
-                        <TextBlock Grid.Row="0" Text="CPU" Style="{StaticResource TitleTextBlockStyle}" Foreground="{ThemeResource SystemAccentColor}"/>
-                        
-                        <!-- Gauges -->
-                        <Grid Grid.Row="1" Margin="0,24,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            
-                            <!-- Main Radial Gauge -->
-                            <controls:AnimatedRadialGauge Grid.Column="0" 
-                                                          Value="{x:Bind ViewModel.CpuUtility, Mode=OneWay, Converter={StaticResource NullableFloatToDoubleConverter}}" 
-                                                          Maximum="100" Unit="%" 
-                                                          Width="140" Height="140" Margin="0,0,32,0"/>
-                                                          
-                            <!-- Stats Grid -->
-                            <Grid Grid.Column="1" VerticalAlignment="Center" ColumnSpacing="24" RowSpacing="16">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-
-                                <controls:AnimatedLinearGauge Grid.Row="0" Grid.Column="0" Label="Temperature" Value="{x:Bind ViewModel.CpuTemp, Mode=OneWay, Converter={StaticResource NullableFloatToDoubleConverter}}" Maximum="100" Unit="°C" />
-                                <controls:AnimatedLinearGauge Grid.Row="1" Grid.Column="0" Label="Package Power" Value="{x:Bind ViewModel.CpuPackagePower, Mode=OneWay, Converter={StaticResource NullableFloatToDoubleConverter}}" Maximum="200" Unit="W" />
-                                
-                                <controls:AnimatedLinearGauge Grid.Row="0" Grid.Column="1" Label="Effective Clock" Value="{x:Bind ViewModel.CpuEffectiveClock, Mode=OneWay, Converter={StaticResource NullableFloatToDoubleConverter}}" Maximum="6000" Unit="MHz" />
-                                <controls:AnimatedLinearGauge Grid.Row="1" Grid.Column="1" Label="Core Clock" Value="{x:Bind ViewModel.CpuCoreClock, Mode=OneWay, Converter={StaticResource NullableFloatToDoubleConverter}}" Maximum="6000" Unit="MHz" />
-
-                            </Grid>
-                        </Grid>
+                        <!-- Edit/Done Button -->
+                        <ToggleButton Grid.Column="2" 
+                                      IsChecked="{x:Bind ViewModel.IsEditMode, Mode=TwoWay}"
+                                      Padding="8,4"
+                                      CornerRadius="4">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon Glyph="{x:Bind ViewModel.IsEditMode, Mode=OneWay, Converter={StaticResource BoolToEditGlyphConverter}}" FontSize="14"/>
+                                <TextBlock Text="{x:Bind ViewModel.IsEditMode, Mode=OneWay, Converter={StaticResource BoolToEditTextConverter}}" FontSize="12"/>
+                            </StackPanel>
+                        </ToggleButton>
                     </Grid>
-                </Border>
-
-                <!-- GPU CARD -->
-                <Border Grid.Row="2" Style="{StaticResource DashboardCardStyle}" helpers:CompositionBehavior.IsSpringAnimationEnabled="True">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        
-                        <TextBlock Grid.Row="0" Text="GPU" Style="{StaticResource TitleTextBlockStyle}" Foreground="{ThemeResource SystemAccentColor}"/>
-                        
-                        <Grid Grid.Row="1" Margin="0,24,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            
-                            <!-- Main Radial Gauge -->
-                            <controls:AnimatedRadialGauge Grid.Column="0" 
-                                                          Value="{x:Bind ViewModel.GpuCoreLoad, Mode=OneWay, Converter={StaticResource NullableFloatToDoubleConverter}}" 
-                                                          Maximum="100" Unit="%" 
-                                                          Width="140" Height="140" Margin="0,0,32,0"/>
-                                                          
-                             <!-- Stats Grid -->
-                            <Grid Grid.Column="1" VerticalAlignment="Center" ColumnSpacing="24" RowSpacing="16">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-
-                                <controls:AnimatedLinearGauge Grid.Row="0" Grid.Column="0" Label="Temperature" Value="{x:Bind ViewModel.GpuTemp, Mode=OneWay, Converter={StaticResource NullableFloatToDoubleConverter}}" Maximum="100" Unit="°C" />
-                                <controls:AnimatedLinearGauge Grid.Row="1" Grid.Column="0" Label="Power" Value="{x:Bind ViewModel.GpuPower, Mode=OneWay, Converter={StaticResource NullableFloatToDoubleConverter}}" Maximum="400" Unit="W" />
-                                
-                                <controls:AnimatedLinearGauge Grid.Row="0" Grid.Column="1" Label="Core Clock" Value="{x:Bind ViewModel.GpuClock, Mode=OneWay, Converter={StaticResource NullableFloatToDoubleConverter}}" Maximum="3000" Unit="MHz" />
-                                <controls:AnimatedLinearGauge Grid.Row="1" Grid.Column="1" Label="VRAM Usage" Value="{x:Bind ViewModel.GpuMemoryUsage, Mode=OneWay, Converter={StaticResource NullableFloatToDoubleConverter}}" Maximum="100" Unit="%" />
-
-                            </Grid>
-                        </Grid>
-                    </Grid>
-                </Border>
-                
-                <!-- Memory & Mobo Split -->
-                <Grid Grid.Row="3">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
                     
-                    <!-- Memory -->
-                    <Border Grid.Column="0" Style="{StaticResource DashboardCardStyle}" helpers:CompositionBehavior.IsSpringAnimationEnabled="True">
-                        <StackPanel Spacing="12">
-                            <TextBlock Text="Memory" Style="{StaticResource TitleTextBlockStyle}" Foreground="{ThemeResource SystemAccentColor}"/>
-                            <controls:AnimatedRadialGauge HorizontalAlignment="Center"
-                                                          Value="{x:Bind ViewModel.MemoryLoad, Mode=OneWay, Converter={StaticResource NullableFloatToDoubleConverter}}" 
-                                                          Maximum="100" Unit="%" 
-                                                          Width="100" Height="100" Margin="0,12"/>
-                        </StackPanel>
-                    </Border>
+                    <!-- Dynamic Sensor List (ListView with manual reordering) -->
+                    <ListView x:Name="SensorListView"
+                              ItemsSource="{x:Bind ViewModel.GadgetSensors, Mode=OneWay}"
+                              SelectionMode="None"
+                              IsItemClickEnabled="False">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SensorCardViewModel">
+                                <Grid ColumnSpacing="16" Padding="8,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/> <!-- Reorder Buttons -->
+                                        <ColumnDefinition Width="Auto"/> <!-- Category bar -->
+                                        <ColumnDefinition Width="*"/>    <!-- Label -->
+                                        <ColumnDefinition Width="Auto"/> <!-- Value -->
+                                        <ColumnDefinition Width="Auto"/> <!-- Visibility -->
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Reorder Buttons -->
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4"
+                                                Visibility="{Binding IsInEditMode, Converter={StaticResource BoolToVisibilityConverter}}">
+                                        <Button Style="{StaticResource ToolbarButtonStyle}"
+                                                Padding="4" MinWidth="28" MinHeight="28"
+                                                ToolTipService.ToolTip="Move Up"
+                                                Command="{Binding DataContext.MoveSensorUpCommand, ElementName=SensorListView}"
+                                                CommandParameter="{Binding}">
+                                            <FontIcon Glyph="&#xE74A;" FontSize="12"/>
+                                        </Button>
+                                        <Button Style="{StaticResource ToolbarButtonStyle}"
+                                                Padding="4" MinWidth="28" MinHeight="28"
+                                                ToolTipService.ToolTip="Move Down"
+                                                Command="{Binding DataContext.MoveSensorDownCommand, ElementName=SensorListView}"
+                                                CommandParameter="{Binding}">
+                                            <FontIcon Glyph="&#xE74B;" FontSize="12"/>
+                                        </Button>
+                                    </StackPanel>
+
+                                    <!-- Category accent bar -->
+                                    <Border Grid.Column="1" Width="4" Height="24" CornerRadius="2" 
+                                            Background="{Binding CategoryBrush}"
+                                            VerticalAlignment="Center"/>
+
+                                    <!-- Sensor label -->
+                                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Label}" Style="{StaticResource BodyTextBlockStyle}"/>
+                                        <TextBlock Text="{Binding Category}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.5"/>
+                                    </StackPanel>
+
+                                    <!-- Current Value -->
+                                    <TextBlock Grid.Column="3" Text="{Binding FormattedValue}" 
+                                               VerticalAlignment="Center" 
+                                               FontWeight="SemiBold" 
+                                               Foreground="{Binding CategoryBrush}"/>
+
+                                    <!-- Visibility Toggle -->
+                                    <CheckBox Grid.Column="4" 
+                                              IsChecked="{Binding IsVisible, Mode=TwoWay}"
+                                              Visibility="{Binding IsInEditMode, Converter={StaticResource BoolToVisibilityConverter}}"
+                                              ToolTipService.ToolTip="Show/hide on dashboard"
+                                              Padding="0" MinWidth="0"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="Margin" Value="0,0,0,4"/>
+                                <Setter Property="Background" Value="{ThemeResource UltraGlassBrush}"/>
+                                <Setter Property="BorderBrush" Value="{ThemeResource EdgeLightingBrush}"/>
+                                <Setter Property="BorderThickness" Value="1"/>
+                                <Setter Property="CornerRadius" Value="8"/>
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                    </ListView>
                     
-                     <!-- Mobo -->
-                    <Border Grid.Column="1" Style="{StaticResource DashboardCardStyle}" helpers:CompositionBehavior.IsSpringAnimationEnabled="True">
-                         <StackPanel Spacing="12">
-                            <TextBlock Text="Motherboard" Style="{StaticResource TitleTextBlockStyle}" Foreground="{ThemeResource SystemAccentColor}"/>
-                            <Grid ColumnSpacing="12" RowSpacing="12">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Vcore" Opacity="0.5" FontSize="12"/>
-                                    <TextBlock Text="{x:Bind ViewModel.Vcore, Mode=OneWay}" FontSize="20" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Grid.Column="1">
-                                    <TextBlock Text="Vsoc" Opacity="0.5" FontSize="12"/>
-                                    <TextBlock Text="{x:Bind ViewModel.Vsoc, Mode=OneWay}" FontSize="20" FontWeight="Bold"/>
-                                </StackPanel>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-                </Grid>
+                    <!-- Empty State (shown when no sensors) -->
+                </StackPanel>
 
             </Grid>
         </ScrollViewer>

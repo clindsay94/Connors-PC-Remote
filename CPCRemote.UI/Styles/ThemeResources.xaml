@@ -24,6 +24,81 @@
     <!-- Glass/Frost Effects -->
     <SolidColorBrush x:Key="GlassBorderBrush" Color="#33FFFFFF"/>
     <SolidColorBrush x:Key="GlassBackgroundBrush" Color="#15FFFFFF"/>
+
+    <!-- ULTRA-GLASS RESOURCES (Phase 2) -->
+    <!-- In-App Acrylic for Cards (Blur behind content) -->
+    <!-- ULTRA-GLASS RESOURCES (Phase 2) -->
+    <!-- Transparency allows Window Backdrop (Mica/Acrylic) to show through -->
+    <SolidColorBrush x:Key="UltraGlassBrush" Color="#20303030"/>
+
+    <!-- Frosted Edge Lighting (Top-Left Light -> Bottom-Right Dark) -->
+    <LinearGradientBrush x:Key="EdgeLightingBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#80FFFFFF" Offset="0.0"/>   <!-- White Highlight -->
+        <GradientStop Color="#20FFFFFF" Offset="0.5"/>   <!-- Mid fade -->
+        <GradientStop Color="#00FFFFFF" Offset="1.0"/>   <!-- Transparent -->
+    </LinearGradientBrush>
+
+    <!-- ===== SENSOR CATEGORY GRADIENTS ===== -->
+    <!-- Vibrant colors for dynamic dashboard sensor cards -->
+    
+    <!-- CPU: Warm Red → Orange (fiery, energetic) -->
+    <LinearGradientBrush x:Key="CpuCategoryGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FFFF4444" Offset="0.0"/>   <!-- Bright Red -->
+        <GradientStop Color="#FFFF8C00" Offset="1.0"/>   <!-- Dark Orange -->
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="CpuCategoryAccent" Color="#FFFF6B6B"/>
+    
+    <!-- GPU: Cool Green → Teal (tech, powerful) -->
+    <LinearGradientBrush x:Key="GpuCategoryGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FF00D26A" Offset="0.0"/>   <!-- Emerald Green -->
+        <GradientStop Color="#FF00CED1" Offset="1.0"/>   <!-- Dark Turquoise -->
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="GpuCategoryAccent" Color="#FF00E676"/>
+    
+    <!-- Memory: Electric Blue → Purple (fast, digital) -->
+    <LinearGradientBrush x:Key="MemoryCategoryGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FF4169E1" Offset="0.0"/>   <!-- Royal Blue -->
+        <GradientStop Color="#FF9B59B6" Offset="1.0"/>   <!-- Amethyst Purple -->
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="MemoryCategoryAccent" Color="#FF5C6BC0"/>
+    
+    <!-- Motherboard: Gold → Amber (hardware, core) -->
+    <LinearGradientBrush x:Key="MotherboardCategoryGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FFFFD700" Offset="0.0"/>   <!-- Gold -->
+        <GradientStop Color="#FFFFB347" Offset="1.0"/>   <!-- Pastel Orange -->
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="MotherboardCategoryAccent" Color="#FFFFC107"/>
+    
+    <!-- Storage: Slate Blue → Steel (persistent, solid) -->
+    <LinearGradientBrush x:Key="StorageCategoryGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FF6A5ACD" Offset="0.0"/>   <!-- Slate Blue -->
+        <GradientStop Color="#FF708090" Offset="1.0"/>   <!-- Slate Gray -->
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="StorageCategoryAccent" Color="#FF7986CB"/>
+    
+    <!-- Cooling: Cyan → Ice Blue (cool, refreshing) -->
+    <LinearGradientBrush x:Key="CoolingCategoryGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FF00BFFF" Offset="0.0"/>   <!-- Deep Sky Blue -->
+        <GradientStop Color="#FFE0FFFF" Offset="1.0"/>   <!-- Light Cyan -->
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="CoolingCategoryAccent" Color="#FF4DD0E1"/>
+    
+    <!-- Network: Magenta → Pink (connectivity, signals) -->
+    <LinearGradientBrush x:Key="NetworkCategoryGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FFFF00FF" Offset="0.0"/>   <!-- Magenta -->
+        <GradientStop Color="#FFFF69B4" Offset="1.0"/>   <!-- Hot Pink -->
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="NetworkCategoryAccent" Color="#FFE040FB"/>
+    
+    <!-- Other: Gray → Silver (neutral, misc) -->
+    <LinearGradientBrush x:Key="OtherCategoryGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FF808080" Offset="0.0"/>   <!-- Gray -->
+        <GradientStop Color="#FFC0C0C0" Offset="1.0"/>   <!-- Silver -->
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="OtherCategoryAccent" Color="#FF90A4AE"/>
+
+    <!-- Neon Glow Wrapper (References SystemAccentColor dynamically) -->
+    <SolidColorBrush x:Key="NeonGlowBrush" Color="{ThemeResource SystemAccentColor}"/>
     
     <!-- 
         OVERRIDES FOR TRANSPARENCY 

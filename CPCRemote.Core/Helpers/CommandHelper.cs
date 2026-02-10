@@ -27,7 +27,6 @@ public sealed partial class CommandHelper(WolOptions wolOptions) : ICommandCatal
     private static readonly TrayCommand[] SeedCommands =
     [
         new(TrayCommandType.Restart, "Restart"),
-        new(TrayCommandType.TurnScreenOff, "Turn screen off"),
         new(TrayCommandType.Shutdown, "Shutdown"),
         new(TrayCommandType.ForceShutdown, "Force Shutdown"),
         new(TrayCommandType.Lock, "Lock"),
@@ -188,9 +187,6 @@ public sealed partial class CommandHelper(WolOptions wolOptions) : ICommandCatal
                 case TrayCommandType.Shutdown:
                     ExecuteShutdownCommand("/s /t 0", commandType, cancellationToken);
                     break;
-                case TrayCommandType.TurnScreenOff:
-                    TurnScreenOff(commandType, cancellationToken);
-                    break;
                 case TrayCommandType.ForceShutdown:
                     ExecuteShutdownCommand("/s /f /t 10", commandType, cancellationToken);
                     break;
@@ -228,35 +224,6 @@ public sealed partial class CommandHelper(WolOptions wolOptions) : ICommandCatal
         catch (Exception ex)
         {
             throw new InvalidOperationException($"Failed to execute shutdown command '{commandType}' with arguments '{arguments}'.", ex);
-        }
-    }
-
-    private static void TurnScreenOff(TrayCommandType commandType, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        try
-        {
-            // From Session 0 services, we cannot directly interact with the user's desktop.
-            // The most reliable approach is to use a scheduled task or simply log the limitation.
-            // For now, we'll try the scrnsave.scr approach which sometimes works.
-            using var process = Process.Start(new ProcessStartInfo
-            {
-                FileName = Environment.ExpandEnvironmentVariables(@"%SystemRoot%\System32\scrnsave.scr"),
-                Arguments = "/s",
-                UseShellExecute = false,
-                CreateNoWindow = true
-            });
-            
-            // Note: If this doesn't work reliably, consider:
-            // 1. Running a companion app in the user session that listens for commands
-            // 2. Using Task Scheduler to run the screen-off command in the user's context
-            Debug.WriteLine("TurnScreenOff: Attempted via screensaver activation");
-        }
-        catch (Exception ex)
-        {
-            // Swallow exceptions here to prevent service crashes for non-critical UI operations
-            Debug.WriteLine($"Failed to turn screen off for command '{commandType}': {ex}");
         }
     }
 

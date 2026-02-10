@@ -14,23 +14,29 @@
     x:Name="RootPage"
     Background="Transparent">
 
+    <Page.Transitions>
+        <TransitionCollection>
+            <EntranceThemeTransition FromVerticalOffset="50" IsStaggeringEnabled="True"/>
+        </TransitionCollection>
+    </Page.Transitions>
+
     <Page.Resources>
         <converters:ZeroCountToVisibilityConverter x:Key="ZeroCountToVisibilityConverter"/>
         <converters:NullToTitleConverter x:Key="NullToTitleConverter"/>
         <!-- App Card Style -->
         <Style x:Key="AppCardStyle" TargetType="Border">
-            <Setter Property="Background" Value="{ThemeResource GlassBackgroundBrush}"/>
-            <Setter Property="BorderBrush" Value="{ThemeResource GlassBorderBrush}"/>
+            <Setter Property="Background" Value="{ThemeResource UltraGlassBrush}"/>
+            <Setter Property="BorderBrush" Value="{ThemeResource EdgeLightingBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="CornerRadius" Value="16"/>
             <Setter Property="Width" Value="240"/>
             <Setter Property="Height" Value="180"/>
-            <Setter Property="Margin" Value="0,0,16,16"/>
+            <Setter Property="Margin" Value="0,0,16,24"/> <!-- Increased bottom margin for lift space -->
             <!-- Implicit Animations -->
             <Setter Property="animations:Implicit.ShowAnimations">
                 <Setter.Value>
                     <animations:ImplicitAnimationSet>
-                        <animations:TranslationAnimation Duration="0:0:0.6" From="0,20,0" To="0,0,0" />
+                        <animations:TranslationAnimation Duration="0:0:0.6" From="0,50,0" To="0,0,0" /> <!-- Staggered entrance from below -->
                         <animations:OpacityAnimation Duration="0:0:0.6" From="0" To="1.0"/>
                     </animations:ImplicitAnimationSet>
                 </Setter.Value>
@@ -73,89 +79,91 @@
 
         <!-- Content Area -->
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-             <ItemsControl ItemsSource="{x:Bind ViewModel.Apps, Mode=OneWay}">
-                 <ItemsControl.ItemsPanel>
-                     <ItemsPanelTemplate>
-                         <controls:WrapPanel Orientation="Horizontal" />
-                     </ItemsPanelTemplate>
-                 </ItemsControl.ItemsPanel>
-                 
-                 <ItemsControl.ItemTemplate>
-                     <DataTemplate x:DataType="models:AppCatalogEntry">
-                         <Border Style="{StaticResource AppCardStyle}" helpers:CompositionBehavior.IsSpringAnimationEnabled="True">
-                             <Grid Padding="16">
-                                 <Grid.RowDefinitions>
-                                     <RowDefinition Height="Auto"/>
-                                     <RowDefinition Height="*"/>
-                                     <RowDefinition Height="Auto"/>
-                                 </Grid.RowDefinitions>
-                                 
-                                 <!-- Header: Slot Badge & Category -->
-                                 <Grid Grid.Row="0" Margin="0,0,0,12">
-                                     <Grid.ColumnDefinitions>
-                                         <ColumnDefinition Width="Auto"/>
-                                         <ColumnDefinition Width="*"/>
-                                     </Grid.ColumnDefinitions>
-                                     <Border Background="{ThemeResource SystemAccentColor}" CornerRadius="4" Padding="8,2">
-                                         <TextBlock Text="{x:Bind Slot}" Foreground="White" FontSize="11" FontWeight="Bold"/>
-                                     </Border>
-                                     <TextBlock Grid.Column="1" Text="{x:Bind Category}" 
-                                                HorizontalAlignment="Right" 
-                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" 
-                                                FontSize="11"/>
-                                 </Grid>
-                                 
-                                 <!-- Main Content: Name & Status -->
-                                 <StackPanel Grid.Row="1" VerticalAlignment="Center">
-                                     <TextBlock Text="{x:Bind Name}" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"/>
+             <Grid Padding="32">
+                 <ItemsControl ItemsSource="{x:Bind ViewModel.Apps, Mode=OneWay}">
+                     <ItemsControl.ItemsPanel>
+                         <ItemsPanelTemplate>
+                             <controls:WrapPanel Orientation="Horizontal" />
+                         </ItemsPanelTemplate>
+                     </ItemsControl.ItemsPanel>
+                     
+                     <ItemsControl.ItemTemplate>
+                         <DataTemplate x:DataType="models:AppCatalogEntry">
+                             <Border Style="{StaticResource AppCardStyle}" helpers:CompositionBehavior.IsSpringAnimationEnabled="True">
+                                 <Grid Padding="16">
+                                     <Grid.RowDefinitions>
+                                         <RowDefinition Height="Auto"/>
+                                         <RowDefinition Height="*"/>
+                                         <RowDefinition Height="Auto"/>
+                                     </Grid.RowDefinitions>
                                      
-                                     <!-- Status Indicators -->
-                                     <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
-                                          <FontIcon Glyph="&#xE7EF;" FontSize="12" Visibility="{x:Bind RunAsAdmin}" ToolTipService.ToolTip="Runs as Admin" Foreground="{ThemeResource SystemFillColorCautionBrush}"/>
-                                          <TextBlock Text="Disabled" Visibility="{x:Bind Enabled, Converter={StaticResource BoolNegationConverter}}" Foreground="{ThemeResource TextFillColorDisabledBrush}" FontSize="12"/>
+                                     <!-- Header: Slot Badge & Category -->
+                                     <Grid Grid.Row="0" Margin="0,0,0,12">
+                                         <Grid.ColumnDefinitions>
+                                             <ColumnDefinition Width="Auto"/>
+                                             <ColumnDefinition Width="*"/>
+                                         </Grid.ColumnDefinitions>
+                                         <Border Background="{ThemeResource SystemAccentColor}" CornerRadius="4" Padding="8,2">
+                                             <TextBlock Text="{x:Bind Slot}" Foreground="White" FontSize="11" FontWeight="Bold"/>
+                                         </Border>
+                                         <TextBlock Grid.Column="1" Text="{x:Bind Category}" 
+                                                    HorizontalAlignment="Right" 
+                                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" 
+                                                    FontSize="11"/>
+                                     </Grid>
+                                     
+                                     <!-- Main Content: Name & Status -->
+                                     <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                                         <TextBlock Text="{x:Bind Name}" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                                         
+                                         <!-- Status Indicators -->
+                                         <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                                              <FontIcon Glyph="&#xE7EF;" FontSize="12" Visibility="{x:Bind RunAsAdmin}" ToolTipService.ToolTip="Runs as Admin" Foreground="{ThemeResource SystemFillColorCautionBrush}"/>
+                                              <TextBlock Text="Disabled" Visibility="{x:Bind Enabled, Converter={StaticResource BoolNegationConverter}}" Foreground="{ThemeResource TextFillColorDisabledBrush}" FontSize="12"/>
+                                         </StackPanel>
                                      </StackPanel>
-                                 </StackPanel>
-                                 
-                                 <!-- Footer: Actions -->
-                                 <Grid Grid.Row="2" ColumnSpacing="8" Margin="0,12,0,0">
-                                     <Grid.ColumnDefinitions>
-                                         <ColumnDefinition Width="*"/>
-                                         <ColumnDefinition Width="Auto"/>
-                                         <ColumnDefinition Width="Auto"/>
-                                     </Grid.ColumnDefinitions>
                                      
-                                     <Button Grid.Column="0" Content="Launch" HorizontalAlignment="Stretch" 
-                                             Command="{Binding ElementName=RootPage, Path=ViewModel.LaunchAppCommand}" 
-                                             CommandParameter="{x:Bind}"
-                                             Style="{StaticResource AccentButtonStyle}"/>
-                                             
-                                     <Button Grid.Column="1" ToolTipService.ToolTip="Edit"
-                                             Command="{Binding ElementName=RootPage, Path=ViewModel.EditAppCommand}"
-                                             CommandParameter="{x:Bind}">
-                                         <FontIcon Glyph="&#xE70F;" FontSize="14"/>
-                                     </Button>
-                                     
-                                     <Button Grid.Column="2" ToolTipService.ToolTip="Delete"
-                                             Command="{Binding ElementName=RootPage, Path=ViewModel.DeleteAppCommand}"
-                                             CommandParameter="{x:Bind}">
-                                          <FontIcon Glyph="&#xE74D;" FontSize="14"/>
-                                     </Button>
+                                     <!-- Footer: Actions -->
+                                     <Grid Grid.Row="2" ColumnSpacing="8" Margin="0,12,0,0">
+                                         <Grid.ColumnDefinitions>
+                                             <ColumnDefinition Width="*"/>
+                                             <ColumnDefinition Width="Auto"/>
+                                             <ColumnDefinition Width="Auto"/>
+                                         </Grid.ColumnDefinitions>
+                                         
+                                         <Button Grid.Column="0" Content="Launch" HorizontalAlignment="Stretch" 
+                                                 Command="{Binding ElementName=RootPage, Path=ViewModel.LaunchAppCommand}" 
+                                                 CommandParameter="{x:Bind}"
+                                                 Style="{StaticResource AccentButtonStyle}"/>
+                                                 
+                                         <Button Grid.Column="1" ToolTipService.ToolTip="Edit"
+                                                 Command="{Binding ElementName=RootPage, Path=ViewModel.EditAppCommand}"
+                                                 CommandParameter="{x:Bind}">
+                                             <FontIcon Glyph="&#xE70F;" FontSize="14"/>
+                                         </Button>
+                                         
+                                         <Button Grid.Column="2" ToolTipService.ToolTip="Delete"
+                                                 Command="{Binding ElementName=RootPage, Path=ViewModel.DeleteAppCommand}"
+                                                 CommandParameter="{x:Bind}">
+                                              <FontIcon Glyph="&#xE74D;" FontSize="14"/>
+                                         </Button>
+                                     </Grid>
                                  </Grid>
-                             </Grid>
-                             
-                             <!-- Context Menu for more options -->
-                             <Border.ContextFlyout>
-                                 <MenuFlyout>
-                                     <MenuFlyoutItem Text="Edit" Icon="Edit" 
-                                                     Command="{Binding ElementName=RootPage, Path=ViewModel.EditAppCommand}" CommandParameter="{x:Bind}"/>
-                                     <MenuFlyoutItem Text="Delete" Icon="Delete" 
-                                                     Command="{Binding ElementName=RootPage, Path=ViewModel.DeleteAppCommand}" CommandParameter="{x:Bind}"/>
-                                 </MenuFlyout>
-                             </Border.ContextFlyout>
-                         </Border>
-                     </DataTemplate>
-                 </ItemsControl.ItemTemplate>
-             </ItemsControl>
+                                 
+                                 <!-- Context Menu for more options -->
+                                 <Border.ContextFlyout>
+                                     <MenuFlyout>
+                                         <MenuFlyoutItem Text="Edit" Icon="Edit" 
+                                                         Command="{Binding ElementName=RootPage, Path=ViewModel.EditAppCommand}" CommandParameter="{x:Bind}"/>
+                                         <MenuFlyoutItem Text="Delete" Icon="Delete" 
+                                                         Command="{Binding ElementName=RootPage, Path=ViewModel.DeleteAppCommand}" CommandParameter="{x:Bind}"/>
+                                     </MenuFlyout>
+                                 </Border.ContextFlyout>
+                             </Border>
+                         </DataTemplate>
+                     </ItemsControl.ItemTemplate>
+                 </ItemsControl>
+             </Grid>
         </ScrollViewer>
         
         <!-- Empty State -->

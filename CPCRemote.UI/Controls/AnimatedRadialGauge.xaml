@@ -8,26 +8,28 @@
     SizeChanged="UserControl_SizeChanged">
 
     <Grid>
+        <!-- Glow Ring (Backlight) — uses category color -->
+        <Ellipse x:Name="GlowRing"
+                 Stroke="{ThemeResource NeonGlowBrush}"
+                 StrokeThickness="10"
+                 Width="100" Height="100"
+                 Opacity="0.12"/>
+
         <!-- Background Ring -->
         <Ellipse x:Name="TrackRing"
                  Stroke="{ThemeResource SurfaceStrokeColorDefaultBrush}"
-                 StrokeThickness="8"
+                 StrokeThickness="7"
                  Width="100" Height="100"/>
 
-        <!-- Progress Ring (We use an Arc-like Path or just a partial ellipse via Clip, but simple StrokeDashArray logic with Ellipse is easiest for XAML-only, 
-             but for true animations we might need a Path or standard ProgressRing customization. 
-             Let's use a standard ProgressRing but styled? No, standard ProgressRing is hard to style thick/round.
-             
-             Let's use a Path for the Arc.
-        -->
+        <!-- Progress Ring (Arc) — colored by category -->
         <Path x:Name="ProgressPath"
-              Stroke="{ThemeResource VibrantMesh}"
-              StrokeThickness="8"
+              Stroke="{ThemeResource NeonGlowBrush}"
+              StrokeThickness="7"
               StrokeStartLineCap="Round"
               StrokeEndLineCap="Round"
               Width="100" Height="100"/>
 
-        <!-- Content -->
+        <!-- Content: Value + Unit in center -->
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
             <TextBlock x:Name="ValueText" 
                        Text="0" 

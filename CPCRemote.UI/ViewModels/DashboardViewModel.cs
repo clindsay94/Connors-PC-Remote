@@ -2,6 +2,7 @@ namespace CPCRemote.UI.ViewModels;
 
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -26,6 +27,30 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
     private readonly DispatcherQueue _dispatcherQueue;
     private CancellationTokenSource? _pollingCts;
     private bool _isDisposed;
+    private bool _gadgetSensorsLoaded;
+
+    /// <summary>
+    /// Dynamic collection of sensors from HWInfo gadget.
+    /// </summary>
+    public ObservableCollection<SensorCardViewModel> GadgetSensors { get; } = [];
+
+    /// <summary>
+    /// Gets sensors grouped by category for display.
+    /// </summary>
+    public IEnumerable<IGrouping<string, SensorCardViewModel>> SensorsByCategory =>
+        GadgetSensors.Where(s => s.IsVisible).GroupBy(s => s.Category);
+
+    /// <summary>
+    /// Gets whether to show the dynamic gadget sensor view.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool UseDynamicDashboard { get; set; } = true;
+
+    /// <summary>
+    /// Gets whether edit mode is active (for reordering and hiding sensors).
+    /// </summary>
+    [ObservableProperty]
+    public partial bool IsEditMode { get; set; }
 
     #region CPU Stats
 
@@ -302,6 +327,23 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// Syncs edit mode state to all sensor cards.
+    /// </summary>
+    partial void OnIsEditModeChanged(bool value)
+    {
+        foreach (var sensor in GadgetSensors)
+        {
+            sensor.IsInEditMode = value;
+        }
+        
+        // When exiting edit mode, save preferences
+        if (!value && GadgetSensors.Count > 0)
+        {
+            _ = SaveSensorPreferencesAsync();
+        }
+    }
+
     private async Task PollStatsAsync(CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
@@ -309,6 +351,12 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
             try
             {
                 await FetchStatsAsync(cancellationToken);
+                
+                // Fetch dynamic gadget sensors
+                if (UseDynamicDashboard)
+                {
+                    await FetchGadgetSensorsAsync(cancellationToken);
+                }
             }
             catch (OperationCanceledException)
             {
@@ -462,6 +510,164 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         finally
         {
             RunOnUIThread(() => IsLoading = false);
+        }
+    }
+
+    /// <summary>
+    /// Fetches gadget sensors from HWInfo registry via IPC.
+    /// Sensors arrive pre-sorted by display order with visibility applied from saved preferences.
+    /// </summary>
+    private async Task FetchGadgetSensorsAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (!_pipeClient.IsConnected)
+            {
+                return;
+            }
+
+            var response = await _pipeClient.SendRequestAsync<GetGadgetSensorsResponse>(
+                new GetGadgetSensorsRequest(),
+                IpcConstants.DefaultTimeout,
+                cancellationToken).ConfigureAwait(false);
+
+            if (!response.Success || response.Sensors.Length == 0)
+            {
+                _logger.LogDebug("No gadget sensors returned: {Message}", response.ErrorMessage ?? "empty");
+                return;
+            }
+
+            RunOnUIThread(() =>
+            {
+                // Update existing sensors or add new ones (server returns them in display order)
+                foreach (var dto in response.Sensors)
+                {
+                    var existing = GadgetSensors.FirstOrDefault(s => s.Label == dto.Label);
+                    if (existing is not null)
+                    {
+                        // Update value and preference fields
+                        existing.Value = dto.Value;
+                        if (!_gadgetSensorsLoaded)
+                        {
+                            existing.IsVisible = dto.IsVisible;
+                            existing.DisplayOrder = dto.DisplayOrder;
+                        }
+                    }
+                    else
+                    {
+                        // Add new sensor with server-provided preferences
+                        GadgetSensors.Add(new SensorCardViewModel
+                        {
+                            Label = dto.Label,
+                            SensorName = dto.SensorName,
+                            Category = dto.Category,
+                            Unit = dto.Unit,
+                            HwInfoColor = dto.Color,
+                            Value = dto.Value,
+                            DisplayOrder = dto.DisplayOrder,
+                            IsVisible = dto.IsVisible
+                        });
+                    }
+                }
+
+                // Remove sensors no longer in the gadget
+                var currentLabels = response.Sensors.Select(s => s.Label).ToHashSet();
+                var toRemove = GadgetSensors.Where(s => !currentLabels.Contains(s.Label)).ToList();
+                foreach (var sensor in toRemove)
+                {
+                    GadgetSensors.Remove(sensor);
+                }
+
+                // Sort by display order on first load only (subsequent order managed by drag-and-drop)
+                if (!_gadgetSensorsLoaded)
+                {
+                    var sorted = GadgetSensors.OrderBy(s => s.DisplayOrder).ToList();
+                    GadgetSensors.Clear();
+                    foreach (var s in sorted)
+                    {
+                        GadgetSensors.Add(s);
+                    }
+                }
+
+                // Notify grouped view needs update
+                OnPropertyChanged(nameof(SensorsByCategory));
+                _gadgetSensorsLoaded = true;
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to fetch gadget sensors");
+        }
+    }
+
+    /// <summary>
+    /// Saves sensor display preferences (order, visibility) to the service.
+    /// Uses the current position in the ObservableCollection as the display order.
+    /// </summary>
+    [RelayCommand]
+    public async Task SaveSensorPreferencesAsync()
+    {
+        try
+        {
+            if (!_pipeClient.IsConnected)
+            {
+                _logger.LogDebug("Cannot save preferences - not connected to service");
+                return;
+            }
+
+            var preferences = GadgetSensors.Select((s, index) => new SensorPreferenceDto
+            {
+                Label = s.Label,
+                DisplayOrder = index,
+                IsVisible = s.IsVisible,
+                CustomColor = null
+            }).ToArray();
+
+            // Also update DisplayOrder on the ViewModels themselves
+            for (int i = 0; i < GadgetSensors.Count; i++)
+            {
+                GadgetSensors[i].DisplayOrder = i;
+            }
+
+            var response = await _pipeClient.SendRequestAsync<SaveSensorPreferencesResponse>(
+                new SaveSensorPreferencesRequest { Preferences = preferences },
+                IpcConstants.DefaultTimeout,
+                CancellationToken.None).ConfigureAwait(false);
+
+            if (response.Success)
+            {
+                _logger.LogInformation("Saved sensor preferences for {Count} sensors", preferences.Length);
+            }
+            else
+            {
+                _logger.LogWarning("Failed to save sensor preferences: {Error}", response.ErrorMessage);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error saving sensor preferences");
+        }
+    }
+
+    [RelayCommand]
+    private void MoveSensorUp(SensorCardViewModel sensor)
+    {
+        var index = GadgetSensors.IndexOf(sensor);
+        if (index > 0)
+        {
+            GadgetSensors.Move(index, index - 1);
+            _ = SaveSensorPreferencesAsync();
+        }
+    }
+
+    [RelayCommand]
+    private void MoveSensorDown(SensorCardViewModel sensor)
+    {
+        var index = GadgetSensors.IndexOf(sensor);
+        if (index < GadgetSensors.Count - 1)
+        {
+            GadgetSensors.Move(index, index + 1);
+            _ = SaveSensorPreferencesAsync();
         }
     }
 

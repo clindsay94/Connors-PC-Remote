@@ -97,13 +97,6 @@
                         <TextBlock Text="Lock" FontWeight="SemiBold"/>
                     </StackPanel>
                 </Button>
-
-                <Button Style="{StaticResource QuickActionTileStyle}" Command="{x:Bind ViewModel.TurnScreenOffCommand}">
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
-                        <FontIcon Glyph="&#xE7F4;" FontSize="32" Foreground="#88FF88"/>
-                        <TextBlock Text="Screen Off" FontWeight="SemiBold"/>
-                    </StackPanel>
-                </Button>
                 
                  <!-- We can add more if ViewModel supports them, looks like WakeOnLan is there too -->
                 <Button Style="{StaticResource QuickActionTileStyle}" Command="{x:Bind ViewModel.WakeOnLanCommand}">
