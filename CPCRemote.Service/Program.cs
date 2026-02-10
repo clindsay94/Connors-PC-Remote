@@ -45,6 +45,9 @@ builder.Services.AddOptions<SensorOptions>().Bind(builder.Configuration.GetSecti
 builder.Services.AddSingleton<UserSessionLauncher>();
 builder.Services.AddSingleton<AppCatalogService>();
 builder.Services.AddSingleton<HardwareMonitor>();
+builder.Services.AddSingleton<HWInfoRegistryReader>();
+builder.Services.AddSingleton<MediaService>();
+builder.Services.AddSingleton<ProcessService>();
 
 // Named Pipe IPC Server
 builder.Services.AddSingleton<NamedPipeServer>();

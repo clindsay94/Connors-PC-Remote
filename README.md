@@ -22,11 +22,14 @@ A Windows application for remotely controlling PC power functions via HTTP comma
 ## Features
 
 - **Remote Power Control** — Shutdown, restart, lock, turn off screen, and UEFI reboot via HTTP
+- **Hardware Monitoring** — Real-time CPU, GPU, Memory, and more via HWiNFO shared memory
+- **Dashboard** — Animated radial and linear gauges with category-colored widgets (Square, Wide, Tall layouts)
+- **Sensor Customization** — Show/hide sensors, reorder via drag-and-drop, per-category color theming
 - **Windows Service** — Runs in background with automatic startup
-- **Modern GUI** — WinUI 3 interface for easy configuration and testing
+- **Modern GUI** — WinUI 3 interface with customizable themes, fonts, and backdrop materials
 - **Secure Authentication** — Bearer token authentication with configurable secrets
 - **App Launcher** — Launch configured applications remotely
-- ~**HTTPS Support** — Optional TLS encryption with certificate binding~ >[!NOTE] >Coming Soon
+- **System Tray** — Minimize to tray with quick access
 
 ## Architecture
 
@@ -165,9 +168,11 @@ Edit `appsettings.json` in the service directory:
 
 Launch the CPCRemote.UI application to:
 
+- Monitor hardware sensors in real-time on the dashboard
 - Install and manage the Windows service
-- Configure settings
-- Test commands
+- Customize themes, fonts, category colors, and sensor layout
+- Configure app catalog for remote launching
+- Test commands directly
 
 ### HTTP Requests
 
@@ -234,14 +239,16 @@ dotnet test
 ### Build MSI Installer
 
 ```powershell
-# 1. Publish UI and Service
-dotnet publish CPCRemote.UI -c Release -r win-x64 --self-contained -o publish/UI
+# 1. Build UI in Release (WiX references build output for XBF files)
+dotnet build CPCRemote.UI/CPCRemote.UI.csproj -c Release -p:Platform=x64
+
+# 2. Publish Service (self-contained)
 dotnet publish CPCRemote.Service -c Release -r win-x64 --self-contained -o publish/Service
 
-# 2. Build the MSI
+# 3. Build the MSI
 dotnet build CPCRemote.Installer -c Release
 
-# Output: bin/Release/CPCRemote.Installer/CPCRemote.msi
+# Output: bin/Release/CPCRemote.Installer/CPCRemote.msi (~90 MB)
 ```
 
 ### Run Locally

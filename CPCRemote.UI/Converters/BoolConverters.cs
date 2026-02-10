@@ -88,4 +88,69 @@ namespace CPCRemote.UI.Converters
             return value;
         }
     }
+
+    /// <summary>
+    /// Converts IsEditMode to appropriate icon glyph.
+    /// </summary>
+    public class BoolToEditGlyphConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            // Edit icon when not editing, Checkmark when done
+            return (value is bool b && b) ? "\uE73E" : "\uE70F"; // Checkmark : Edit
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// Converts IsEditMode to appropriate button text.
+    /// </summary>
+    public class BoolToEditTextConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            return (value is bool b && b) ? "Done" : "Edit";
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// Converts a string to Visibility: non-null/non-empty → Visible, else Collapsed.
+    /// </summary>
+    public class StringToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            return !string.IsNullOrEmpty(value as string) ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// Inverts a boolean and returns Visibility (true → Collapsed, false → Visible).
+    /// </summary>
+    public class BoolToInverseVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            return (value is bool b && b) ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

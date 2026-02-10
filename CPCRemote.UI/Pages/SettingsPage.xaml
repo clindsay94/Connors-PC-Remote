@@ -125,6 +125,145 @@
                 <ToggleSwitch IsOn="{x:Bind ViewModel.DashboardAnimations, Mode=TwoWay}"/>
             </controls:SettingsCard>
 
+            <!-- DASHBOARD COLORS -->
+            <TextBlock Text="Dashboard Colors" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,24,0,4"/>
+
+            <controls:SettingsExpander Header="Category colors" Description="Customize the accent color for each sensor category">
+                <controls:SettingsExpander.HeaderIcon><FontIcon Glyph="&#xE790;"/></controls:SettingsExpander.HeaderIcon>
+                <Button Content="Reset All" Command="{x:Bind ViewModel.ResetCategoryColorsCommand}"/>
+                <controls:SettingsExpander.Items>
+
+                    <!-- CPU -->
+                    <controls:SettingsCard Header="CPU" Description="Processor sensors">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Border Width="24" Height="24" CornerRadius="4">
+                                <Border.Background><SolidColorBrush Color="{x:Bind ViewModel.CpuColor, Mode=OneWay}"/></Border.Background>
+                            </Border>
+                            <Button Content="Pick Color">
+                                <Button.Flyout><Flyout>
+                                    <ColorPicker IsColorSliderVisible="True" IsHexInputVisible="True" IsAlphaEnabled="False"
+                                                 Color="{x:Bind ViewModel.CpuColor, Mode=OneWay}"
+                                                 ColorChanged="CpuColorPicker_ColorChanged"/>
+                                </Flyout></Button.Flyout>
+                            </Button>
+                        </StackPanel>
+                    </controls:SettingsCard>
+
+                    <!-- GPU -->
+                    <controls:SettingsCard Header="GPU" Description="Graphics card sensors">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Border Width="24" Height="24" CornerRadius="4">
+                                <Border.Background><SolidColorBrush Color="{x:Bind ViewModel.GpuColor, Mode=OneWay}"/></Border.Background>
+                            </Border>
+                            <Button Content="Pick Color">
+                                <Button.Flyout><Flyout>
+                                    <ColorPicker IsColorSliderVisible="True" IsHexInputVisible="True" IsAlphaEnabled="False"
+                                                 Color="{x:Bind ViewModel.GpuColor, Mode=OneWay}"
+                                                 ColorChanged="GpuColorPicker_ColorChanged"/>
+                                </Flyout></Button.Flyout>
+                            </Button>
+                        </StackPanel>
+                    </controls:SettingsCard>
+
+                    <!-- Memory -->
+                    <controls:SettingsCard Header="Memory" Description="RAM sensors">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Border Width="24" Height="24" CornerRadius="4">
+                                <Border.Background><SolidColorBrush Color="{x:Bind ViewModel.MemoryColor, Mode=OneWay}"/></Border.Background>
+                            </Border>
+                            <Button Content="Pick Color">
+                                <Button.Flyout><Flyout>
+                                    <ColorPicker IsColorSliderVisible="True" IsHexInputVisible="True" IsAlphaEnabled="False"
+                                                 Color="{x:Bind ViewModel.MemoryColor, Mode=OneWay}"
+                                                 ColorChanged="MemoryColorPicker_ColorChanged"/>
+                                </Flyout></Button.Flyout>
+                            </Button>
+                        </StackPanel>
+                    </controls:SettingsCard>
+
+                    <!-- Motherboard -->
+                    <controls:SettingsCard Header="Motherboard" Description="Mainboard sensors">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Border Width="24" Height="24" CornerRadius="4">
+                                <Border.Background><SolidColorBrush Color="{x:Bind ViewModel.MotherboardColor, Mode=OneWay}"/></Border.Background>
+                            </Border>
+                            <Button Content="Pick Color">
+                                <Button.Flyout><Flyout>
+                                    <ColorPicker IsColorSliderVisible="True" IsHexInputVisible="True" IsAlphaEnabled="False"
+                                                 Color="{x:Bind ViewModel.MotherboardColor, Mode=OneWay}"
+                                                 ColorChanged="MotherboardColorPicker_ColorChanged"/>
+                                </Flyout></Button.Flyout>
+                            </Button>
+                        </StackPanel>
+                    </controls:SettingsCard>
+
+                    <!-- Storage -->
+                    <controls:SettingsCard Header="Storage" Description="Disk and SSD sensors">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Border Width="24" Height="24" CornerRadius="4">
+                                <Border.Background><SolidColorBrush Color="{x:Bind ViewModel.StorageColor, Mode=OneWay}"/></Border.Background>
+                            </Border>
+                            <Button Content="Pick Color">
+                                <Button.Flyout><Flyout>
+                                    <ColorPicker IsColorSliderVisible="True" IsHexInputVisible="True" IsAlphaEnabled="False"
+                                                 Color="{x:Bind ViewModel.StorageColor, Mode=OneWay}"
+                                                 ColorChanged="StorageColorPicker_ColorChanged"/>
+                                </Flyout></Button.Flyout>
+                            </Button>
+                        </StackPanel>
+                    </controls:SettingsCard>
+
+                    <!-- Cooling -->
+                    <controls:SettingsCard Header="Cooling" Description="Fan and pump sensors">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Border Width="24" Height="24" CornerRadius="4">
+                                <Border.Background><SolidColorBrush Color="{x:Bind ViewModel.CoolingColor, Mode=OneWay}"/></Border.Background>
+                            </Border>
+                            <Button Content="Pick Color">
+                                <Button.Flyout><Flyout>
+                                    <ColorPicker IsColorSliderVisible="True" IsHexInputVisible="True" IsAlphaEnabled="False"
+                                                 Color="{x:Bind ViewModel.CoolingColor, Mode=OneWay}"
+                                                 ColorChanged="CoolingColorPicker_ColorChanged"/>
+                                </Flyout></Button.Flyout>
+                            </Button>
+                        </StackPanel>
+                    </controls:SettingsCard>
+
+                    <!-- Network -->
+                    <controls:SettingsCard Header="Network" Description="Network interface sensors">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Border Width="24" Height="24" CornerRadius="4">
+                                <Border.Background><SolidColorBrush Color="{x:Bind ViewModel.NetworkColor, Mode=OneWay}"/></Border.Background>
+                            </Border>
+                            <Button Content="Pick Color">
+                                <Button.Flyout><Flyout>
+                                    <ColorPicker IsColorSliderVisible="True" IsHexInputVisible="True" IsAlphaEnabled="False"
+                                                 Color="{x:Bind ViewModel.NetworkColor, Mode=OneWay}"
+                                                 ColorChanged="NetworkColorPicker_ColorChanged"/>
+                                </Flyout></Button.Flyout>
+                            </Button>
+                        </StackPanel>
+                    </controls:SettingsCard>
+
+                    <!-- Other -->
+                    <controls:SettingsCard Header="Other" Description="Miscellaneous sensors">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Border Width="24" Height="24" CornerRadius="4">
+                                <Border.Background><SolidColorBrush Color="{x:Bind ViewModel.OtherColor, Mode=OneWay}"/></Border.Background>
+                            </Border>
+                            <Button Content="Pick Color">
+                                <Button.Flyout><Flyout>
+                                    <ColorPicker IsColorSliderVisible="True" IsHexInputVisible="True" IsAlphaEnabled="False"
+                                                 Color="{x:Bind ViewModel.OtherColor, Mode=OneWay}"
+                                                 ColorChanged="OtherColorPicker_ColorChanged"/>
+                                </Flyout></Button.Flyout>
+                            </Button>
+                        </StackPanel>
+                    </controls:SettingsCard>
+
+                </controls:SettingsExpander.Items>
+            </controls:SettingsExpander>
+
             <!-- WINDOW -->
             <TextBlock Text="Window" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,24,0,4"/>
 
@@ -142,7 +281,53 @@
                 <controls:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE8A0;"/></controls:SettingsCard.HeaderIcon>
                 <ToggleSwitch IsOn="{x:Bind ViewModel.RememberPosition, Mode=TwoWay}"/>
             </controls:SettingsCard>
-            
+
+            <!-- NETWORK SETTINGS -->
+            <TextBlock Text="Network" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,24,0,4"/>
+
+            <controls:SettingsExpander Header="Firewall configuration" Description="Manage Windows Firewall rules for the CPCRemote service">
+                <controls:SettingsExpander.HeaderIcon><FontIcon Glyph="&#xE8F7;"/></controls:SettingsExpander.HeaderIcon>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Ellipse Width="10" Height="10" 
+                             Fill="{x:Bind ViewModel.IsFirewallRuleActive, Mode=OneWay, Converter={StaticResource BoolToColorConverter}}"
+                             VerticalAlignment="Center"/>
+                    <TextBlock Text="{x:Bind ViewModel.FirewallStatus, Mode=OneWay}" 
+                               VerticalAlignment="Center"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
+                <controls:SettingsExpander.Items>
+                    <controls:SettingsCard Header="Service port" Description="The port configured in appsettings.json">
+                        <TextBlock Text="{x:Bind ViewModel.ConfiguredPort, Mode=OneWay}" 
+                                   FontWeight="SemiBold" FontFamily="Consolas"/>
+                    </controls:SettingsCard>
+                    <controls:SettingsCard Header="Open firewall port" 
+                                           Description="Create an inbound Windows Firewall rule to allow remote connections">
+                        <Button Content="Open Port" 
+                                Style="{StaticResource AccentButtonStyle}" 
+                                Command="{x:Bind ViewModel.OpenFirewallPortCommand}"/>
+                    </controls:SettingsCard>
+                    <controls:SettingsCard Header="Remove firewall rule" 
+                                           Description="Delete the CPCRemote firewall rule">
+                        <Button Content="Remove Rule" Command="{x:Bind ViewModel.RemoveFirewallRuleCommand}"/>
+                    </controls:SettingsCard>
+                    <controls:SettingsCard>
+                        <controls:SettingsCard.Header>
+                            <InfoBar x:Name="FirewallInfoBar"
+                                     IsOpen="{x:Bind ViewModel.ShowFirewallInfo, Mode=OneWay}"
+                                     Severity="{x:Bind ViewModel.FirewallInfoSeverity, Mode=OneWay}"
+                                     Title="{x:Bind ViewModel.FirewallInfoTitle, Mode=OneWay}"
+                                     Message="{x:Bind ViewModel.FirewallInfoMessage, Mode=OneWay}"
+                                     IsClosable="True"/>
+                        </controls:SettingsCard.Header>
+                    </controls:SettingsCard>
+                </controls:SettingsExpander.Items>
+            </controls:SettingsExpander>
+
+            <controls:SettingsCard Header="Check firewall status" Description="Re-check if the firewall rule exists" IsClickEnabled="True" Command="{x:Bind ViewModel.CheckFirewallStatusCommand}">
+                <controls:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE72C;"/></controls:SettingsCard.HeaderIcon>
+                <Button Content="Check" Command="{x:Bind ViewModel.CheckFirewallStatusCommand}"/>
+            </controls:SettingsCard>
+
              <!-- RESET -->
             <TextBlock Text="Reset" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,24,0,4"/>
             <controls:SettingsCard Header="Reset all settings" Description="Restore defaults" IsClickEnabled="True" Command="{x:Bind ViewModel.ResetSettingsCommand}">

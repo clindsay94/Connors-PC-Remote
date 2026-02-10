@@ -30,12 +30,6 @@ public enum TrayCommandType
     Restart,
 
     /// <summary>
-    /// Turns off the display monitor(s) without affecting the PC state.
-    /// </summary>
-    /// <remarks>Sends WM_SYSCOMMAND with SC_MONITORPOWER to turn off displays.</remarks>
-    TurnScreenOff,
-
-    /// <summary>
     /// Gracefully shuts down the PC, allowing applications to close cleanly.
     /// </summary>
     /// <remarks>Uses ExitWindowsEx with EWX_SHUTDOWN flag.</remarks>

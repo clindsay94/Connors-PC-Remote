@@ -8,32 +8,28 @@
     SizeChanged="UserControl_SizeChanged">
 
     <Grid>
-        <!-- Glow Ring (Backlight) -->
-        <Ellipse Stroke="{ThemeResource NeonGlowBrush}"
-                 StrokeThickness="12"
+        <!-- Glow Ring (Backlight) — uses category color -->
+        <Ellipse x:Name="GlowRing"
+                 Stroke="{ThemeResource NeonGlowBrush}"
+                 StrokeThickness="10"
                  Width="100" Height="100"
-                 Opacity="0.2"/>
+                 Opacity="0.12"/>
 
         <!-- Background Ring -->
         <Ellipse x:Name="TrackRing"
                  Stroke="{ThemeResource SurfaceStrokeColorDefaultBrush}"
-                 StrokeThickness="8"
+                 StrokeThickness="7"
                  Width="100" Height="100"/>
-                 
-        <!-- Active Glow (We can't easily animate a second path without duplicating logic, 
-             so let's just make the main path glow via Shadow if possible or just use a bright brush) 
-             For now, just updating the main path to use SystemAccentColor is a win.
-        -->
-                 
-        <!-- Progress Ring -->
+
+        <!-- Progress Ring (Arc) — colored by category -->
         <Path x:Name="ProgressPath"
               Stroke="{ThemeResource NeonGlowBrush}"
-              StrokeThickness="8"
+              StrokeThickness="7"
               StrokeStartLineCap="Round"
               StrokeEndLineCap="Round"
               Width="100" Height="100"/>
 
-        <!-- Content -->
+        <!-- Content: Value + Unit in center -->
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
             <TextBlock x:Name="ValueText" 
                        Text="0" 

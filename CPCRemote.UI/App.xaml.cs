@@ -20,6 +20,12 @@ namespace CPCRemote.UI
         public static MainWindow? CurrentMainWindow { get; private set; }
         public static ILogger? Logger { get; private set; }
         public static IServiceProvider? Services { get; private set; }
+        public static TrayService? Tray { get; private set; }
+
+        /// <summary>
+        /// When true, the next window close will actually exit the app instead of hiding to tray.
+        /// </summary>
+        internal static bool RequestExit { get; set; }
 
         private ILoggerFactory? _loggerFactory;
         private Window? m_window;
@@ -82,11 +88,26 @@ namespace CPCRemote.UI
                 // 7. Perform initial navigation after services are ready
                 CurrentMainWindow?.PerformInitialNavigation();
 
-                // Cleanup on exit
+                // 8. Initialize system tray icon
+                Tray = new TrayService(Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread());
+                Tray.Initialize();
+
+                // Handle window close: minimize to tray unless exit was explicitly requested
                 m_window.Closed += (s, e) =>
                 {
+                    if (!RequestExit)
+                    {
+                        // Hide window to tray instead of closing
+                        e.Handled = true;
+                        CurrentMainWindow?.Hide();
+                        return;
+                    }
+
+                    // True exit: cleanup everything
                     Logger?.LogInformation("Application shutting down...");
                     
+                    Tray?.Dispose();
+
                     // Dispose the pipe client
                     if (Services?.GetService<IPipeClient>() is IAsyncDisposable disposable)
                     {
@@ -123,6 +144,7 @@ namespace CPCRemote.UI
             // - Singleton: Shared state across navigation, survives page changes (e.g., service status)
             // - Transient: Fresh instance each time, no shared state (e.g., dashboard refreshes on each visit)
             services.AddSingleton<SettingsService>();           // Singleton: Caches settings, shared across pages
+            services.AddSingleton<CategoryColorService>();       // Singleton: Category colors shared across dashboard
             
             // HttpClient for ServiceManagementViewModel - uses IHttpClientFactory pattern
             // This properly manages HttpClient lifecycle, avoiding socket exhaustion
@@ -133,6 +155,7 @@ namespace CPCRemote.UI
             
             services.AddTransient<QuickActionsViewModel>();      // Transient: Fresh state on each page visit
             services.AddTransient<DashboardViewModel>();         // Transient: Refreshes stats on each navigation
+            services.AddTransient<HomePageViewModel>();          // Transient: Fresh widget state on each visit
             services.AddTransient<AppCatalogViewModel>();        // Transient: Reloads catalog from service each visit
             services.AddTransient<SettingsPageViewModel>();      // Transient: Settings Page VM
 
@@ -188,6 +211,11 @@ namespace CPCRemote.UI
 
                 Logger?.LogInformation("Applied saved settings: Theme={Theme}, Backdrop={Backdrop}, Font={Font}, Scale={Scale}%", 
                     theme, backdrop, fontFamily, fontScale);
+
+                // Initialize category color service on view models
+                var colorService = GetService<CategoryColorService>();
+                DashboardWidgetViewModel.SetColorService(colorService);
+                SensorCardViewModel.SetColorService(colorService);
             }
             catch (Exception ex)
             {

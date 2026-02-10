@@ -64,12 +64,6 @@ public partial class QuickActionsViewModel : ObservableObject
     private async Task Lock() => await SendCommandAsync("Lock");
 
     /// <summary>
-    /// Sends a turn screen off command to the PC.
-    /// </summary>
-    [RelayCommand]
-    private async Task TurnScreenOff() => await SendCommandAsync("TurnScreenOff");
-
-    /// <summary>
     /// Sends a Wake-on-LAN magic packet to wake the PC.
     /// </summary>
     [RelayCommand]

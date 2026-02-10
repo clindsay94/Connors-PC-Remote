@@ -60,6 +60,32 @@ namespace CPCRemote.UI
         }
 
         /// <summary>
+        /// Hides the window (for minimize-to-tray).
+        /// </summary>
+        public void Hide()
+        {
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            ShowWindow(hwnd, SW_HIDE);
+        }
+
+        /// <summary>
+        /// Shows the window from a hidden/minimized state and brings it to the foreground.
+        /// </summary>
+        public void Show()
+        {
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            ShowWindow(hwnd, SW_SHOW);
+            SetForegroundWindow(hwnd);
+        }
+
+        private const int SW_HIDE = 0;
+        private const int SW_SHOW = 5;
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        /// <summary>
         /// Sets the window icon for unpackaged deployment.
         /// Uses AppWindow API to set the icon from assets.
         /// </summary>
@@ -116,15 +142,15 @@ namespace CPCRemote.UI
         {
             try
             {
-                // Start with Dashboard as the first page
-                var firstPage = typeof(DashboardPage);
+                // Start with Home as the first page
+                var firstPage = typeof(HomePage);
 
                 NavView.SelectedItem = NavView.MenuItems[0];
                 bool success = ContentFrame.Navigate(firstPage);
 
                 if (!success)
                 {
-                    Debug.WriteLine("WARNING: Navigation to DashboardPage failed (returned false).");
+                    Debug.WriteLine("WARNING: Navigation to HomePage failed (returned false).");
                 }
             }
             catch (Exception ex)
@@ -158,6 +184,7 @@ namespace CPCRemote.UI
                     // Using fully qualified names or explicit types helps avoid "Type not found" errors
                     Type? pageType = pageTag switch
                     {
+                        "HomePage" => typeof(HomePage),
                         "DashboardPage" => typeof(DashboardPage),
                         "QuickActionsPage" => typeof(QuickActionsPage),
                         "AppCatalogPage" => typeof(AppCatalogPage),

@@ -1,0 +1,196 @@
+<UserControl
+    x:Class="CPCRemote.UI.Controls.DashboardWidget"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:CPCRemote.UI.Controls"
+    xmlns:vm="using:CPCRemote.UI.ViewModels"
+    xmlns:helpers="using:CPCRemote.UI.Helpers"
+    xmlns:animations="using:CommunityToolkit.WinUI.Animations"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance Type=vm:DashboardWidgetViewModel, IsDesignTimeCreatable=True}">
+
+    <Border x:Name="WidgetBorder"
+            BorderBrush="{ThemeResource EdgeLightingBrush}"
+            BorderThickness="1"
+            CornerRadius="16"
+            Padding="14"
+            MinWidth="160"
+            MinHeight="120"
+            helpers:CompositionBehavior.IsSpringAnimationEnabled="True">
+
+        <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="{ThemeResource CardBackgroundFillColorDefault}" Offset="0.0"/>
+                <GradientStop Color="{Binding CategoryColor, Converter={StaticResource ColorToTransparentConverter}, ConverterParameter=0.10}" Offset="1.0"/>
+            </LinearGradientBrush>
+        </Border.Background>
+
+        <!-- Entry Animation -->
+        <animations:Implicit.ShowAnimations>
+            <animations:ImplicitAnimationSet>
+                <animations:TranslationAnimation Duration="0:0:0.5" From="0,30,0" To="0,0,0" />
+                <animations:OpacityAnimation Duration="0:0:0.5" From="0" To="1.0"/>
+                <animations:ScaleAnimation Duration="0:0:0.4" From="0.9,0.9,1" To="1,1,1"/>
+            </animations:ImplicitAnimationSet>
+        </animations:Implicit.ShowAnimations>
+
+        <Grid RowSpacing="4">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>  <!-- Category + Label + Edit -->
+                <RowDefinition Height="*"/>     <!-- Gauge / Value (main content) -->
+                <RowDefinition Height="Auto"/>  <!-- Footer: category badge -->
+            </Grid.RowDefinitions>
+
+            <!-- Row 0: Header — Category icon + Label -->
+            <Grid Grid.Row="0" Margin="0,0,0,2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Category accent bar -->
+                <Border Grid.Column="0" Width="3" Height="14" CornerRadius="2" Margin="0,0,8,0"
+                        Background="{Binding CategoryBrush}"/>
+
+                <!-- Sensor label -->
+                <TextBlock Grid.Column="1"
+                           Text="{Binding Label}"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           TextTrimming="CharacterEllipsis"
+                           MaxLines="1"
+                           VerticalAlignment="Center"
+                           ToolTipService.ToolTip="{Binding SensorName}"/>
+
+                <!-- Edit Controls -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2"
+                            Visibility="{Binding IsInEditMode, Converter={StaticResource BoolToVisibilityConverter}}">
+
+                    <!-- Move Left -->
+                    <Button Style="{StaticResource ToolbarButtonStyle}"
+                            Padding="2" MinWidth="24" MinHeight="24"
+                            ToolTipService.ToolTip="Move Left"
+                            Tag="{Binding}"
+                            Click="MoveLeftButton_Click">
+                        <FontIcon Glyph="&#xE76B;" FontSize="10"/>
+                    </Button>
+
+                    <!-- Move Right -->
+                    <Button Style="{StaticResource ToolbarButtonStyle}"
+                            Padding="2" MinWidth="24" MinHeight="24"
+                            ToolTipService.ToolTip="Move Right"
+                            Tag="{Binding}"
+                            Click="MoveRightButton_Click">
+                        <FontIcon Glyph="&#xE76C;" FontSize="10"/>
+                    </Button>
+
+                    <!-- Cycle Size -->
+                    <Button Style="{StaticResource ToolbarButtonStyle}"
+                            Padding="2" MinWidth="24" MinHeight="24"
+                            ToolTipService.ToolTip="Cycle widget size"
+                            Tag="{Binding}"
+                            Click="CycleSizeButton_Click">
+                        <FontIcon Glyph="&#xE740;" FontSize="10"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- Row 1: Main Content — ONLY ONE of these is visible at a time -->
+            <Grid Grid.Row="1" Margin="0,4">
+
+                <!-- ══════ 1. SQUARE mode: Radial Gauge (gauge units only) ══════ -->
+                <Viewbox Visibility="{Binding ShowRadialGauge, Converter={StaticResource BoolToVisibilityConverter}}"
+                         Stretch="Uniform"
+                         StretchDirection="DownOnly"
+                         MaxWidth="130" MaxHeight="130"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center">
+                    <controls:AnimatedRadialGauge 
+                        Value="{Binding Value, Mode=OneWay, Converter={StaticResource NullableFloatToDoubleConverter}}"
+                        Maximum="{Binding MaxValue}"
+                        Unit="{Binding Unit}"
+                        CategoryBrush="{Binding CategoryBrush}"
+                        Width="130" Height="130"/>
+                </Viewbox>
+
+                <!-- ══════ 2. WIDE mode: Value + optional Linear Gauge ══════ -->
+                <StackPanel Visibility="{Binding ShowLinearGauge, Converter={StaticResource BoolToVisibilityConverter}}"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Center"
+                            Spacing="6">
+                    <TextBlock Text="{Binding FormattedValue}"
+                               FontSize="28"
+                               FontWeight="Bold"
+                               Foreground="{Binding CategoryBrush}"
+                               HorizontalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"/>
+
+                    <controls:AnimatedLinearGauge 
+                        Visibility="{Binding IsGaugeSensor, Converter={StaticResource BoolToVisibilityConverter}}"
+                        Label=""
+                        Value="{Binding Value, Mode=OneWay, Converter={StaticResource NullableFloatToDoubleConverter}}"
+                        Maximum="{Binding MaxValue}"
+                        Unit="{Binding Unit}"
+                        Height="6"/>
+                </StackPanel>
+
+                <!-- ══════ 3. TALL mode: Gauge at top + Value at bottom ══════ -->
+                <Grid Visibility="{Binding ShowTallLayout, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="2*"/>   <!-- Gauge gets 2/3 space -->
+                        <RowDefinition Height="Auto"/> <!-- Small gap -->
+                        <RowDefinition Height="*"/>    <!-- Value gets 1/3 space -->
+                    </Grid.RowDefinitions>
+
+                    <!-- Gauge fills top space (constrained by Viewbox) -->
+                    <Viewbox Grid.Row="0" 
+                             Stretch="Uniform" 
+                             StretchDirection="DownOnly"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center"
+                             Margin="8">
+                        <controls:AnimatedRadialGauge 
+                            Value="{Binding Value, Mode=OneWay, Converter={StaticResource NullableFloatToDoubleConverter}}"
+                            Maximum="{Binding MaxValue}"
+                            Unit="{Binding Unit}"
+                            CategoryBrush="{Binding CategoryBrush}"
+                            Width="140" Height="140"/>
+                    </Viewbox>
+
+                    <!-- Value at bottom — separate row, cannot overlap -->
+                    <TextBlock Grid.Row="2" 
+                               Text="{Binding FormattedValue}"
+                               FontSize="20"
+                               FontWeight="SemiBold"
+                               Foreground="{Binding CategoryBrush}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"
+                               TextWrapping="NoWrap"/>
+                </Grid>
+            </Grid>
+
+            <!-- Row 2: Footer — Category badge -->
+            <Grid Grid.Row="2" Margin="0,2,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Background="{Binding CategoryBrush}"
+                        Opacity="0.15"
+                        CornerRadius="4"
+                        Padding="6,2"
+                        HorizontalAlignment="Left">
+                    <TextBlock Text="{Binding Category}"
+                               FontSize="10"
+                               FontWeight="SemiBold"
+                               Foreground="{Binding CategoryBrush}"/>
+                </Border>
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

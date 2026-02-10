@@ -18,6 +18,9 @@ public sealed partial class AnimatedRadialGauge : UserControl
     public static readonly DependencyProperty UnitProperty =
         DependencyProperty.Register("Unit", typeof(string), typeof(AnimatedRadialGauge), new PropertyMetadata(string.Empty, OnUnitChanged));
 
+    public static readonly DependencyProperty CategoryBrushProperty =
+        DependencyProperty.Register("CategoryBrush", typeof(Brush), typeof(AnimatedRadialGauge), new PropertyMetadata(null, OnCategoryBrushChanged));
+
     public double Value
     {
         get => (double)GetValue(ValueProperty);
@@ -34,6 +37,16 @@ public sealed partial class AnimatedRadialGauge : UserControl
     {
         get => (string)GetValue(UnitProperty);
         set => SetValue(UnitProperty, value);
+    }
+
+    /// <summary>
+    /// Optional brush to color the gauge arc and glow with the sensor's category color.
+    /// Falls back to NeonGlowBrush if not set.
+    /// </summary>
+    public Brush CategoryBrush
+    {
+        get => (Brush)GetValue(CategoryBrushProperty);
+        set => SetValue(CategoryBrushProperty, value);
     }
 
     public AnimatedRadialGauge()
@@ -57,18 +70,48 @@ public sealed partial class AnimatedRadialGauge : UserControl
         }
     }
 
+    private static void OnCategoryBrushChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is AnimatedRadialGauge gauge)
+        {
+            gauge.ApplyBrush();
+        }
+    }
+
+    private void ApplyBrush()
+    {
+        var brush = CategoryBrush;
+        if (brush is not null)
+        {
+            ProgressPath.Stroke = brush;
+            GlowRing.Stroke = brush;
+            ValueText.Foreground = brush;
+        }
+        else
+        {
+            // Fallback to theme resource
+            if (Resources.TryGetValue("NeonGlowBrush", out var fallback) && fallback is Brush fb)
+            {
+                ProgressPath.Stroke = fb;
+                GlowRing.Stroke = fb;
+            }
+        }
+    }
+
     private void UserControl_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        UpdateGauge();
-        // Resize rings
         double size = Math.Min(e.NewSize.Width, e.NewSize.Height);
         if (size > 0)
         {
+            // Resize all rings to match
+            GlowRing.Width = size;
+            GlowRing.Height = size;
             TrackRing.Width = size;
             TrackRing.Height = size;
             ProgressPath.Width = size;
             ProgressPath.Height = size;
         }
+        UpdateGauge();
     }
 
     private void UpdateGauge()
@@ -108,10 +151,6 @@ public sealed partial class AnimatedRadialGauge : UserControl
         geo.Figures.Add(fig);
         
         ProgressPath.Data = geo;
-        
-        // Color transition based on value
-        // Simple logic: Green -> Yellow -> Red? Or just use the VibrantMesh gradient?
-        // Let's stick to VibrantMesh for the "Hyper-Dynamic" look defined in ThemeResources.
     }
 
     private static Point GetPointOnCircle(Point center, double radius, double angleInDegrees)

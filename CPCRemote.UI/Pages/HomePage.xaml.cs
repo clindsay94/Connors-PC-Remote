@@ -4,15 +4,17 @@ using Microsoft.UI.Xaml.Navigation;
 
 namespace CPCRemote.UI.Pages;
 
-public sealed partial class DashboardPage : Page
+/// <summary>
+/// Home Page — the dynamic widget-based dashboard.
+/// </summary>
+public sealed partial class HomePage : Page
 {
-    public DashboardViewModel ViewModel { get; }
+    public HomePageViewModel ViewModel { get; }
 
-    public DashboardPage()
+    public HomePage()
     {
         InitializeComponent();
-        ViewModel = App.GetService<DashboardViewModel>();
-        DataContext = ViewModel;
+        ViewModel = App.GetService<HomePageViewModel>();
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)

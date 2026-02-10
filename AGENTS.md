@@ -275,14 +275,16 @@ dotnet build CPCRemote.sln --configuration Release
 The project uses WiX Toolset v6 for MSI-based deployment.
 
 ```powershell
-# 1. Publish UI and Service (self-contained)
-dotnet publish CPCRemote.UI/CPCRemote.UI.csproj -c Release -r win-x64 --self-contained -o publish/UI
+# 1. Build UI in Release (WiX references build output for XBF files)
+dotnet build CPCRemote.UI/CPCRemote.UI.csproj -c Release -p:Platform=x64
+
+# 2. Publish Service (self-contained)
 dotnet publish CPCRemote.Service/CPCRemote.Service.csproj -c Release -r win-x64 --self-contained -o publish/Service
 
-# 2. Build the MSI installer
+# 3. Build the MSI installer
 dotnet build CPCRemote.Installer/CPCRemote.Installer.wixproj -c Release
 
-# Output: bin/Release/CPCRemote.Installer/CPCRemote.msi (~80 MB)
+# Output: bin/Release/CPCRemote.Installer/CPCRemote.msi (~90 MB)
 ```
 
 > **Note**: The MSI installer automatically:

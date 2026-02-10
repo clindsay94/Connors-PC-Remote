@@ -5,6 +5,96 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-02-10
+
+### Added
+
+#### Dashboard Color Customization
+
+- New `CategoryColorService` for centralized sensor category color management
+- Per-category color pickers in Settings (CPU, GPU, Memory, Motherboard, Storage, Cooling, Network, Other)
+- Color choices persisted via `SettingsService` and applied globally to dashboard widgets and sensor cards
+- "Reset All" button to restore default category colors
+
+#### Gauge Improvements
+
+- `CategoryBrush` dependency property on `AnimatedRadialGauge` — gauges now use their sensor's category color
+- Glow ring correctly resizes with the gauge
+
+### Changed
+
+#### Dashboard Widget Layout
+
+- `ShowRadialGauge`, `ShowLinearGauge`, and `ShowTallLayout` are now mutually exclusive — only one content mode renders at a time
+- Tall mode uses a proper `2*:Auto:*` row split so gauge and value text occupy separate rows (cannot overlap)
+- Increased `VariableSizedWrapGrid` cell size (220×200 → 240×220) with uniform 6px margins between cards
+- Rebuilt `DashboardWidget.xaml` with proper visibility bindings and border clipping
+
+#### ViewModel Updates
+
+- Both `DashboardWidgetViewModel` and `SensorCardViewModel` now use `CategoryColorService` instead of hardcoded color switch expressions
+- Static `SetColorService()` pattern for singleton initialization
+
+### Fixed
+
+- Widget overlap when resized to Wide or Tall configurations
+- Text/gauge overlap in Tall mode widgets
+- Content clipping in dashboard widgets
+
+---
+
+## [1.2.0] - 2026-02-09
+
+### Added
+
+#### Sensor Preferences
+
+- Per-sensor visibility toggling (show/hide individual sensors on the dashboard)
+- Drag-and-drop sensor reordering
+- Sensor preferences persisted via IPC to the Service
+- New `SensorPreferencesMessages` IPC protocol
+
+#### Settings Overhaul
+
+- Settings now support theme, accent color, backdrop material, font family, and font scale customization
+- Typography settings with system font enumeration
+- Dashboard-specific settings: refresh interval, temperature unit, animation toggle
+- Window behavior settings: always on top, start minimized, remember position
+- Firewall configuration UI with automatic rule management
+- "Reset All Settings" with confirmation dialog
+
+#### UI Infrastructure
+
+- `SettingsService` for centralized settings persistence (packaged + unpackaged)
+- `SecureStorageService` for credential protection with DPAPI
+- Service configuration management via IPC (no more direct file editing)
+- System tray icon with minimize-to-tray support
+
+### Changed
+
+#### Dashboard Rework
+
+- Redesigned dashboard with sensor cards using category-colored gradients
+- Animated radial gauges for percentage-based sensors
+- Animated linear gauges for non-circular metrics
+- Variable-sized widget grid (Square, Wide, Tall configurations)
+- Real-time sensor value updates with configurable refresh interval
+
+#### Architecture
+
+- Full MVVM with CommunityToolkit.Mvvm partial properties
+- Dependency Injection throughout all ViewModels and Pages
+- Global exception handling with `AppDomain.UnhandledException` and `TaskScheduler.UnobservedTaskException`
+
+### Fixed
+
+- Lock command failure from Session 0 (Windows Service context) — now uses `PInvoke` fallback
+- Browse button in App Catalog now opens file picker correctly
+- Font selection now applies globally across all pages
+- Service Management page text overlap
+
+---
+
 ## [1.1.0] - 2026-01-07
 
 ### Added
@@ -169,6 +259,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.3.0]: https://github.com/clindsay94/Connors-PC-Remote/compare/1.2.0...1.3.0
+[1.2.0]: https://github.com/clindsay94/Connors-PC-Remote/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/clindsay94/Connors-PC-Remote/compare/1.0.1...1.1.0
 [1.0.1]: https://github.com/clindsay94/Connors-PC-Remote/compare/1.0.0...1.0.1
 [1.0.0]: https://github.com/clindsay94/Connors-PC-Remote/compare/main...New-Features
