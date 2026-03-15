@@ -28,6 +28,5 @@
   <ItemGroup>
     <ProjectReference Include="..\\CPCRemote.Core\\CPCRemote.Core.csproj" />
     <ProjectReference Include="..\\CPCRemote.Service\\CPCRemote.Service.csproj" />
-    <ProjectReference Include="..\\CPCRemote.UI\\CPCRemote.UI.csproj" />
   </ItemGroup>
 </Project>

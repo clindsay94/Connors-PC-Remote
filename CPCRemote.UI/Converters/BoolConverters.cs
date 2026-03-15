@@ -19,11 +19,7 @@ namespace CPCRemote.UI.Converters
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
         {
-            if (value is SolidColorBrush brush)
-            {
-                return brush.Color == Colors.Green;
-            }
-            return false;
+            return DependencyProperty.UnsetValue;
         }
     }
 
@@ -52,7 +48,7 @@ namespace CPCRemote.UI.Converters
                 }
                 return result;
             }
-            return false;
+            return DependencyProperty.UnsetValue;
         }
     }
 
@@ -65,7 +61,7 @@ namespace CPCRemote.UI.Converters
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
         {
-            return value is string s && s == "\uE7F1";
+            return DependencyProperty.UnsetValue;
         }
     }
 
@@ -98,7 +94,7 @@ namespace CPCRemote.UI.Converters
                 return !boolValue;
             }
 
-            return value;
+            return DependencyProperty.UnsetValue;
         }
     }
 
@@ -115,7 +111,7 @@ namespace CPCRemote.UI.Converters
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
         {
-            return value is string s && s == "\uE73E";
+            return DependencyProperty.UnsetValue;
         }
     }
 
@@ -131,7 +127,7 @@ namespace CPCRemote.UI.Converters
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
         {
-            return value is string s && s == "Done";
+            return DependencyProperty.UnsetValue;
         }
     }
 
@@ -163,7 +159,11 @@ namespace CPCRemote.UI.Converters
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
         {
-            return value is Visibility v && v == Visibility.Collapsed;
+            if (value is Visibility v)
+            {
+                return v == Visibility.Collapsed;
+            }
+            return DependencyProperty.UnsetValue;
         }
     }
 }

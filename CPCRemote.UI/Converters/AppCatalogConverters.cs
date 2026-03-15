@@ -11,7 +11,7 @@ namespace CPCRemote.UI.Converters
             if (value is int count && count == 0) return Visibility.Visible;
             return Visibility.Collapsed;
         }
-        public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
+        public object ConvertBack(object value, Type targetType, object parameter, string language) => DependencyProperty.UnsetValue;
     }
 
     public class NullToTitleConverter : IValueConverter
@@ -20,6 +20,6 @@ namespace CPCRemote.UI.Converters
         {
             return value == null ? "Add New App" : "Edit App";
         }
-        public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
+        public object ConvertBack(object value, Type targetType, object parameter, string language) => DependencyProperty.UnsetValue;
     }
 }

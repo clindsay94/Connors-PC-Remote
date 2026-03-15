@@ -21,6 +21,6 @@ public class SegmentedStringConverter : IValueConverter
         {
             return tag;
         }
-        return null!; // Or string.Empty
+        return DependencyProperty.UnsetValue;
     }
 }
