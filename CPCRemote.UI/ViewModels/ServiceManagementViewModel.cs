@@ -460,7 +460,7 @@ namespace CPCRemote.UI.ViewModels
 
             try
             {
-                var result = await RunScCommandAsync($"create {ServiceName} binPath=\"{exePath}\" start=auto", _cancellationTokenSource.Token, progress);
+                var result = await RunScCommandAsync(["create", ServiceName, "binPath=", exePath, "start=", "auto"], _cancellationTokenSource.Token, progress);
 
                 if (result.success)
                 {
@@ -520,7 +520,7 @@ namespace CPCRemote.UI.ViewModels
                     }
                 });
 
-                var result = await RunScCommandAsync($"delete {ServiceName}", _cancellationTokenSource.Token, progress);
+                var result = await RunScCommandAsync(["delete", ServiceName], _cancellationTokenSource.Token, progress);
 
                 if (result.success)
                 {
@@ -557,15 +557,17 @@ namespace CPCRemote.UI.ViewModels
             _cancellationTokenSource?.Cancel();
         }
 
-        private async Task<(bool success, string output)> RunScCommandAsync(string arguments, CancellationToken cancellationToken, IProgress<double> progress)
+        private async Task<(bool success, string output)> RunScCommandAsync(System.Collections.Generic.IEnumerable<string> arguments, CancellationToken cancellationToken, IProgress<double> progress)
         {
+            string argumentString = string.Join(" ", arguments.Select(EscapeCommandLineArgument));
+
             if (!IsAdministrator())
             {
                 // Request elevation via UAC
                 var startInfo = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "sc.exe",
-                    Arguments = arguments,
+                    Arguments = argumentString,
                     UseShellExecute = true, // Required for Verb = "runas"
                     Verb = "runas",
                     CreateNoWindow = true
@@ -605,7 +607,7 @@ namespace CPCRemote.UI.ViewModels
                 var startInfo = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "sc.exe",
-                    Arguments = arguments,
+                    Arguments = argumentString,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
@@ -650,6 +652,50 @@ namespace CPCRemote.UI.ViewModels
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Safely escapes a command line argument for Windows.
+        /// </summary>
+        private static string EscapeCommandLineArgument(string argument)
+        {
+            if (string.IsNullOrEmpty(argument))
+                return "\"\"";
+
+            // If it doesn't contain spaces or quotes, we don't strictly need to quote it.
+            // sc.exe specific: we also want to avoid quoting keys like binPath=
+            if (!argument.Any(c => char.IsWhiteSpace(c) || c == '\"'))
+                return argument;
+
+            var sb = new System.Text.StringBuilder();
+            sb.Append('\"');
+            for (int i = 0; i < argument.Length; i++)
+            {
+                int backslashCount = 0;
+                while (i < argument.Length && argument[i] == '\\')
+                {
+                    backslashCount++;
+                    i++;
+                }
+
+                if (i == argument.Length)
+                {
+                    sb.Append('\\', backslashCount * 2);
+                    break;
+                }
+                else if (argument[i] == '\"')
+                {
+                    sb.Append('\\', backslashCount * 2 + 1);
+                    sb.Append('\"');
+                }
+                else
+                {
+                    sb.Append('\\', backslashCount);
+                    sb.Append(argument[i]);
+                }
+            }
+            sb.Append('\"');
+            return sb.ToString();
         }
 
         public string PreviewUrl => $"http://{IpAddress}:{Port}/";
