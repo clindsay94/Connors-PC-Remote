@@ -25,6 +25,6 @@ public sealed class EnumToVisibilityConverter : IValueConverter
 
     public object ConvertBack(object value, Type targetType, object parameter, string language)
     {
-        return Binding.DoNothing;
+        return DependencyProperty.UnsetValue;
     }
 }

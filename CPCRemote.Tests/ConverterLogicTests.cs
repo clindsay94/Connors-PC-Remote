@@ -55,10 +55,10 @@ public class ConverterLogicTests
     }
 
     [Test]
-    public void StringToVisibilityConverter_ConvertBack_ReturnsDoNothing()
+    public void StringToVisibilityConverter_ConvertBack_ReturnsUnsetValue()
     {
         var converter = new StringToVisibilityConverter();
-        Assert.That(converter.ConvertBack(Visibility.Visible, typeof(string), null, null), Is.EqualTo(Binding.DoNothing));
+        Assert.That(converter.ConvertBack(Visibility.Visible, typeof(string), null, null), Is.EqualTo(DependencyProperty.UnsetValue));
     }
 
     [Test]
@@ -70,9 +70,9 @@ public class ConverterLogicTests
     }
 
     [Test]
-    public void EnumToVisibilityConverter_ConvertBack_ReturnsDoNothing()
+    public void EnumToVisibilityConverter_ConvertBack_ReturnsUnsetValue()
     {
         var converter = new EnumToVisibilityConverter();
-        Assert.That(converter.ConvertBack(Visibility.Visible, typeof(object), "SomeValue", null), Is.EqualTo(Binding.DoNothing));
+        Assert.That(converter.ConvertBack(Visibility.Visible, typeof(object), "SomeValue", null), Is.EqualTo(DependencyProperty.UnsetValue));
     }
 }
