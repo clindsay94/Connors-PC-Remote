@@ -22,44 +22,62 @@ public sealed class SensorOptionsValidator : IValidateOptions<SensorOptions>
         var errors = new List<string>();
 
         // Validate required sensor mappings have at least one pattern
-        if (options.CpuLoad.Patterns.Length == 0)
-        {
-            errors.Add("CpuLoad.Patterns must contain at least one pattern.");
-        }
-
-        if (options.MemoryLoad.Patterns.Length == 0)
-        {
-            errors.Add("MemoryLoad.Patterns must contain at least one pattern.");
-        }
-
-        if (options.CpuTemp.Patterns.Length == 0)
-        {
-            errors.Add("CpuTemp.Patterns must contain at least one pattern.");
-        }
-
-        if (options.GpuTemp.Patterns.Length == 0)
-        {
-            errors.Add("GpuTemp.Patterns must contain at least one pattern.");
-        }
+        ValidateMapping(errors, "CpuLoad", options.CpuLoad);
+        ValidateMapping(errors, "MemoryLoad", options.MemoryLoad);
+        ValidateMapping(errors, "CpuTemp", options.CpuTemp);
+        ValidateMapping(errors, "GpuTemp", options.GpuTemp);
 
         // Validate custom sensors have required properties
-        for (int i = 0; i < options.CustomSensors.Count; i++)
+        if (options.CustomSensors == null)
         {
-            var sensor = options.CustomSensors[i];
-
-            if (string.IsNullOrWhiteSpace(sensor.Name))
+            errors.Add("CustomSensors collection cannot be null.");
+        }
+        else
+        {
+            for (int i = 0; i < options.CustomSensors.Count; i++)
             {
-                errors.Add($"CustomSensors[{i}].Name is required.");
-            }
+                var sensor = options.CustomSensors[i];
 
-            if (string.IsNullOrWhiteSpace(sensor.Label))
-            {
-                errors.Add($"CustomSensors[{i}].Label is required.");
+                if (sensor == null)
+                {
+                    errors.Add($"CustomSensors[{i}] cannot be null.");
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(sensor.Name))
+                {
+                    errors.Add($"CustomSensors[{i}].Name is required.");
+                }
+
+                if (string.IsNullOrWhiteSpace(sensor.Label))
+                {
+                    errors.Add($"CustomSensors[{i}].Label is required.");
+                }
             }
         }
 
         return errors.Count > 0
             ? ValidateOptionsResult.Fail(errors)
             : ValidateOptionsResult.Success;
+    }
+
+    private static void ValidateMapping(List<string> errors, string propertyName, SensorMappingOptions? mapping)
+    {
+        if (mapping == null)
+        {
+            errors.Add($"{propertyName} configuration is required.");
+            return;
+        }
+
+        if (mapping.Patterns == null)
+        {
+            errors.Add($"{propertyName}.Patterns cannot be null.");
+            return;
+        }
+
+        if (mapping.Patterns.Length == 0)
+        {
+            errors.Add($"{propertyName}.Patterns must contain at least one pattern.");
+        }
     }
 }

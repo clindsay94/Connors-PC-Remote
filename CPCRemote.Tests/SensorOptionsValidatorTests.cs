@@ -84,16 +84,18 @@ public class SensorOptionsValidatorTests
 
     #endregion
 
-    #region Empty Patterns Tests
+    #region Mapping Validation Tests
 
     [Test]
-    public void Validate_EmptyCpuLoadPatterns_ReturnsFail()
+    [TestCase("CpuLoad", TestName = "Validate_NullCpuLoad_ReturnsFail")]
+    [TestCase("MemoryLoad", TestName = "Validate_NullMemoryLoad_ReturnsFail")]
+    [TestCase("CpuTemp", TestName = "Validate_NullCpuTemp_ReturnsFail")]
+    [TestCase("GpuTemp", TestName = "Validate_NullGpuTemp_ReturnsFail")]
+    public void Validate_NullMapping_ReturnsFail(string propertyName)
     {
         // Arrange
-        var options = new SensorOptions
-        {
-            CpuLoad = new SensorMappingOptions { Patterns = [], Unit = "%" }
-        };
+        var options = new SensorOptions();
+        typeof(SensorOptions).GetProperty(propertyName)?.SetValue(options, null);
 
         // Act
         var result = _validator.Validate(null, options);
@@ -102,18 +104,21 @@ public class SensorOptionsValidatorTests
         Assert.Multiple(() =>
         {
             Assert.That(result.Failed, Is.True);
-            Assert.That(result.FailureMessage, Does.Contain("CpuLoad.Patterns"));
+            Assert.That(result.FailureMessage, Does.Contain($"{propertyName} configuration is required"));
         });
     }
 
     [Test]
-    public void Validate_EmptyMemoryLoadPatterns_ReturnsFail()
+    [TestCase("CpuLoad", TestName = "Validate_NullCpuLoadPatterns_ReturnsFail")]
+    [TestCase("MemoryLoad", TestName = "Validate_NullMemoryLoadPatterns_ReturnsFail")]
+    [TestCase("CpuTemp", TestName = "Validate_NullCpuTempPatterns_ReturnsFail")]
+    [TestCase("GpuTemp", TestName = "Validate_NullGpuTempPatterns_ReturnsFail")]
+    public void Validate_NullPatterns_ReturnsFail(string propertyName)
     {
         // Arrange
-        var options = new SensorOptions
-        {
-            MemoryLoad = new SensorMappingOptions { Patterns = [], Unit = "%" }
-        };
+        var options = new SensorOptions();
+        var mapping = (SensorMappingOptions?)typeof(SensorOptions).GetProperty(propertyName)?.GetValue(options);
+        if (mapping != null) mapping.Patterns = null!;
 
         // Act
         var result = _validator.Validate(null, options);
@@ -122,18 +127,21 @@ public class SensorOptionsValidatorTests
         Assert.Multiple(() =>
         {
             Assert.That(result.Failed, Is.True);
-            Assert.That(result.FailureMessage, Does.Contain("MemoryLoad.Patterns"));
+            Assert.That(result.FailureMessage, Does.Contain($"{propertyName}.Patterns cannot be null"));
         });
     }
 
     [Test]
-    public void Validate_EmptyCpuTempPatterns_ReturnsFail()
+    [TestCase("CpuLoad", TestName = "Validate_EmptyCpuLoadPatterns_ReturnsFail")]
+    [TestCase("MemoryLoad", TestName = "Validate_EmptyMemoryLoadPatterns_ReturnsFail")]
+    [TestCase("CpuTemp", TestName = "Validate_EmptyCpuTempPatterns_ReturnsFail")]
+    [TestCase("GpuTemp", TestName = "Validate_EmptyGpuTempPatterns_ReturnsFail")]
+    public void Validate_EmptyPatterns_ReturnsFail(string propertyName)
     {
         // Arrange
-        var options = new SensorOptions
-        {
-            CpuTemp = new SensorMappingOptions { Patterns = [], Unit = "°c" }
-        };
+        var options = new SensorOptions();
+        var mapping = (SensorMappingOptions?)typeof(SensorOptions).GetProperty(propertyName)?.GetValue(options);
+        if (mapping != null) mapping.Patterns = [];
 
         // Act
         var result = _validator.Validate(null, options);
@@ -142,27 +150,7 @@ public class SensorOptionsValidatorTests
         Assert.Multiple(() =>
         {
             Assert.That(result.Failed, Is.True);
-            Assert.That(result.FailureMessage, Does.Contain("CpuTemp.Patterns"));
-        });
-    }
-
-    [Test]
-    public void Validate_EmptyGpuTempPatterns_ReturnsFail()
-    {
-        // Arrange
-        var options = new SensorOptions
-        {
-            GpuTemp = new SensorMappingOptions { Patterns = [], Unit = "°c" }
-        };
-
-        // Act
-        var result = _validator.Validate(null, options);
-
-        // Assert
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.Failed, Is.True);
-            Assert.That(result.FailureMessage, Does.Contain("GpuTemp.Patterns"));
+            Assert.That(result.FailureMessage, Does.Contain($"{propertyName}.Patterns must contain at least one pattern"));
         });
     }
 
@@ -195,6 +183,43 @@ public class SensorOptionsValidatorTests
     #endregion
 
     #region Custom Sensor Validation Tests
+
+    [Test]
+    public void Validate_NullCustomSensors_ReturnsFail()
+    {
+        // Arrange
+        var options = new SensorOptions { CustomSensors = null! };
+
+        // Act
+        var result = _validator.Validate(null, options);
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Failed, Is.True);
+            Assert.That(result.FailureMessage, Does.Contain("CustomSensors collection cannot be null"));
+        });
+    }
+
+    [Test]
+    public void Validate_CustomSensorIsNull_ReturnsFail()
+    {
+        // Arrange
+        var options = new SensorOptions
+        {
+            CustomSensors = [null!]
+        };
+
+        // Act
+        var result = _validator.Validate(null, options);
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Failed, Is.True);
+            Assert.That(result.FailureMessage, Does.Contain("CustomSensors[0] cannot be null"));
+        });
+    }
 
     [Test]
     public void Validate_CustomSensorMissingName_ReturnsFail()
