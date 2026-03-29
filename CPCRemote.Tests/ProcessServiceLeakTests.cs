@@ -7,7 +7,8 @@ using NUnit.Framework;
 namespace CPCRemote.Tests;
 
 [TestFixture]
-[SupportedOSPlatform("windows10.0.22621.0")]
+[NonParallelizable]
+[SupportedOSPlatform("windows")]
 public class ProcessServiceLeakTests
 {
     [Test]
@@ -20,7 +21,13 @@ public class ProcessServiceLeakTests
         GC.Collect();
         GC.WaitForPendingFinalizers();
 
-        long initialHandles = Process.GetCurrentProcess().HandleCount;
+        long initialHandles;
+        using (var current = Process.GetCurrentProcess())
+        {
+            current.Refresh();
+            initialHandles = current.HandleCount;
+        }
+
         TestContext.Out.WriteLine($"Initial handle count: {initialHandles}");
 
         for (int i = 0; i < 50; i++)
@@ -28,15 +35,30 @@ public class ProcessServiceLeakTests
             service.GetTopProcesses();
         }
 
+        // Measure immediately after the loop (before GC) to catch leaks not cleaned by finalizers
+        long handleCountAfterLoop;
+        using (var current = Process.GetCurrentProcess())
+        {
+            current.Refresh();
+            handleCountAfterLoop = current.HandleCount;
+        }
+
         GC.Collect();
         GC.WaitForPendingFinalizers();
 
-        long finalHandles = Process.GetCurrentProcess().HandleCount;
-        TestContext.Out.WriteLine($"Final handle count: {finalHandles}");
+        long finalHandles;
+        using (var current = Process.GetCurrentProcess())
+        {
+            current.Refresh();
+            finalHandles = current.HandleCount;
+        }
+
+        TestContext.Out.WriteLine($"Handle count after loop (pre-GC): {handleCountAfterLoop}");
+        TestContext.Out.WriteLine($"Final handle count (post-GC): {finalHandles}");
 
         // Allow for some fluctuation, but 50 calls with ~100-200 processes each
         // would leak thousands of handles if not disposed.
-        // Process objects in .NET can be tricky with GC, but a large leak should be obvious.
-        Assert.That(finalHandles, Is.LessThan(initialHandles + 100), "Significant handle leak detected");
+        Assert.That(handleCountAfterLoop, Is.LessThan(initialHandles + 100), "Significant handle leak detected before GC");
+        Assert.That(finalHandles, Is.LessThan(initialHandles + 100), "Significant handle leak detected after GC");
     }
 }

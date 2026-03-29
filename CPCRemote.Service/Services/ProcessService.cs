@@ -2,6 +2,7 @@ namespace CPCRemote.Service.Services;
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.Versioning;
@@ -52,7 +53,8 @@ public sealed class ProcessService
                 {
                     try
                     {
-                        if (string.IsNullOrEmpty(p.ProcessName))
+                        string name = p.ProcessName;
+                        if (string.IsNullOrEmpty(name))
                         {
                             continue;
                         }
@@ -60,14 +62,15 @@ public sealed class ProcessService
                         processInfos.Add(new ProcessInfoDto
                         {
                             Pid = p.Id,
-                            Name = p.ProcessName,
+                            Name = name,
                             MemoryMb = Math.Round(p.WorkingSet64 / (1024.0 * 1024.0), 1),
-                            IsProtected = ProtectedProcesses.Contains(p.ProcessName)
+                            IsProtected = ProtectedProcesses.Contains(name)
                         });
                     }
-                    catch
+                    catch (Exception ex) when (ex is InvalidOperationException or Win32Exception or NotSupportedException)
                     {
-                        // Some processes might exit while we are iterating or we might lack permissions
+                        // Process may have exited or we lack permissions to inspect it
+                        _logger.LogDebug(ex, "Skipping process during enumeration");
                     }
                 }
             }
