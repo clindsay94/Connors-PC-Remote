@@ -7,7 +7,7 @@ using NUnit.Framework;
 namespace CPCRemote.Tests;
 
 [TestFixture]
-[SupportedOSPlatform("windows10.0.22621.0")]
+[SupportedOSPlatform("windows")]
 public class ProcessServiceLeakTests
 {
     [Test]
