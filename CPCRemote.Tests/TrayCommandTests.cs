@@ -93,7 +93,7 @@ public class TrayCommandTests
 
         // Assert
         Assert.That(commands, Is.Not.Null);
-        Assert.That(commands.Count, Is.EqualTo(7));
+        Assert.That(commands.Count, Is.EqualTo(6));
 
         Assert.Multiple(() =>
         {
