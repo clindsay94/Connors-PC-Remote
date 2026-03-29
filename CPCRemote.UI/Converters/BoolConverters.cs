@@ -19,7 +19,7 @@ namespace CPCRemote.UI.Converters
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
         {
-            throw new NotImplementedException();
+            return DependencyProperty.UnsetValue;
         }
     }
 
@@ -39,7 +39,16 @@ namespace CPCRemote.UI.Converters
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
         {
-            throw new NotImplementedException();
+            if (value is Visibility visibility)
+            {
+                bool result = visibility == Visibility.Visible;
+                if (parameter is string s && s.Equals("Inverse", StringComparison.OrdinalIgnoreCase))
+                {
+                    return !result;
+                }
+                return result;
+            }
+            return DependencyProperty.UnsetValue;
         }
     }
 
@@ -52,7 +61,7 @@ namespace CPCRemote.UI.Converters
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
         {
-            throw new NotImplementedException();
+            return DependencyProperty.UnsetValue;
         }
     }
 
@@ -85,7 +94,7 @@ namespace CPCRemote.UI.Converters
                 return !boolValue;
             }
 
-            return value;
+            return DependencyProperty.UnsetValue;
         }
     }
 
@@ -102,7 +111,7 @@ namespace CPCRemote.UI.Converters
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
         {
-            throw new NotImplementedException();
+            return DependencyProperty.UnsetValue;
         }
     }
 
@@ -118,7 +127,7 @@ namespace CPCRemote.UI.Converters
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
         {
-            throw new NotImplementedException();
+            return DependencyProperty.UnsetValue;
         }
     }
 
@@ -134,7 +143,7 @@ namespace CPCRemote.UI.Converters
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
         {
-            throw new NotImplementedException();
+            return DependencyProperty.UnsetValue;
         }
     }
 
@@ -150,7 +159,11 @@ namespace CPCRemote.UI.Converters
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
         {
-            throw new NotImplementedException();
+            if (value is Visibility v)
+            {
+                return v == Visibility.Collapsed;
+            }
+            return DependencyProperty.UnsetValue;
         }
     }
 }

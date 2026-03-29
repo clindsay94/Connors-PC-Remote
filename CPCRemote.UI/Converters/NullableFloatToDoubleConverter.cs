@@ -1,3 +1,4 @@
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 using System;
 
@@ -20,6 +21,10 @@ public sealed class NullableFloatToDoubleConverter : IValueConverter
 
     public object ConvertBack(object value, Type targetType, object parameter, string language)
     {
-        throw new NotImplementedException();
+        if (value is double d)
+        {
+            return (float)d;
+        }
+        return DependencyProperty.UnsetValue;
     }
 }
