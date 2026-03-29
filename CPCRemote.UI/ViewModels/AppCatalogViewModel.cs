@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Linq;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -192,26 +193,9 @@ public sealed partial class AppCatalogViewModel : ObservableObject
     [RelayCommand]
     public void AddNewApp()
     {
-        // Find first available slot
-        string? availableSlot = null;
-        foreach (var slot in AvailableSlots)
-        {
-            bool slotUsed = false;
-            foreach (var app in Apps)
-            {
-                if (string.Equals(app.Slot, slot, StringComparison.OrdinalIgnoreCase))
-                {
-                    slotUsed = true;
-                    break;
-                }
-            }
-
-            if (!slotUsed)
-            {
-                availableSlot = slot;
-                break;
-            }
-        }
+        // Find first available slot using a HashSet for efficient O(N+M) lookup
+        var usedSlots = new HashSet<string>(Apps.Select(a => a.Slot!), StringComparer.OrdinalIgnoreCase);
+        string? availableSlot = AvailableSlots.FirstOrDefault(slot => !usedSlots.Contains(slot));
 
         EditSlot = availableSlot ?? "App1";
         EditName = string.Empty;
