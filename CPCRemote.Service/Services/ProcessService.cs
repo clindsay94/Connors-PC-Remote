@@ -2,6 +2,7 @@ namespace CPCRemote.Service.Services;
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.Versioning;
@@ -66,10 +67,10 @@ public sealed class ProcessService
                             IsProtected = ProtectedProcesses.Contains(name)
                         });
                     }
-                                       catch (Exception ex)
+                    catch (Exception ex) when (ex is InvalidOperationException or Win32Exception or NotSupportedException)
                     {
-                        // Some processes might exit while we are iterating or we might lack permissions
-                        _logger.LogDebug(ex, "Skipping process due to an error during info retrieval.");
+                        // Process may have exited or we lack permissions to inspect it
+                        _logger.LogDebug(ex, "Skipping process during enumeration");
                     }
                 }
             }
