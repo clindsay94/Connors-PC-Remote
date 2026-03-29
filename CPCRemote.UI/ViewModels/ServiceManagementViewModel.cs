@@ -560,13 +560,14 @@ namespace CPCRemote.UI.ViewModels
         private async Task<(bool success, string output)> RunScCommandAsync(System.Collections.Generic.IEnumerable<string> arguments, CancellationToken cancellationToken, IProgress<double> progress)
         {
             string argumentString = string.Join(" ", arguments.Select(EscapeCommandLineArgument));
+            string scPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "sc.exe");
 
             if (!IsAdministrator())
             {
                 // Request elevation via UAC
                 var startInfo = new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName = "sc.exe",
+                    FileName = scPath,
                     Arguments = argumentString,
                     UseShellExecute = true, // Required for Verb = "runas"
                     Verb = "runas",
@@ -606,7 +607,7 @@ namespace CPCRemote.UI.ViewModels
                 // Already administrator, run directly with output redirection
                 var startInfo = new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName = "sc.exe",
+                    FileName = scPath,
                     Arguments = argumentString,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
@@ -817,9 +818,10 @@ namespace CPCRemote.UI.ViewModels
         {
             try
             {
+                string scPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "sc.exe");
                 var startInfo = new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName = "sc.exe",
+                    FileName = scPath,
                     Arguments = $"qc {ServiceName}",
                     RedirectStandardOutput = true,
                     UseShellExecute = false,

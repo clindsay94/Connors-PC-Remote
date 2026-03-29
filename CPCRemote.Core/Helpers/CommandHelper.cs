@@ -215,7 +215,8 @@ public sealed partial class CommandHelper(WolOptions wolOptions) : ICommandCatal
 
         try
         {
-            Process? process = Process.Start("shutdown", arguments);
+            string shutdownPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "shutdown.exe");
+            Process? process = Process.Start(shutdownPath, arguments);
             if (process == null)
             {
                 throw new InvalidOperationException($"Failed to start shutdown process for command '{commandType}'.");
