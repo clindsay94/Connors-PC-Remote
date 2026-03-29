@@ -391,7 +391,7 @@ public partial class SettingsPageViewModel : ObservableObject
     {
         try
         {
-            var result = await RunNetshAsync($"advfirewall firewall show rule name=\"{FirewallRuleName}\"");
+            var result = await RunNetshAsync("advfirewall", "firewall", "show", "rule", $"name={FirewallRuleName}");
             bool exists = result.ExitCode == 0 && result.Output.Contains(FirewallRuleName, StringComparison.OrdinalIgnoreCase);
             IsFirewallRuleActive = exists;
             FirewallStatus = exists ? "Rule active" : "No rule found";
@@ -415,11 +415,11 @@ public partial class SettingsPageViewModel : ObservableObject
             }
 
             // Remove existing rule first (ignore errors)
-            await RunNetshAsync($"advfirewall firewall delete rule name=\"{FirewallRuleName}\"");
+            await RunNetshAsync("advfirewall", "firewall", "delete", "rule", $"name={FirewallRuleName}");
 
             // Create inbound TCP rule
             var result = await RunNetshAsync(
-                $"advfirewall firewall add rule name=\"{FirewallRuleName}\" dir=in action=allow protocol=TCP localport={port}");
+                "advfirewall", "firewall", "add", "rule", $"name={FirewallRuleName}", "dir=in", "action=allow", "protocol=TCP", $"localport={port}");
 
             if (result.ExitCode == 0)
             {
@@ -444,7 +444,7 @@ public partial class SettingsPageViewModel : ObservableObject
     {
         try
         {
-            var result = await RunNetshAsync($"advfirewall firewall delete rule name=\"{FirewallRuleName}\"");
+            var result = await RunNetshAsync("advfirewall", "firewall", "delete", "rule", $"name={FirewallRuleName}");
 
             if (result.ExitCode == 0)
             {
@@ -472,19 +472,23 @@ public partial class SettingsPageViewModel : ObservableObject
         ShowFirewallInfo = true;
     }
 
-    private static async Task<(int ExitCode, string Output)> RunNetshAsync(string arguments)
+    private static async Task<(int ExitCode, string Output)> RunNetshAsync(params string[] arguments)
     {
         using var process = new Process();
         process.StartInfo = new ProcessStartInfo
         {
-            FileName = "netsh",
-            Arguments = arguments,
+            FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "netsh.exe"),
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             CreateNoWindow = true,
             Verb = "runas"
         };
+
+        foreach (var arg in arguments)
+        {
+            process.StartInfo.ArgumentList.Add(arg);
+        }
 
         process.Start();
         string output = await process.StandardOutput.ReadToEndAsync();
