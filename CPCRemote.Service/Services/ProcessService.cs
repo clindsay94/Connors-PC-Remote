@@ -66,9 +66,10 @@ public sealed class ProcessService
                             IsProtected = ProtectedProcesses.Contains(name)
                         });
                     }
-                    catch
+                                       catch (Exception ex)
                     {
                         // Some processes might exit while we are iterating or we might lack permissions
+                        _logger.LogDebug(ex, "Skipping process due to an error during info retrieval.");
                     }
                 }
             }
