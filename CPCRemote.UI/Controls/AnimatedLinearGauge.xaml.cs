@@ -1,5 +1,7 @@
+using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Animation;
 
 namespace CPCRemote.UI.Controls;
 
@@ -44,7 +46,7 @@ public sealed partial class AnimatedLinearGauge : UserControl
     public AnimatedLinearGauge()
     {
         this.InitializeComponent();
-        this.SizeChanged += (s, e) => UpdateGauge();
+        this.SizeChanged += (s, e) => UpdateGauge(false);
     }
 
     private static void OnValueChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -71,46 +73,35 @@ public sealed partial class AnimatedLinearGauge : UserControl
         }
     }
 
-    private void UpdateGauge()
+    private void UpdateGauge(bool animate = true)
     {
-        double percentage = System.Math.Clamp(Value / Maximum, 0, 1);
-        ValueText.Text = System.Math.Round(Value).ToString();
-        
-        // Animate width (using simplified Width assignment for now, implicitly animated by layout updates often)
-        // For true smooth animation, we'd use Composition or DoubleAnimation.
-        // But let's just set Width. Grid layout will handle it if we used Column definitions, 
-        // but here we are using Rectangle inside Grid.
-        
-        if (ActualWidth > 0) // we need the container width
-        {
-             // Actually, ActualWidth is the whole control width. We need the Grid Column 0 width.
-             // But we can just set Width of FillRect directly if we know the available space.
-             // Better: Set Width of FillRect to (Percentage * ContainerWidth).
-             // But ContainerWidth depends on layout. 
-             // Simplest: Use Grid with ColumnDefinitions and *, then put Rectangle in Column 0 with Width=Auto? No.
-             
-             // Used approach: Rectangle HorizontalAlignment=Left. Width = ?
-             // We need the parent grid's ActualWidth (minus the text column).
-             // Let's assume the Grid column 0 has a width.
-             
-             // Refined: Use a Grid for the track, and a Grid/Border for the fill inside it.
-             // The track Grid has known width? No, it's *
-        }
-        
-        // Easier approach: Use a Grid for the bar track. 
-        // Inside put a Border for the fill. 
-        // Set fill.Width = track.ActualWidth * percentage.
-        // But track.ActualWidth is dynamic.
-        
-        // Let's try to just use a standard ProgressBar with Custom Style! 
-        // WinUI ProgressBar supports this easily.
-        // But for "AnimatedLinearGauge" I wanted custom text.
-        
-        // Okay, let's fix the Width logic.
-        // The track is the Grid "Grid.Column=0".
+        double percentage = Math.Clamp(Value / Maximum, 0, 1);
+        ValueText.Text = Math.Round(Value).ToString();
+
         if (FillRect.Parent is FrameworkElement track)
         {
-             FillRect.Width = track.ActualWidth * percentage;
+            double targetWidth = track.ActualWidth * percentage;
+
+            if (animate && targetWidth > 0)
+            {
+                DoubleAnimation widthAnimation = new DoubleAnimation
+                {
+                    To = targetWidth,
+                    Duration = TimeSpan.FromMilliseconds(300),
+                    EnableDependentAnimation = true,
+                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                };
+
+                Storyboard storyboard = new Storyboard();
+                Storyboard.SetTarget(widthAnimation, FillRect);
+                Storyboard.SetTargetProperty(widthAnimation, "Width");
+                storyboard.Children.Add(widthAnimation);
+                storyboard.Begin();
+            }
+            else
+            {
+                FillRect.Width = targetWidth;
+            }
         }
     }
 }
