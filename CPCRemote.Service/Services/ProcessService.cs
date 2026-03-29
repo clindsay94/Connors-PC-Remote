@@ -43,31 +43,40 @@ public sealed class ProcessService
         {
             count = Math.Clamp(count, 1, 50);
 
-            var processes = Process.GetProcesses()
-                .Where(p => !string.IsNullOrEmpty(p.ProcessName))
-                .Select(p =>
+            var allProcesses = Process.GetProcesses();
+            var processInfos = new List<ProcessInfoDto>(allProcesses.Length);
+
+            foreach (var p in allProcesses)
+            {
+                using (p)
                 {
                     try
                     {
-                        return new ProcessInfoDto
+                        string name = p.ProcessName;
+                        if (string.IsNullOrEmpty(name))
+                        {
+                            continue;
+                        }
+
+                        processInfos.Add(new ProcessInfoDto
                         {
                             Pid = p.Id,
-                            Name = p.ProcessName,
+                            Name = name,
                             MemoryMb = Math.Round(p.WorkingSet64 / (1024.0 * 1024.0), 1),
-                            IsProtected = ProtectedProcesses.Contains(p.ProcessName)
-                        };
+                            IsProtected = ProtectedProcesses.Contains(name)
+                        });
                     }
                     catch
                     {
-                        return null;
+                        // Some processes might exit while we are iterating or we might lack permissions
                     }
-                })
-                .Where(p => p is not null)
-                .OrderByDescending(p => p!.MemoryMb)
+                }
+            }
+
+            return processInfos
+                .OrderByDescending(p => p.MemoryMb)
                 .Take(count)
                 .ToArray();
-
-            return processes!;
         }
         catch (Exception ex)
         {
@@ -84,7 +93,7 @@ public sealed class ProcessService
     {
         try
         {
-            var process = Process.GetProcessById(pid);
+            using var process = Process.GetProcessById(pid);
             string name = process.ProcessName;
 
             // Security check
