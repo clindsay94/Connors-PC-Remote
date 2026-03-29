@@ -17,9 +17,6 @@ public sealed partial class AppCatalogPage : Page
         this.Name = "RootPage"; // For ElementName binding
     }
 
-    private void RefreshButton_Click(object sender, RoutedEventArgs e) => ViewModel.RefreshAppsCommand.Execute(null);
-    private void AddButton_Click(object sender, RoutedEventArgs e) => ViewModel.AddNewAppCommand.Execute(null);
-
     private async void BrowsePathButton_Click(object sender, RoutedEventArgs e)
     {
         var picker = new Windows.Storage.Pickers.FileOpenPicker();
